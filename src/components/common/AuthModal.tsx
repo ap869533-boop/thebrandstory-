@@ -1,0 +1,741 @@
+import React, { useState, useEffect } from 'react';
+import {
+  X,
+  Mail,
+  User,
+  Building2,
+  Sparkles,
+  ArrowRight,
+  Loader2,
+  Phone,
+  MapPin,
+  Tag,
+  AtSign,
+  CheckCircle2,
+  AlertCircle,
+  KeyRound,
+  ArrowLeft
+} from 'lucide-react';
+import { usePlatform } from '../../context/PlatformContext';
+import { UserRole } from '../../types';
+import { CATEGORIES_LIST, CITIES_LIST } from '../../data/initialData';
+
+export const AuthModal: React.FC = () => {
+  const { authModalOpen, authModalInitialMode, closeAuthModal, setAuthUser, setCurrentRole, navigateTo, setCreators } = usePlatform();
+  const [mode, setMode] = useState<'login' | 'signup'>(authModalInitialMode);
+  const [role, setRole] = useState<UserRole>('CREATOR');
+
+  // Form Fields
+  const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [phone, setPhone] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [category, setCategory] = useState('Fashion');
+  const [city, setCity] = useState('Delhi NCR');
+
+  // OTP Fields
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState('');
+
+  // Reset fields cleanly when modal opens to prevent stale browser autofills
+  useEffect(() => {
+    if (authModalOpen) {
+      setMode(authModalInitialMode);
+      setEmail('');
+      setPassword('');
+      setName('');
+      setUsername('');
+      setPhone('');
+      setCompanyName('');
+      setOtp('');
+      setOtpSent(false);
+      setErrorMsg(null);
+      setSuccessMsg(null);
+      setFieldErrors({});
+      setTouched({});
+    }
+  }, [authModalOpen, authModalInitialMode]);
+
+  // Validation State
+  const [touched, setTouched] = useState<{ [key: string]: boolean }>({});
+  const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  if (!authModalOpen) return null;
+
+  // Validation Logic
+  const validate = () => {
+    const errors: { [key: string]: string } = {};
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email.trim()) {
+      errors.email = 'Email address is required';
+    } else if (!emailRegex.test(email.trim())) {
+      errors.email = 'Please enter a valid email address (e.g. name@company.com)';
+    }
+
+    // Password validation
+    if (!password) {
+      errors.password = 'Password is required';
+    } else if (password.length < 6 && mode === 'signup') {
+      errors.password = 'Password must be at least 6 characters';
+    }
+
+    if (mode === 'signup' && otpSent) {
+      if (!otp.trim()) {
+        errors.otp = 'OTP is required';
+      } else if (otp.trim().length !== 6) {
+        errors.otp = 'OTP must be 6 digits';
+      }
+    }
+
+    if (!otpSent && mode === 'signup') {
+      // Name validation
+      if (!name.trim()) {
+        errors.name = 'Full name is required';
+      } else if (name.trim().length < 2) {
+        errors.name = 'Name must be at least 2 characters';
+      }
+
+      // Role specific validation
+      if (role === 'CREATOR') {
+        if (username.trim()) {
+          const handleRegex = /(https?:\/\/)?(www\.)?instagram\.com\/[^\/]+/i;
+          if (!handleRegex.test(username.trim())) {
+            errors.username = 'Please enter a valid Instagram profile URL (e.g., https://instagram.com/username)';
+          }
+        }
+        // Phone validation (Optional but if provided, must be valid 10 digits)
+        if (phone.trim()) {
+          const cleanPhone = phone.replace(/[^0-9]/g, '');
+          if (cleanPhone.length < 10) {
+            errors.phone = 'Please enter a valid 10-digit mobile number';
+          }
+        }
+      } else if (role === 'BRAND') {
+        if (!companyName.trim()) {
+          errors.companyName = 'Company or brand name is required';
+        }
+      }
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleBlur = (field: string) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    validate();
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setTouched({
+      name: true,
+      username: true,
+      email: true,
+      phone: true,
+      companyName: true,
+      otp: true,
+    });
+
+    if (!validate()) {
+      setErrorMsg('Please correct the highlighted fields before submitting.');
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    try {
+      if (mode === 'login') {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email.trim(), password }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Authentication failed');
+        }
+
+        if (data.token) localStorage.setItem('sc_auth_token', data.token);
+        if (data.user) {
+          setAuthUser(data.user);
+          setCurrentRole(data.user.role);
+          setSuccessMsg('Login successful! Redirecting to workspace...');
+          setTimeout(() => {
+            closeAuthModal();
+            if (data.user.role === 'CREATOR') navigateTo('creator-dashboard');
+            else if (data.user.role === 'BRAND') navigateTo('brand-dashboard');
+            else if (data.user.role === 'ADMIN') navigateTo('admin-dashboard');
+            else navigateTo('search');
+          }, 800);
+        }
+      } else {
+        // SIGNUP MODE
+        if (!otpSent) {
+          // Request OTP
+          const res = await fetch('/api/auth/request-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email.trim() }),
+          });
+          
+          const data = await res.json();
+          
+          if (!res.ok || !data.success) {
+            throw new Error(data.error || 'Failed to send OTP');
+          }
+          
+          setOtpSent(true);
+          setSuccessMsg(`OTP sent to ${email.trim()}`);
+        } else {
+          // Verify OTP
+          // Extract username from URL for creators
+          let parsedUsername = (username || name).toLowerCase();
+          if (role === 'CREATOR' && username) {
+            const match = username.match(/instagram\.com\/([^\/?#]+)/i);
+            if (match && match[1]) {
+              parsedUsername = match[1];
+            }
+          } else {
+            parsedUsername = parsedUsername.replace(/[^a-z0-9_]/g, '');
+          }
+
+          const body = {
+            email: email.trim(),
+            otp: otp.trim(),
+            password,
+            name: name.trim(),
+            role,
+            phone: phone.trim(),
+            companyName: companyName.trim(),
+            username: parsedUsername,
+            category,
+            city,
+          };
+
+          const res = await fetch('/api/auth/verify-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          });
+
+          const data = await res.json();
+
+          if (!res.ok || !data.success) {
+            throw new Error(data.error || 'Authentication failed');
+          }
+
+          if (data.token) localStorage.setItem('sc_auth_token', data.token);
+          if (data.user) {
+            setAuthUser(data.user);
+            setCurrentRole(data.user.role);
+            if (data.user.creatorProfile) {
+              setCreators((prev) => [data.user.creatorProfile, ...prev]);
+            }
+
+            setSuccessMsg(
+              role === 'CREATOR'
+                ? 'Creator Profile created! Redirecting...'
+                : 'Brand Account registered successfully! Redirecting...'
+            );
+
+            setTimeout(() => {
+              closeAuthModal();
+              if (data.user.role === 'CREATOR') navigateTo('creator-dashboard');
+              else if (data.user.role === 'BRAND') navigateTo('brand-dashboard');
+              else if (data.user.role === 'ADMIN') navigateTo('admin-dashboard');
+              else navigateTo('search');
+            }, 800);
+          }
+        }
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Authentication error. Please check your details.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fadeIn font-sans"
+      onClick={closeAuthModal}
+    >
+      <div
+        className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-100 p-6 sm:p-8 space-y-5 animate-scaleUp max-h-[92vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Close Button */}
+        <button
+          onClick={closeAuthModal}
+          className="absolute top-5 right-5 p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition cursor-pointer"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        {/* Header Title */}
+        <div className="text-center space-y-2">
+          <div className="flex justify-center mb-1">
+            <img
+              src="/logo.png"
+              alt="thebrandsstory."
+              className="h-10 w-auto object-contain"
+            />
+          </div>
+          <h2 className="text-2xl font-black tracking-tight text-slate-900">
+            {mode === 'login' ? 'Sign In to thebrandsstory.' : 'Create Your Account'}
+          </h2>
+          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+            {mode === 'login'
+              ? 'Access verified creators, brand campaigns, and live enquiries'
+              : 'Join India’s premier influencer marketing platform'}
+          </p>
+        </div>
+
+        {/* Mode Switcher Tabs */}
+        {!otpSent && (
+          <div className="flex p-1 bg-slate-100 rounded-xl">
+            <button
+              type="button"
+              onClick={() => {
+                setMode('login');
+                setErrorMsg(null);
+                setSuccessMsg(null);
+                setFieldErrors({});
+              }}
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition cursor-pointer ${
+                mode === 'login' ? 'bg-white text-[#b88628] shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Login
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMode('signup');
+                setErrorMsg(null);
+                setSuccessMsg(null);
+                setFieldErrors({});
+              }}
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition cursor-pointer ${
+                mode === 'signup' ? 'bg-white text-[#b88628] shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Sign Up
+            </button>
+          </div>
+        )}
+
+        {/* Error Notification */}
+        {errorMsg && (
+          <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl font-medium flex items-center gap-2 animate-shake">
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <span>{errorMsg}</span>
+          </div>
+        )}
+
+        {/* Success Notification */}
+        {successMsg && (
+          <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl font-medium flex items-center gap-2 animate-fadeIn">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{successMsg}</span>
+          </div>
+        )}
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} noValidate className="space-y-3.5 text-xs">
+          {!otpSent ? (
+            <>
+              {mode === 'signup' && (
+                <>
+                  {/* Role Selection */}
+                  <div>
+                    <label className="block text-slate-700 font-bold mb-1.5">I am registering as:</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRole('CREATOR');
+                          setFieldErrors({});
+                        }}
+                        className={`p-3 rounded-xl border text-center font-bold transition cursor-pointer flex flex-col items-center gap-1 ${
+                          role === 'CREATOR'
+                            ? 'border-blue-600 bg-blue-50/70 text-[#b88628] shadow-xs ring-2 ring-blue-500/20'
+                            : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
+                        }`}
+                      >
+                        <Sparkles className="w-4 h-4 text-[#D4A338]" />
+                        <span>Creator / Influencer</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRole('BRAND');
+                          setFieldErrors({});
+                        }}
+                        className={`p-3 rounded-xl border text-center font-bold transition cursor-pointer flex flex-col items-center gap-1 ${
+                          role === 'BRAND'
+                            ? 'border-blue-600 bg-blue-50/70 text-[#b88628] shadow-xs ring-2 ring-blue-500/20'
+                            : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
+                        }`}
+                      >
+                        <Building2 className="w-4 h-4 text-indigo-600" />
+                        <span>Brand / Agency</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Name & Handle in 2-columns */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <div className="flex justify-between items-center mb-1.5">
+                        <label className="text-slate-800 text-xs font-bold">Full Name *</label>
+                      </div>
+                      <div className="relative">
+                        <User className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5" />
+                        <input
+                          type="text"
+                          placeholder="e.g. Tanvi Joshi"
+                          value={name}
+                          onChange={(e) => {
+                            setName(e.target.value);
+                            if (fieldErrors.name) validate();
+                          }}
+                          onBlur={() => handleBlur('name')}
+                          className={`w-full pl-10 pr-4 py-3 bg-slate-50 border rounded-xl focus:bg-white focus:outline-none transition font-medium ${
+                            touched.name && fieldErrors.name
+                              ? 'border-rose-400 focus:border-rose-500 bg-rose-50/30'
+                              : touched.name && !fieldErrors.name && name
+                              ? 'border-emerald-400'
+                              : 'border-slate-200 focus:border-blue-500'
+                          }`}
+                        />
+                      </div>
+                      {touched.name && fieldErrors.name && (
+                        <span className="text-[11px] text-rose-600 font-semibold mt-1 block">
+                          {fieldErrors.name}
+                        </span>
+                      )}
+                    </div>
+
+                    {role === 'CREATOR' ? (
+                      <div>
+                        <label className="block text-slate-800 text-xs font-bold mb-1.5">Instagram Profile URL</label>
+                        <div className="relative">
+                          <AtSign className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5" />
+                          <input
+                            type="text"
+                            placeholder="https://instagram.com/username"
+                            value={username}
+                            onChange={(e) => {
+                              setUsername(e.target.value);
+                              if (fieldErrors.username) validate();
+                            }}
+                            onBlur={() => handleBlur('username')}
+                            className={`w-full pl-10 pr-4 py-3 bg-slate-50 border rounded-xl focus:bg-white focus:outline-none transition font-medium ${
+                              touched.username && fieldErrors.username
+                                ? 'border-rose-400 focus:border-rose-500'
+                                : 'border-slate-200 focus:border-blue-500'
+                            }`}
+                          />
+                        </div>
+                        {touched.username && fieldErrors.username && (
+                          <span className="text-[11px] text-rose-600 font-semibold mt-1 block">
+                            {fieldErrors.username}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <div>
+                        <label className="block text-slate-800 text-xs font-bold mb-1.5">Company / Brand Name *</label>
+                        <div className="relative">
+                          <Building2 className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5" />
+                          <input
+                            type="text"
+                            placeholder="e.g. Mamaearth"
+                            value={companyName}
+                            onChange={(e) => {
+                              setCompanyName(e.target.value);
+                              if (fieldErrors.companyName) validate();
+                            }}
+                            onBlur={() => handleBlur('companyName')}
+                            className={`w-full pl-10 pr-4 py-3 bg-slate-50 border rounded-xl focus:bg-white focus:outline-none transition font-medium ${
+                              touched.companyName && fieldErrors.companyName
+                                ? 'border-rose-400 focus:border-rose-500 bg-rose-50/30'
+                                : 'border-slate-200 focus:border-blue-500'
+                            }`}
+                          />
+                        </div>
+                        {touched.companyName && fieldErrors.companyName && (
+                          <span className="text-[11px] text-rose-600 font-semibold mt-1 block">
+                            {fieldErrors.companyName}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Category & City for Creator */}
+                  {role === 'CREATOR' && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-slate-800 text-xs font-bold mb-1.5">Primary Niche</label>
+                        <div className="relative">
+                          <Tag className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5" />
+                          <select
+                            value={category}
+                            onChange={(e) => setCategory(e.target.value)}
+                            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 transition cursor-pointer font-medium"
+                          >
+                            {CATEGORIES_LIST.map((cat) => (
+                              <option key={cat.id} value={cat.name}>
+                                {cat.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-800 text-xs font-bold mb-1.5">Base City</label>
+                        <div className="relative">
+                          <MapPin className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5" />
+                          <select
+                            value={city}
+                            onChange={(e) => setCity(e.target.value)}
+                            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 transition cursor-pointer font-medium"
+                          >
+                            {CITIES_LIST.map((c) => (
+                              <option key={c.id} value={c.name}>
+                                {c.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Phone */}
+                  <div>
+                    <label className="block text-slate-800 text-xs font-bold mb-1.5">WhatsApp / Contact Number</label>
+                    <div className="relative">
+                      <Phone className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5" />
+                      <input
+                        type="tel"
+                        placeholder="+91 98765 43210"
+                        value={phone}
+                        onChange={(e) => {
+                          setPhone(e.target.value);
+                          if (fieldErrors.phone) validate();
+                        }}
+                        onBlur={() => handleBlur('phone')}
+                        className={`w-full pl-10 pr-4 py-3 bg-slate-50 border rounded-xl focus:bg-white focus:outline-none transition font-medium ${
+                          touched.phone && fieldErrors.phone
+                            ? 'border-rose-400 focus:border-rose-500 bg-rose-50/30'
+                            : 'border-slate-200 focus:border-blue-500'
+                        }`}
+                      />
+                    </div>
+                    {touched.phone && fieldErrors.phone && (
+                      <span className="text-[11px] text-rose-600 font-semibold mt-1 block">
+                        {fieldErrors.phone}
+                      </span>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {/* Email */}
+              <div>
+                <label className="block text-slate-800 text-xs font-bold mb-1.5">Email Address *</label>
+                <div className="relative">
+                  <Mail className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5 pointer-events-none" />
+                  <input
+                    type="email"
+                    name="sc_auth_login_user_email"
+                    id="sc-email-input"
+                    autoComplete="email"
+                    autoCorrect="off"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    placeholder="name@brand.com"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (fieldErrors.email) validate();
+                    }}
+                    onBlur={() => handleBlur('email')}
+                    className={`w-full pl-10 pr-4 py-3 bg-slate-50 border rounded-xl focus:bg-white focus:outline-none transition font-medium ${
+                      touched.email && fieldErrors.email
+                        ? 'border-rose-400 focus:border-rose-500 bg-rose-50/30'
+                        : touched.email && !fieldErrors.email && email
+                        ? 'border-emerald-400'
+                        : 'border-slate-200 focus:border-blue-500'
+                    }`}
+                  />
+                </div>
+                {touched.email && fieldErrors.email && (
+                  <span className="text-[11px] text-rose-600 font-semibold mt-1 block">
+                    {fieldErrors.email}
+                  </span>
+                )}
+              </div>
+
+              {/* Password */}
+              <div>
+                <label className="block text-slate-800 text-xs font-bold mb-1.5">Password *</label>
+                <div className="relative">
+                  <KeyRound className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5 pointer-events-none" />
+                  <input
+                    type="password"
+                    name="sc_auth_login_user_password"
+                    placeholder={mode === 'login' ? 'Your password' : 'Create a strong password'}
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (fieldErrors.password) validate();
+                    }}
+                    onBlur={() => handleBlur('password')}
+                    className={`w-full pl-10 pr-4 py-3 bg-slate-50 border rounded-xl focus:bg-white focus:outline-none transition font-medium ${
+                      touched.password && fieldErrors.password
+                        ? 'border-rose-400 focus:border-rose-500 bg-rose-50/30'
+                        : touched.password && !fieldErrors.password && password
+                        ? 'border-emerald-400'
+                        : 'border-slate-200 focus:border-blue-500'
+                    }`}
+                  />
+                </div>
+                {touched.password && fieldErrors.password && (
+                  <span className="text-[11px] text-rose-600 font-semibold mt-1 block">
+                    {fieldErrors.password}
+                  </span>
+                )}
+              </div>
+            </>
+          ) : (
+            // OTP Phase
+            <div className="space-y-4">
+              <button 
+                type="button"
+                onClick={() => {
+                  setOtpSent(false);
+                  setSuccessMsg(null);
+                  setErrorMsg(null);
+                  setOtp('');
+                }}
+                className="flex items-center text-[11px] font-semibold text-slate-500 hover:text-slate-800 transition cursor-pointer"
+              >
+                <ArrowLeft className="w-3.5 h-3.5 mr-1" /> Back to Edit Email
+              </button>
+              <div>
+                <label className="block text-slate-800 text-xs font-bold mb-1.5">Enter 6-Digit OTP *</label>
+                <div className="relative">
+                  <KeyRound className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5 pointer-events-none" />
+                  <input
+                    type="text"
+                    maxLength={6}
+                    placeholder="••••••"
+                    value={otp}
+                    onChange={(e) => {
+                      setOtp(e.target.value.replace(/[^0-9]/g, ''));
+                      if (fieldErrors.otp) validate();
+                    }}
+                    onBlur={() => handleBlur('otp')}
+                    className={`w-full pl-10 pr-4 py-3 bg-slate-50 border rounded-xl focus:bg-white focus:outline-none transition font-medium text-center tracking-widest text-lg ${
+                      touched.otp && fieldErrors.otp
+                        ? 'border-rose-400 focus:border-rose-500 bg-rose-50/30'
+                        : touched.otp && !fieldErrors.otp && otp.length === 6
+                        ? 'border-emerald-400'
+                        : 'border-slate-200 focus:border-blue-500'
+                    }`}
+                  />
+                </div>
+                {touched.otp && fieldErrors.otp && (
+                  <span className="text-[11px] text-rose-600 font-semibold mt-1 block">
+                    {fieldErrors.otp}
+                  </span>
+                )}
+              </div>
+              <p className="text-center text-slate-500 text-[11px]">
+                Please check your email. We sent a code to <span className="font-bold text-slate-800">{email}</span>. 
+              </p>
+            </div>
+          )}
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-500/20 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 mt-3"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Processing...</span>
+              </>
+            ) : (
+              <>
+                <span>{!otpSent ? 'Send OTP' : (mode === 'login' ? 'Verify & Sign In' : 'Verify & Complete Registration')}</span>
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
+          </button>
+        </form>
+
+        {/* 1-Click Quick Demo Logins Helper */}
+        {mode === 'login' && !otpSent && (
+          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5 text-[11px] text-slate-500">
+            <span className="font-bold text-slate-700 block">Click to auto-fill & send OTP:</span>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={(e) => {
+                  setEmail('admin@thebrandsstory.in');
+                  setErrorMsg(null);
+                  setFieldErrors({});
+                  // Use setTimeout to ensure state is updated before submit
+                  setTimeout(() => {
+                    const formEvent = { preventDefault: () => {} } as React.FormEvent;
+                    handleSubmit(formEvent);
+                  }, 0);
+                }}
+                className="px-2.5 py-1 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-lg text-slate-700 font-semibold transition cursor-pointer text-[10px]"
+              >
+                👑 <strong>Admin</strong> (admin@thebrandsstory.in)
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  setEmail('brand@nykaa.com');
+                  setErrorMsg(null);
+                  setFieldErrors({});
+                  // Use setTimeout to ensure state is updated before submit
+                  setTimeout(() => {
+                    const formEvent = { preventDefault: () => {} } as React.FormEvent;
+                    handleSubmit(formEvent);
+                  }, 0);
+                }}
+                className="px-2.5 py-1 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-lg text-slate-700 font-semibold transition cursor-pointer text-[10px]"
+              >
+                🏢 <strong>Brand</strong> (brand@nykaa.com)
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};

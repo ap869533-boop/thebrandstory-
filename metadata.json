@@ -1,0 +1,7 @@
+{
+  "name": "thebrandsstory. — India's Biggest Influencer Platform",
+  "description": "Premium influencer discovery marketplace, creator directory, and brand collaboration platform powered by thebrandsstory..",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
