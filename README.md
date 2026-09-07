@@ -351,3 +351,5 @@ The backend runs on Express (`server.ts`) and is seamlessly integrated with the 
 <div align="center">
   <b>thebrandsstory.</b> — Empowering India's 50,000+ Creators & Next-Gen Brands 🇮🇳
 </div>
+#   t h e b r a n d s t o r y -  
+ 
