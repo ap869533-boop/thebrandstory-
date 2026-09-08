@@ -207,7 +207,7 @@ export interface EnquiryLead {
   phone: string;
   campaignType: string;
   collaborationType?: string;
-  campaignDescription: string;
+  campaignDescription?: string;
   city: string;
   budget: string;
   influencersRequired: number;
@@ -229,20 +229,20 @@ export interface CampaignRequirement {
   phone: string;
   industry: string;
   campaignTitle: string;
-  campaignDescription: string;
+  campaignDescription?: string;
   city: string;
   influencersCount: string | number;
   followerRange: string;
   budget: string;
   category: string;
-  collaborationType: string;
-  campaignDate: string;
+  collaborationType?: string;
+  campaignDate?: string;
   deliverablesNeeded?: string;
   isBarter?: boolean;
   campaignStartDate?: string;
   customInstructions?: string;
-  platforms: string[];
-  requirements: string;
+  platforms?: string[];
+  requirements?: string;
   status: 'Open' | 'In Review' | 'Filled' | 'Completed';
   applicantsCount: number;
   applicants: {
