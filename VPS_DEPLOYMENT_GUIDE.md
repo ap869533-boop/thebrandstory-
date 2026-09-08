@@ -7,7 +7,7 @@ Is guide ko follow karke aap is project ko kisi bhi Linux VPS (Hostinger, Digita
 ## 🏗️ Architecture Overview
 
 - **Frontend**: React + Vite SPA (Compiled to `/var/www/thebrandsstory/frontend/dist`, directly served by high-speed Nginx web server)
-- **Backend**: Node.js Express API Server running on port `5000` (Managed 24/7 by PM2 process manager)
+- **Backend**: Node.js Express API Server running on port `8000` (Managed 24/7 by PM2 process manager)
 - **Database**: MySQL Server running locally on port `3306`
 - **Reverse Proxy & SSL**: Nginx forwards `/api/` to Express and serves frontend at `/`, with free Let's Encrypt SSL HTTPS.
 
@@ -83,7 +83,7 @@ nano backend/.env
 ```
 Apni details enter karein:
 ```env
-PORT=5000
+PORT=8000
 NODE_ENV=production
 DB_HOST=localhost
 DB_USER=brandsuser
@@ -117,7 +117,7 @@ pm2 startup
 Backend status check karein:
 ```bash
 pm2 status
-curl http://localhost:5000/health
+curl http://localhost:8000/health
 # Output: {"status":"ok", ...}
 ```
 
@@ -156,7 +156,7 @@ server {
 
     # Backend Express API Reverse Proxy
     location /api/ {
-        proxy_pass http://127.0.0.1:5000;
+        proxy_pass http://127.0.0.1:8000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';

@@ -21,6 +21,19 @@ import { usePlatform } from '../../context/PlatformContext';
 import { UserRole } from '../../types';
 import { CATEGORIES_LIST, CITIES_LIST } from '../../data/initialData';
 
+async function readApiResponse(response: Response): Promise<any> {
+  const body = await response.text();
+  if (!body) {
+    return { success: false, error: `Server returned ${response.status} without a response body.` };
+  }
+
+  try {
+    return JSON.parse(body);
+  } catch {
+    return { success: false, error: `Server returned ${response.status}: ${body.slice(0, 160)}` };
+  }
+}
+
 export const AuthModal: React.FC = () => {
   const { authModalOpen, authModalInitialMode, closeAuthModal, setAuthUser, setCurrentRole, navigateTo, setCreators, setActiveCreatorId, categories, cities, siteLogo } = usePlatform();
   const [mode, setMode] = useState<'login' | 'signup'>(authModalInitialMode);
@@ -164,7 +177,7 @@ export const AuthModal: React.FC = () => {
           body: JSON.stringify({ email: email.trim(), password }),
         });
 
-        const data = await res.json();
+        const data = await readApiResponse(res);
 
         if (!res.ok || !data.success) {
           throw new Error(data.error || 'Authentication failed');
@@ -209,7 +222,7 @@ export const AuthModal: React.FC = () => {
             body: JSON.stringify({ email: email.trim() }),
           });
           
-          const data = await res.json();
+          const data = await readApiResponse(res);
           
           if (!res.ok || !data.success) {
             throw new Error(data.error || 'Failed to send OTP');
@@ -249,7 +262,7 @@ export const AuthModal: React.FC = () => {
             body: JSON.stringify(body),
           });
 
-          const data = await res.json();
+          const data = await readApiResponse(res);
 
           if (!res.ok || !data.success) {
             throw new Error(data.error || 'Authentication failed');

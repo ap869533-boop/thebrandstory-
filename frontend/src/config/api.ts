@@ -4,7 +4,7 @@
  * Central API Configuration for Frontend
  * Live Production Backend Domain: https://thebrandsstory.com
  */
-export const LIVE_DOMAIN = 'http://localhost:5000';
+export const LIVE_DOMAIN = 'http://localhost:8000';
 
 export const getApiBaseUrl = (): string => {
   const envUrl = (import.meta as any).env?.VITE_API_BASE_URL as string | undefined;
