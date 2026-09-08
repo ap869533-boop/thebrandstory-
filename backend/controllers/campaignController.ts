@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { dbQuery } from '../config/db';
-import { CampaignRequirement } from '../../src/types';
+import { CampaignRequirement } from '../types';
 import { creatorsStore } from './creatorController';
 
 let campaignsStore: CampaignRequirement[] = [

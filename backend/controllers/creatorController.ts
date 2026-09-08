@@ -1,19 +1,20 @@
 import { Request, Response } from 'express';
 import { dbQuery } from '../config/db';
-import { INITIAL_CREATORS } from '../../src/data/initialData';
-import { Creator } from '../../src/types';
+import { INITIAL_CREATORS } from '../data/initialData';
+import { Creator } from '../types';
 import { sendApprovalEmail } from '../utils/mailer';
 
 // In-Memory store initialized with seed data as resilient fallback
-let creatorsStore: Creator[] = [...INITIAL_CREATORS];
+export let creatorsStore: Creator[] = [...INITIAL_CREATORS];
 
-function mapDbRowToCreator(row: any): Creator {
+export function mapDbRowToCreator(row: any): Creator {
   return {
     id: row.id,
     name: row.name,
     username: row.username,
     avatar: row.avatar || '',
     coverImage: row.cover_image || '',
+    reelVideoUrl: row.reel_video_url || '',
     bio: row.bio || '',
     currentCity: row.current_city,
     state: row.state || 'Delhi',
@@ -483,7 +484,7 @@ export async function updateCreator(req: Request, res: Response) {
 
   if (shouldSendApprovalEmail) {
     const creatorName = creatorsStore[index].name;
-    const creatorEmail = creatorsStore[index].email || ''; 
+    const creatorEmail = creatorsStore[index].email || '';
     if (creatorEmail) {
       sendApprovalEmail(creatorEmail, creatorName);
     }
@@ -521,5 +522,3 @@ export async function addCreatorReview(req: Request, res: Response) {
 
   res.status(201).json({ success: true, review: newReview });
 }
-
-export { creatorsStore };

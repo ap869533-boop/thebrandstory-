@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { dbQuery } from '../config/db';
-import { EnquiryLead } from '../../src/types';
+import { EnquiryLead } from '../types';
 import { creatorsStore } from './creatorController';
 
 let enquiriesStore: EnquiryLead[] = [

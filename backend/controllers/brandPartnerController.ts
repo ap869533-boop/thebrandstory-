@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { dbQuery } from '../config/db';
-import { BrandPartner } from '../../src/types';
+import { BrandPartner } from '../types';
 
 export const INITIAL_BRAND_PARTNERS: BrandPartner[] = [
   {

@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { dbQuery } from '../config/db';
-import { BLOG_POSTS } from '../../src/data/initialData';
-import { BlogPost } from '../../src/types';
+import { BLOG_POSTS } from '../data/initialData';
+import { BlogPost } from '../types';
 
 export async function getBlogPosts(req: Request, res: Response) {
   try {

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { dbQuery } from '../config/db';
-import { SavedFolder } from '../../src/types';
+import { SavedFolder } from '../types';
 
 let memoryFolders: SavedFolder[] = [];
 

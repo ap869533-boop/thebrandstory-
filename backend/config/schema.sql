@@ -233,3 +233,38 @@ CREATE TABLE IF NOT EXISTS `cities` (
   `image` VARCHAR(500) DEFAULT NULL,
   `count` INT UNSIGNED DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 11. Partner Brands Table
+CREATE TABLE IF NOT EXISTS `partner_brands` (
+  `id` VARCHAR(64) PRIMARY KEY,
+  `name` VARCHAR(120) NOT NULL,
+  `category` VARCHAR(100) DEFAULT 'Brand Partner',
+  `logo_url` VARCHAR(500) NOT NULL,
+  `website` VARCHAR(255) DEFAULT NULL,
+  `sort_order` INT DEFAULT 0,
+  `is_active` BOOLEAN DEFAULT TRUE,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 12. Industries Table
+CREATE TABLE IF NOT EXISTS `industries` (
+  `id` VARCHAR(64) PRIMARY KEY,
+  `name` VARCHAR(120) NOT NULL,
+  `slug` VARCHAR(120) NOT NULL UNIQUE,
+  `icon_name` VARCHAR(50) DEFAULT 'Briefcase',
+  `description` TEXT DEFAULT NULL,
+  `recommended_categories` JSON DEFAULT NULL,
+  `image` VARCHAR(500) DEFAULT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 13. Platform Stats Table
+CREATE TABLE IF NOT EXISTS `platform_stats` (
+  `id` VARCHAR(64) PRIMARY KEY,
+  `creators_display` VARCHAR(50) NOT NULL DEFAULT '50,000+',
+  `cities_display` VARCHAR(50) NOT NULL DEFAULT '500+',
+  `categories_display` VARCHAR(50) NOT NULL DEFAULT '100+',
+  `brand_connections_display` VARCHAR(50) NOT NULL DEFAULT '10,000+',
+  `custom_override` BOOLEAN DEFAULT FALSE,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

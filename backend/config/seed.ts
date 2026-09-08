@@ -5,9 +5,12 @@ import {
   INITIAL_CREATORS,
   CATEGORIES_LIST,
   CITIES_LIST,
+  INDUSTRIES_LIST,
+  INITIAL_STATS,
   INITIAL_CAMPAIGNS,
   BLOG_POSTS,
-} from '../../src/data/initialData';
+} from '../data/initialData';
+import { INITIAL_BRAND_PARTNERS } from '../controllers/brandPartnerController';
 
 dotenv.config();
 
@@ -63,6 +66,7 @@ async function runSeed() {
         username VARCHAR(80) NOT NULL UNIQUE,
         avatar VARCHAR(500) DEFAULT NULL,
         cover_image VARCHAR(500) DEFAULT NULL,
+        reel_video_url VARCHAR(500) DEFAULT NULL,
         bio TEXT DEFAULT NULL,
         current_city VARCHAR(80) NOT NULL,
         state VARCHAR(80) DEFAULT 'Delhi',
@@ -145,6 +149,44 @@ async function runSeed() {
     `);
 
     await connection.query(`
+      CREATE TABLE IF NOT EXISTS industries (
+        id VARCHAR(64) PRIMARY KEY,
+        name VARCHAR(120) NOT NULL,
+        slug VARCHAR(120) NOT NULL UNIQUE,
+        icon_name VARCHAR(50) DEFAULT 'Briefcase',
+        description TEXT DEFAULT NULL,
+        recommended_categories JSON DEFAULT NULL,
+        image VARCHAR(500) DEFAULT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS partner_brands (
+        id VARCHAR(64) PRIMARY KEY,
+        name VARCHAR(120) NOT NULL,
+        category VARCHAR(100) DEFAULT 'Brand Partner',
+        logo_url VARCHAR(500) NOT NULL,
+        website VARCHAR(255) DEFAULT NULL,
+        sort_order INT DEFAULT 0,
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS platform_stats (
+        id VARCHAR(64) PRIMARY KEY,
+        creators_display VARCHAR(50) NOT NULL DEFAULT '50,000+',
+        cities_display VARCHAR(50) NOT NULL DEFAULT '500+',
+        categories_display VARCHAR(50) NOT NULL DEFAULT '100+',
+        brand_connections_display VARCHAR(50) NOT NULL DEFAULT '10,000+',
+        custom_override BOOLEAN DEFAULT FALSE,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    await connection.query(`
       CREATE TABLE IF NOT EXISTS campaign_requirements (
         id VARCHAR(64) PRIMARY KEY,
         user_id VARCHAR(64) DEFAULT NULL,
@@ -205,7 +247,7 @@ async function runSeed() {
         brand_name VARCHAR(150) NOT NULL,
         rating TINYINT UNSIGNED NOT NULL DEFAULT 5,
         review_text TEXT NOT NULL,
-        campaign_type VARCHAR(100) DEFAULT 'Instagram Reel Campaign',
+        campaign_type VARCHAR(100) DEFAULT 'Instagram Reel Deliverable',
         verified_collaboration BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -247,9 +289,9 @@ async function runSeed() {
     const creatorPass = await bcrypt.hash('creator123', 10);
 
     const usersData = [
-      ['user_admin_1', 'thebrandsstory. Admin', 'admin@thebrandsstory..in', adminPass, 'ADMIN', '+91 99999 88888', 'thebrandsstory. HQ', true],
+      ['user_admin_1', 'thebrandsstory. Admin', 'admin@thebrandsstory.in', adminPass, 'ADMIN', '+91 99999 88888', 'thebrandsstory. HQ', true],
       ['user_brand_1', 'Nykaa Marketing Team', 'brand@nykaa.com', brandPass, 'BRAND', '+91 98111 22334', 'Nykaa Beauty', true],
-      ['user_creator_1', 'Priya Sharma', 'creator@thebrandsstory..in', creatorPass, 'CREATOR', '+91 98765 43210', 'Priya Sharma Studio', true],
+      ['user_creator_1', 'Priya Sharma', 'creator@thebrandsstory.in', creatorPass, 'CREATOR', '+91 98765 43210', 'Priya Sharma Studio', true],
     ];
 
     for (const u of usersData) {
@@ -284,18 +326,67 @@ async function runSeed() {
     }
     console.log(`🏙️ Seeded ${CITIES_LIST.length} Indian cities.`);
 
-    // 7. Seed Creators (Deep Profile Data)
+    // 7. Seed Industries
+    for (const ind of INDUSTRIES_LIST) {
+      await connection.query(
+        `INSERT INTO industries (id, name, slug, icon_name, description, recommended_categories, image)
+         VALUES (?, ?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE name=VALUES(name), description=VALUES(description), image=VALUES(image);`,
+        [
+          ind.id,
+          ind.name,
+          ind.slug,
+          ind.iconName || 'Briefcase',
+          ind.description,
+          JSON.stringify(ind.recommendedCategories || []),
+          ind.image
+        ]
+      );
+    }
+    console.log(`🏭 Seeded ${INDUSTRIES_LIST.length} Target Industries.`);
+
+    // 8. Seed Partner Brands
+    for (const bp of INITIAL_BRAND_PARTNERS) {
+      await connection.query(
+        `INSERT INTO partner_brands (id, name, category, logo_url, website, sort_order, is_active)
+         VALUES (?, ?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE name=VALUES(name), logo_url=VALUES(logo_url), category=VALUES(category);`,
+        [bp.id, bp.name, bp.category, bp.logoUrl, bp.website || null, bp.sortOrder || 0, bp.isActive !== false]
+      );
+    }
+    console.log(`🤝 Seeded ${INITIAL_BRAND_PARTNERS.length} Partner Brands.`);
+
+    // 9. Seed Platform Stats
+    await connection.query(
+      `INSERT INTO platform_stats (id, creators_display, cities_display, categories_display, brand_connections_display, custom_override)
+       VALUES ('main_stats', ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+         creators_display=VALUES(creators_display),
+         cities_display=VALUES(cities_display),
+         categories_display=VALUES(categories_display),
+         brand_connections_display=VALUES(brand_connections_display);`,
+      [
+        INITIAL_STATS.creatorsDisplay,
+        INITIAL_STATS.citiesDisplay,
+        INITIAL_STATS.categoriesDisplay,
+        INITIAL_STATS.brandConnectionsDisplay,
+        INITIAL_STATS.customOverride || false,
+      ]
+    );
+    console.log(`📊 Seeded Platform Analytics & Summary Stats.`);
+
+    // 10. Seed Creators (Deep Profile Data + Reel URLs)
     for (const c of INITIAL_CREATORS) {
       await connection.query(
         `INSERT INTO creators (
-          id, name, username, avatar, cover_image, bio, current_city, state, preferred_cities,
+          id, name, username, avatar, cover_image, reel_video_url, bio, current_city, state, preferred_cities,
           primary_category, sub_categories, languages, gender, age_group, followers, engagement_rate,
           avg_views, avg_likes, avg_comments, brand_collaborations_count, trust_score, trust_signals,
           is_verified, is_top20, is_rising, is_featured, is_trending, status, starting_price,
           reel_price, story_price, post_price, ugc_price, is_negotiable, is_barter_available,
           collaboration_types, social_platforms, audience, portfolio, phone, email, profile_views, saved_count
         ) VALUES (
-          ?, ?, ?, ?, ?, ?, ?, ?, ?,
+          ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
           ?, ?, ?, ?, ?, ?, ?,
           ?, ?, ?, ?, ?, ?,
           ?, ?, ?, ?, ?, ?, ?,
@@ -303,13 +394,15 @@ async function runSeed() {
           ?, ?, ?, ?, ?, ?, ?, ?
         ) ON DUPLICATE KEY UPDATE
           name=VALUES(name), followers=VALUES(followers), engagement_rate=VALUES(engagement_rate),
-          trust_score=VALUES(trust_score), starting_price=VALUES(starting_price), reel_price=VALUES(reel_price);`,
+          trust_score=VALUES(trust_score), starting_price=VALUES(starting_price), reel_price=VALUES(reel_price),
+          reel_video_url=VALUES(reel_video_url);`,
         [
           c.id,
           c.name,
           c.username,
           c.avatar,
           c.coverImage,
+          c.reelVideoUrl || null,
           c.bio,
           c.currentCity,
           c.state || 'Delhi',
@@ -345,15 +438,15 @@ async function runSeed() {
           JSON.stringify(c.audience || {}),
           JSON.stringify(c.portfolio || []),
           c.phone || '+91 98765 43210',
-          c.email || `${c.username}@thebrandsstory..in`,
+          c.email || `${c.username}@thebrandsstory.in`,
           c.profileViews || 150,
           c.savedCount || 5,
         ]
       );
     }
-    console.log(`✨ Seeded ${INITIAL_CREATORS.length} Influencer Profiles with full metrics & rate cards.`);
+    console.log(`✨ Seeded ${INITIAL_CREATORS.length} Influencer Profiles with full metrics, rate cards & reel video links.`);
 
-    // 8. Seed Campaigns
+    // 11. Seed Campaigns
     for (const camp of INITIAL_CAMPAIGNS) {
       await connection.query(
         `INSERT INTO campaign_requirements (
@@ -387,7 +480,7 @@ async function runSeed() {
     }
     console.log(`📢 Seeded ${INITIAL_CAMPAIGNS.length} Live Campaign Briefs.`);
 
-    // 9. Seed Direct Enquiries
+    // 12. Seed Direct Enquiries
     const sampleEnquiries = [
       [
         'SC-ENQ-849201',
@@ -408,6 +501,26 @@ async function runSeed() {
         'We love your authentic skin tone styling and would like to send our PR kit.',
         'New',
         false
+      ],
+      [
+        'SC-ENQ-849202',
+        'c2',
+        'Rahul Verma',
+        'rahulverma',
+        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
+        'Spice & Sizzle Bistro',
+        'Karan Bhasin',
+        'karan@spicesizzle.in',
+        '+91 98111 22334',
+        'Rooftop Lounge Experiential Tasting',
+        'Inviting you for our VIP tasting event before public launch.',
+        'Noida',
+        '₹12,000',
+        1,
+        'This Weekend',
+        'Looking forward to having your coverage for our sector 104 outlet.',
+        'Contacted',
+        true
       ]
     ];
 
@@ -424,7 +537,27 @@ async function runSeed() {
     }
     console.log(`📩 Seeded initial Direct Booking Enquiry Leads.`);
 
-    // 10. Seed Blog Posts
+    // 13. Seed Creator Reviews
+    const sampleReviews = [
+      ['rev_1', 'c1', 'Nykaa Beauty', 5, 'Priya delivered 140k organic views on our monsoon skincare serum campaign! Super professional, on-time deliverable, and authentic storytelling.', 'Instagram Reel + Story Series', true],
+      ['rev_2', 'c1', 'Urbanic India', 5, 'Top tier styling sense. Her followers actively engage and swipe up. Delivered 4.2x ROI on our festive launch collection.', 'Lookbook Reel Deliverable', true],
+      ['rev_3', 'c2', 'Bakehouse 101', 5, 'Rahul made our new outlet viral within 48 hours! Massive walk-in footfall in Sector 104 Noida.', 'Experiential Food Tasting Reel', true],
+      ['rev_4', 'c3', 'Mamaearth', 5, 'Ananya explains dermat-formulations with immense clarity. Credible creator with loyal audience.', 'D2C Product Review', true],
+      ['rev_5', 'c4', 'boAt', 5, 'Outstanding production quality and tech unboxing depth. Exceeded all our engagement KPIs.', 'Gadget Unboxing & Reel', true],
+      ['rev_6', 'c5', 'Cult.fit', 5, 'Dr. Tanvi brings real medical credibility. Best fitness collaborator we have worked with.', 'Workout Routine & Form Reel', true],
+    ];
+
+    for (const rev of sampleReviews) {
+      await connection.query(
+        `INSERT INTO creator_reviews (id, creator_id, brand_name, rating, review_text, campaign_type, verified_collaboration)
+         VALUES (?, ?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE rating=VALUES(rating), review_text=VALUES(review_text);`,
+        rev
+      );
+    }
+    console.log(`⭐ Seeded ${sampleReviews.length} Verified Creator Reviews.`);
+
+    // 14. Seed Blog Posts
     for (const blog of BLOG_POSTS) {
       await connection.query(
         `INSERT INTO blog_posts (
@@ -447,7 +580,7 @@ async function runSeed() {
     }
     console.log(`📰 Seeded ${BLOG_POSTS.length} Industry Insights Articles.`);
 
-    console.log('🎉 Database seeding finished successfully! All data is populated in MySQL.');
+    console.log('🎉 Database seeding finished successfully! 100% of all data is populated in MySQL.');
   } catch (error: any) {
     console.error('❌ Database Seeding Error:', error.message || error);
   } finally {
