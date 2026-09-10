@@ -233,12 +233,24 @@ export async function deletePartnerBrand(req: Request, res: Response) {
   await ensureBrandTable();
   try {
     const { id } = req.params;
-    memoryBrandPartners = memoryBrandPartners.filter(b => b.id !== id);
-
-    await dbQuery('DELETE FROM partner_brands WHERE id = ?', [id]).catch(err => console.warn('MySQL brand delete notice:', err));
-
-    res.json({ success: true, message: 'Brand partner removed successfully' });
+    // Delete from MySQL
+    await dbQuery('DELETE FROM partner_brands WHERE id = ?', [id]);
+    // Fetch remaining brands
+    const dbRows = await dbQuery('SELECT * FROM partner_brands WHERE is_active = TRUE ORDER BY sort_order ASC, created_at DESC');
+    const brands: BrandPartner[] = (dbRows || []).map((r: any) => ({
+      id: r.id,
+      name: r.name,
+      category: r.category,
+      logoUrl: r.logo_url,
+      website: r.website,
+      sortOrder: r.sort_order,
+      isActive: Boolean(r.is_active),
+    }));
+    // Update in-memory cache
+    memoryBrandPartners = brands;
+    res.json({ success: true, message: 'Brand partner removed successfully', brands, source: 'mysql' });
   } catch (err: any) {
+    console.warn('Delete brand error:', err);
     res.status(500).json({ success: false, error: err.message || 'Failed to delete partner brand' });
   }
 }
