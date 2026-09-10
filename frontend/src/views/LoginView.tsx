@@ -11,7 +11,9 @@ import {
   Phone,
   AtSign,
   ShieldCheck,
-  Check
+  Check,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { usePlatform } from '../context/PlatformContext';
 import { UserRole } from '../types';
@@ -35,6 +37,7 @@ export const LoginView: React.FC = () => {
   // Form Fields
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
   const [phone, setPhone] = useState('');
@@ -455,15 +458,23 @@ export const LoginView: React.FC = () => {
               <div>
                 <label className="block text-slate-700 font-bold mb-1">Password *</label>
                 <div className="relative">
-                  <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5" />
+                  <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5 pointer-events-none" />
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     onBlur={() => handleBlur('password')}
-                    className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] transition"
+                    className="w-full pl-9 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] transition"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-700 transition cursor-pointer p-0.5"
+                    title={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
                 {touched.password && fieldErrors.password && (
                   <span className="text-[11px] text-rose-600 font-semibold mt-1 block">{fieldErrors.password}</span>

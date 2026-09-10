@@ -16,7 +16,9 @@ import {
   AlertCircle,
   KeyRound,
   ArrowLeft,
-  ShieldCheck
+  ShieldCheck,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { usePlatform } from '../../context/PlatformContext';
 import { UserRole } from '../../types';
@@ -61,6 +63,7 @@ export const AuthModal: React.FC = () => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [phone, setPhone] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [category, setCategory] = useState('Fashion');
@@ -684,7 +687,7 @@ export const AuthModal: React.FC = () => {
                 <div className="relative">
                   <KeyRound className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5 pointer-events-none" />
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     name="sc_auth_login_user_password"
                     placeholder={mode === 'login' ? 'Your password' : 'Create a strong password'}
                     value={password}
@@ -693,7 +696,7 @@ export const AuthModal: React.FC = () => {
                       if (fieldErrors.password) validate();
                     }}
                     onBlur={() => handleBlur('password')}
-                    className={`w-full pl-10 pr-4 py-3 bg-slate-50 border rounded-xl focus:bg-white focus:outline-none transition font-medium ${
+                    className={`w-full pl-10 pr-11 py-3 bg-slate-50 border rounded-xl focus:bg-white focus:outline-none transition font-medium ${
                       touched.password && fieldErrors.password
                         ? 'border-rose-400 focus:border-rose-500 bg-rose-50/30'
                         : touched.password && !fieldErrors.password && password
@@ -701,6 +704,14 @@ export const AuthModal: React.FC = () => {
                         : 'border-slate-200 focus:border-blue-500'
                     }`}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-3 text-slate-400 hover:text-slate-700 transition cursor-pointer p-0.5"
+                    title={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
                 {touched.password && fieldErrors.password && (
                   <span className="text-[11px] text-rose-600 font-semibold mt-1 block">
