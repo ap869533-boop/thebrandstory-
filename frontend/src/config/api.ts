@@ -4,7 +4,7 @@
  * Central API Configuration for Frontend
  * Live Production Backend Domain: https://thebrandsstory.com
  */
-export const LIVE_DOMAIN = 'http://localhost:8000';
+export const LIVE_DOMAIN = 'https://thebrandsstory.com';
 
 export const getApiBaseUrl = (): string => {
   const envUrl = (import.meta as any).env?.VITE_API_BASE_URL as string | undefined;
@@ -28,3 +28,20 @@ export const apiUrl = (endpoint: string): string => {
   const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   return `${API_BASE_URL}${path}`;
 };
+
+export async function readApiResponse(response: Response): Promise<any> {
+  const body = await response.text();
+  if (!body) {
+    return { success: false, error: `Server returned ${response.status} without a response body.` };
+  }
+
+  try {
+    return JSON.parse(body);
+  } catch (error) {
+    return {
+      success: false,
+      error: `Server returned an invalid HTML or non-JSON response (${response.status}).`
+    };
+  }
+}
+

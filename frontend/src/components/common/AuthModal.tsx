@@ -15,7 +15,8 @@ import {
   CheckCircle2,
   AlertCircle,
   KeyRound,
-  ArrowLeft
+  ArrowLeft,
+  ShieldCheck
 } from 'lucide-react';
 import { usePlatform } from '../../context/PlatformContext';
 import { UserRole } from '../../types';
@@ -35,9 +36,24 @@ async function readApiResponse(response: Response): Promise<any> {
 }
 
 export const AuthModal: React.FC = () => {
-  const { authModalOpen, authModalInitialMode, closeAuthModal, setAuthUser, setCurrentRole, navigateTo, setCreators, setActiveCreatorId, categories, cities, siteLogo } = usePlatform();
+  const {
+    authModalOpen,
+    authModalInitialMode,
+    authModalPreferredRole,
+    authModalNotice,
+    authModalRedirectAfter,
+    closeAuthModal,
+    setAuthUser,
+    setCurrentRole,
+    navigateTo,
+    setCreators,
+    setActiveCreatorId,
+    categories,
+    cities,
+    siteLogo
+  } = usePlatform();
   const [mode, setMode] = useState<'login' | 'signup'>(authModalInitialMode);
-  const [role, setRole] = useState<UserRole>('CREATOR');
+  const [role, setRole] = useState<UserRole>(authModalPreferredRole || 'CREATOR');
   const [logoError, setLogoError] = useState(false);
 
   // Form Fields
@@ -58,6 +74,7 @@ export const AuthModal: React.FC = () => {
   useEffect(() => {
     if (authModalOpen) {
       setMode(authModalInitialMode);
+      setRole(authModalPreferredRole || 'CREATOR');
       setEmail('');
       setPassword('');
       setName('');
@@ -71,7 +88,7 @@ export const AuthModal: React.FC = () => {
       setFieldErrors({});
       setTouched({});
     }
-  }, [authModalOpen, authModalInitialMode]);
+  }, [authModalOpen, authModalInitialMode, authModalPreferredRole]);
 
   // Validation State
   const [touched, setTouched] = useState<{ [key: string]: boolean }>({});
@@ -206,10 +223,17 @@ export const AuthModal: React.FC = () => {
           setSuccessMsg('Login successful! Redirecting to workspace...');
           setTimeout(() => {
             closeAuthModal();
-            if (data.user.role === 'CREATOR') navigateTo('creator-dashboard');
-            else if (data.user.role === 'BRAND') navigateTo('brand-dashboard');
-            else if (data.user.role === 'ADMIN') navigateTo('admin-dashboard');
-            else navigateTo('search');
+            if (authModalRedirectAfter) {
+              navigateTo(authModalRedirectAfter);
+            } else if (data.user.role === 'CREATOR') {
+              navigateTo('creator-dashboard');
+            } else if (data.user.role === 'BRAND') {
+              navigateTo('brand-dashboard');
+            } else if (data.user.role === 'ADMIN') {
+              navigateTo('admin-dashboard');
+            } else {
+              navigateTo('home');
+            }
           }, 800);
         }
       } else {
@@ -387,6 +411,14 @@ export const AuthModal: React.FC = () => {
             >
               Sign Up
             </button>
+          </div>
+        )}
+
+        {/* Contextual Notice */}
+        {authModalNotice && (
+          <div className="p-3 bg-amber-50 border border-amber-300 text-amber-950 text-xs rounded-xl font-medium flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-[#b88628] shrink-0" />
+            <span>{authModalNotice}</span>
           </div>
         )}
 

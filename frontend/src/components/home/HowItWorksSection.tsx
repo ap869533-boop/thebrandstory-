@@ -4,7 +4,7 @@ import { usePlatform } from '../../context/PlatformContext';
 
 export const HowItWorksSection: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'brands' | 'creators'>('brands');
-  const { navigateTo, openOnboardingModal, openTrustScoreModal } = usePlatform();
+  const { navigateTo, openOnboardingModal, openTrustScoreModal, requireRole } = usePlatform();
 
   return (
     <section className="py-16 bg-black text-white border-b border-zinc-900 relative overflow-hidden">
@@ -120,7 +120,10 @@ export const HowItWorksSection: React.FC = () => {
         <div className="text-center">
           {activeTab === 'brands' ? (
             <button
-              onClick={() => navigateTo('post-requirement')}
+              onClick={() => {
+                if (!requireRole('BRAND', 'post a campaign brief', 'post-requirement')) return;
+                navigateTo('post-requirement');
+              }}
               className="px-6 py-3.5 bg-[#D4A338] hover:bg-[#b88628] text-black font-bold text-xs rounded-2xl shadow-xl shadow-[#D4A338]/20 transition inline-flex items-center gap-2 cursor-pointer border border-[#D4A338]/40"
             >
               <span>Post Your Campaign Brief — Free</span>

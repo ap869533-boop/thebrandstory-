@@ -4,12 +4,13 @@ import { usePlatform } from '../../context/PlatformContext';
 import { CampaignRequirement } from '../../types';
 
 export const LiveOpportunitiesBoard: React.FC = () => {
-  const { campaigns, applyToCampaign, activeCreatorId, navigateTo } = usePlatform();
+  const { campaigns, applyToCampaign, activeCreatorId, navigateTo, requireRole } = usePlatform();
   const [selectedCampaign, setSelectedCampaign] = useState<CampaignRequirement | null>(null);
   const [pitchText, setPitchText] = useState('');
   const [hasApplied, setHasApplied] = useState<string | null>(null);
 
   const handleApply = (campaign: CampaignRequirement) => {
+    if (!requireRole('CREATOR', 'pitch for a brand campaign', 'home')) return;
     setSelectedCampaign(campaign);
     setPitchText(`Hi ${campaign.companyName}! I am interested in collaborating on this campaign. My audience is based in ${campaign.city} and strongly matches your target audience.`);
   };
@@ -17,6 +18,7 @@ export const LiveOpportunitiesBoard: React.FC = () => {
   const submitApplication = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCampaign) return;
+    if (!requireRole('CREATOR', 'submit a pitch proposal', 'home')) return;
     applyToCampaign(selectedCampaign.id, activeCreatorId, pitchText);
     setHasApplied(selectedCampaign.id);
     setTimeout(() => {
@@ -45,7 +47,10 @@ export const LiveOpportunitiesBoard: React.FC = () => {
 
           <div className="flex items-center gap-3 shrink-0">
             <button
-              onClick={() => navigateTo('post-requirement')}
+              onClick={() => {
+                if (!requireRole('BRAND', 'post a campaign brief', 'post-requirement')) return;
+                navigateTo('post-requirement');
+              }}
               className="px-4 py-2.5 bg-[#D4A338] hover:bg-[#b88628] text-black font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
             >
               <PlusCircle className="w-4 h-4 text-black" />

@@ -1,16 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Building2, Sparkles, Send, CheckCircle2, ArrowRight, IndianRupee, MapPin, Users, Calendar, ShieldCheck } from 'lucide-react';
 import { usePlatform } from '../context/PlatformContext';
 import { CATEGORIES_LIST, CITIES_LIST, INDUSTRIES_LIST, CAMPAIGN_TYPES } from '../data/initialData';
 import confetti from 'canvas-confetti';
 
 export const PostRequirementView: React.FC = () => {
-  const { postCampaignRequirement, navigateTo, activeBrandName, categories, cities, industries } = usePlatform();
+  const { postCampaignRequirement, navigateTo, activeBrandName, categories, cities, industries, authUser, requireRole } = usePlatform();
+
+  useEffect(() => {
+    if (!authUser || authUser.role !== 'BRAND') {
+      requireRole('BRAND', 'create and post a campaign brief', 'post-requirement');
+    }
+  }, [authUser]);
 
   const [formData, setFormData] = useState({
-    companyName: activeBrandName || '',
-    contactPerson: '',
-    email: '',
+    companyName: authUser?.companyName || activeBrandName || '',
+    contactPerson: authUser?.name || '',
+    email: authUser?.email || '',
     phone: '',
     campaignTitle: '',
     industry: 'Fashion & Lifestyle',
@@ -69,6 +75,34 @@ export const PostRequirementView: React.FC = () => {
       }
     }, 500);
   };
+
+  if (!authUser || authUser.role !== 'BRAND') {
+    return (
+      <div className="min-h-screen bg-slate-50/70 py-20 flex flex-col items-center justify-center text-center px-4 font-sans">
+        <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-xl max-w-md w-full space-y-4">
+          <div className="w-12 h-12 rounded-2xl bg-amber-100 text-[#8e6819] flex items-center justify-center mx-auto">
+            <Building2 className="w-6 h-6" />
+          </div>
+          <h2 className="text-xl font-black text-slate-900">Brand Authentication Required</h2>
+          <p className="text-xs text-slate-500 leading-relaxed">
+            Please sign in as a verified Brand or Agency to post campaign briefs and receive custom creator pitches.
+          </p>
+          <button
+            onClick={() =>
+              navigateTo('login', {
+                role: 'BRAND',
+                redirectAfter: 'post-requirement',
+                message: 'Brand Login Required: Please sign in as a Brand to post a campaign brief.'
+              })
+            }
+            className="w-full py-2.5 bg-[#D4A338] hover:bg-[#b88628] text-black font-bold text-xs rounded-xl transition cursor-pointer shadow-sm"
+          >
+            Go to Brand Sign In
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50/60 py-10">

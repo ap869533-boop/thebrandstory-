@@ -3,7 +3,7 @@ import { ArrowRight, Sparkles, ShieldCheck, Zap, Users, CheckCircle2, Building2 
 import { usePlatform } from '../../context/PlatformContext';
 
 export const CTABanners: React.FC = () => {
-  const { navigateTo, openOnboardingModal } = usePlatform();
+  const { navigateTo, openOnboardingModal, requireRole } = usePlatform();
 
   return (
     <div className="py-12 bg-slate-50/80 space-y-8">
@@ -31,7 +31,10 @@ export const CTABanners: React.FC = () => {
 
             <div className="relative z-10 pt-2">
               <button
-                onClick={() => navigateTo('post-requirement')}
+                onClick={() => {
+                  if (!requireRole('BRAND', 'post a campaign brief', 'post-requirement')) return;
+                  navigateTo('post-requirement');
+                }}
                 className="px-6 py-3 bg-[#D4A338] hover:bg-[#b88628] text-black font-extrabold text-xs rounded-xl shadow-lg shadow-[#D4A338]/20 transition flex items-center gap-2 cursor-pointer group"
               >
                 <span>Post Campaign Brief & Get Quotes</span>

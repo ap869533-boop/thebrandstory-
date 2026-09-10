@@ -175,8 +175,9 @@ export async function getPartnerBrands(req: Request, res: Response) {
   await ensureBrandTable();
   try {
     const dbRows = await dbQuery('SELECT * FROM partner_brands WHERE is_active = TRUE ORDER BY sort_order ASC, created_at DESC');
-    if (dbRows && dbRows.length > 0) {
-      const brands: BrandPartner[] = dbRows.map((r: any) => ({
+    // If table exists and has rows, return them; if table is empty return empty (don't fall to hardcoded defaults)
+    if (dbRows !== null && dbRows !== undefined) {
+      const brands: BrandPartner[] = (dbRows || []).map((r: any) => ({
         id: r.id,
         name: r.name,
         category: r.category,

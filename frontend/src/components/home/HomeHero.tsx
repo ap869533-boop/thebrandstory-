@@ -20,9 +20,9 @@ export const HomeHero: React.FC = () => {
     filters,
     setFilters,
     navigateTo,
-    openOnboardingModal,
     categories,
     cities,
+    requireRole,
   } = usePlatform();
 
   const [keyword, setKeyword] = useState('');
@@ -372,7 +372,10 @@ export const HomeHero: React.FC = () => {
           <button
             type="button"
             id="hero-post-brief-btn"
-            onClick={() => navigateTo('post-requirement')}
+            onClick={() => {
+              if (!requireRole('BRAND', 'post a campaign brief', 'post-requirement')) return;
+              navigateTo('post-requirement');
+            }}
             className="flex-1 sm:flex-none sm:w-auto px-3 sm:px-6 py-2 sm:py-2.5 rounded-xl bg-[#D4A338] hover:bg-[#b88628] text-black font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-[#D4A338]/25 transition cursor-pointer"
           >
             <Flame className="w-3.5 h-3.5 text-black shrink-0" />
@@ -382,7 +385,7 @@ export const HomeHero: React.FC = () => {
           <button
             type="button"
             id="hero-list-free-btn"
-            onClick={openOnboardingModal}
+            onClick={() => navigateTo('login', { mode: 'signup', role: 'CREATOR' })}
             className="flex-1 sm:flex-none sm:w-auto px-3 sm:px-6 py-2 sm:py-2.5 rounded-xl bg-[#D4A338] hover:bg-[#b88628] text-black font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-[#D4A338]/25 transition cursor-pointer"
           >
             <Sparkles className="w-3.5 h-3.5 text-black shrink-0" />

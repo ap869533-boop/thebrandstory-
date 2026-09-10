@@ -91,6 +91,12 @@ DB_PASSWORD=StrongPassword123!
 DB_NAME=social_cults_db
 DB_PORT=3306
 JWT_SECRET=social_cults_super_secret_jwt_key_2026
+
+# Production SMTP Email (Real OTP Ke Liye)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=ap869533@gmail.com
+SMTP_PASS=lyma glwj pfxq iwwg
 ```
 *(Ctrl + O dabakar Enter, fir Ctrl + X dabakar exit karein)*
 

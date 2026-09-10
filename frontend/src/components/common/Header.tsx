@@ -35,7 +35,8 @@ export const Header: React.FC = () => {
     notifications,
     markNotificationRead,
     clearAllNotifications,
-    siteLogo
+    siteLogo,
+    requireRole
   } = usePlatform();
 
   const [searchQuery, setSearchQuery] = useState(filters.searchQuery);
@@ -87,7 +88,10 @@ export const Header: React.FC = () => {
 
             <button
               id="nav-post-req-header-btn"
-              onClick={() => navigateTo('post-requirement')}
+              onClick={() => {
+                if (!requireRole('BRAND', 'post a campaign brief', 'post-requirement')) return;
+                navigateTo('post-requirement');
+              }}
               className={`hover:text-[#D4A338] transition py-1 cursor-pointer ${
                 currentView === 'post-requirement' ? 'text-[#D4A338] font-bold' : ''
               }`}
@@ -243,7 +247,7 @@ export const Header: React.FC = () => {
               </div>
             ) : (
               <button
-                onClick={() => openAuthModal()}
+                onClick={() => navigateTo('login')}
                 className="hidden sm:inline-flex items-center gap-1 text-xs font-bold text-slate-700 hover:text-[#b88628] transition cursor-pointer px-2.5 py-1.5 rounded-lg hover:bg-slate-100"
               >
                 <User className="w-3.5 h-3.5 text-slate-500" />
@@ -287,6 +291,7 @@ export const Header: React.FC = () => {
           <button
             onClick={() => {
               setMobileMenuOpen(false);
+              if (!requireRole('BRAND', 'post a campaign brief', 'post-requirement')) return;
               navigateTo('post-requirement');
             }}
             className="w-full p-2.5 bg-slate-50 text-slate-700 rounded-lg text-left flex items-center gap-2"
@@ -298,7 +303,7 @@ export const Header: React.FC = () => {
           <div className="flex gap-2 pt-1">
             {!authUser && (
               <button
-                onClick={() => { setMobileMenuOpen(false); openAuthModal(); }}
+                onClick={() => { setMobileMenuOpen(false); navigateTo('login'); }}
                 className="flex-1 p-2.5 bg-slate-50 text-slate-700 rounded-lg text-center font-bold text-xs"
               >
                 Sign In

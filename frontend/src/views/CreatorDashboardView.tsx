@@ -84,88 +84,78 @@ export const CreatorDashboardView: React.FC = () => {
       if (matched) return matched;
       if (authUser.creatorProfile) return authUser.creatorProfile;
 
-      // Safe fallback for authenticated creator (never show Priya Sharma)
+      // Safe fallback for authenticated creator — empty profile so user fills it themselves
       return {
         id: authUser.id || 'creator_logged_in',
-        name: authUser.name || 'Creator',
+        name: authUser.name || '',
         username: (authUser.name || 'creator').toLowerCase().replace(/[^a-z0-9_]/g, ''),
-        avatar: authUser.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-        coverImage: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1200&auto=format&fit=crop&q=80',
+        avatar: authUser.avatar || '',
+        coverImage: '',
         reelVideoUrl: '',
-        bio: 'Verified creator based in Delhi NCR. Open for brand collaborations & paid reels.',
-        currentCity: 'Delhi NCR',
-        state: 'Delhi',
-        preferredCities: ['Delhi NCR'],
-        primaryCategory: 'Lifestyle',
-        subCategories: ['Lifestyle', 'Fashion'],
-        languages: ['Hindi', 'English'],
-        gender: 'Male',
-        ageGroup: '22-29',
-        followers: 18500,
-        engagementRate: 5.2,
-        avgViews: 24000,
-        avgLikes: 1800,
-        avgComments: 110,
-        brandCollaborationsCount: 1,
-        trustScore: 89,
+        bio: '',
+        currentCity: '',
+        state: '',
+        preferredCities: [],
+        primaryCategory: '',
+        subCategories: [],
+        languages: [],
+        gender: 'Female' as any,
+        ageGroup: '',
+        followers: 0,
+        engagementRate: 0,
+        avgViews: 0,
+        avgLikes: 0,
+        avgComments: 0,
+        brandCollaborationsCount: 0,
+        trustScore: 0,
         trustSignals: {
-          profileCompleteness: 90,
+          profileCompleteness: 0,
           phoneVerified: Boolean((authUser as any).phone),
           emailVerified: true,
           socialVerified: false,
-          engagementQuality: 88,
-          audienceQuality: 89,
-          collaborationHistoryScore: 85,
+          engagementQuality: 0,
+          audienceQuality: 0,
+          collaborationHistoryScore: 0,
           verifiedReviewsCount: 0,
-          responseRate: 98,
-          campaignReliability: 92,
-          accountActivityScore: 94,
+          responseRate: 0,
+          campaignReliability: 0,
+          accountActivityScore: 0,
         },
         isVerified: false,
-        verificationRequested: true,
-        verificationStepsCompleted: ['Email'],
+        verificationRequested: false,
+        verificationStepsCompleted: [],
         isTop20: false,
-        isRising: true,
+        isRising: false,
         isFeatured: false,
-        isTrending: true,
+        isTrending: false,
         status: 'active',
-        startingPrice: 5000,
+        startingPrice: 0,
         pricing: {
-          reelPrice: 6000,
-          storyPrice: 2500,
-          postPrice: 5000,
-          ugcPrice: 5000,
+          reelPrice: 0,
+          storyPrice: 0,
+          postPrice: 0,
+          ugcPrice: 0,
           isNegotiable: true,
-          isBarterAvailable: true,
+          isBarterAvailable: false,
           pricingDisplayType: 'starting',
         },
-        collaborationTypes: ['Paid', 'Barter', 'UGC'],
-        socialPlatforms: [
-          {
-            platform: 'instagram',
-            username: (authUser.name || 'creator').toLowerCase().replace(/[^a-z0-9_]/g, ''),
-            url: `https://instagram.com/${(authUser.name || 'creator').toLowerCase().replace(/[^a-z0-9_]/g, '')}`,
-            followers: 18500,
-            avgViews: 24000,
-            engagementRate: 5.2,
-            verified: false,
-          }
-        ],
+        collaborationTypes: [],
+        socialPlatforms: [],
         audience: {
-          topCities: [{ city: 'Delhi NCR', percentage: 55 }],
-          topCountries: [{ country: 'India', percentage: 96 }],
-          ageGroups: [{ bracket: '18-24', percentage: 54 }, { bracket: '25-34', percentage: 36 }],
-          genderSplit: [{ gender: 'Male', percentage: 52 }, { gender: 'Female', percentage: 48 }],
-          topInterests: ['Lifestyle', 'Fashion & Style'],
-          avgReach: 28000,
-          avgImpressions: 48000,
+          topCities: [],
+          topCountries: [],
+          ageGroups: [],
+          genderSplit: [],
+          topInterests: [],
+          avgReach: 0,
+          avgImpressions: 0,
         },
         portfolio: [],
         previousCollaborations: [],
         reviews: [],
         phone: (authUser as any).phone || '',
         email: authUser.email,
-        profileViews: 1,
+        profileViews: 0,
         savedCount: 0,
         createdAt: new Date().toISOString(),
       };
@@ -493,6 +483,23 @@ export const CreatorDashboardView: React.FC = () => {
     setTimeout(() => setProfileSaved(false), 2500);
   };
 
+  // === Profile Completion Calculation ===
+  const profileFields = [
+    { label: 'Profile Photo', done: !!creator.avatar && !creator.avatar.includes('unsplash') },
+    { label: 'Cover Image', done: !!creator.coverImage && !creator.coverImage.includes('unsplash') },
+    { label: 'Bio / About', done: !!creator.bio && creator.bio.trim().length > 30 },
+    { label: 'City', done: !!creator.currentCity && creator.currentCity.trim().length > 0 },
+    { label: 'Category', done: !!creator.primaryCategory && creator.primaryCategory.trim().length > 0 },
+    { label: 'Followers', done: (creator.followers || 0) > 0 },
+    { label: 'Engagement Rate', done: (creator.engagementRate || 0) > 0 },
+    { label: 'Starting Rate', done: (creator.startingPrice || 0) > 0 },
+    { label: 'Instagram Handle', done: (creator.socialPlatforms || []).some(p => p.platform === 'instagram' && !!p.username) },
+    { label: 'Languages', done: (creator.languages || []).length > 0 },
+  ];
+  const completedCount = profileFields.filter(f => f.done).length;
+  const completionPct = Math.round((completedCount / profileFields.length) * 100);
+  const incompletedFields = profileFields.filter(f => !f.done).map(f => f.label);
+
   return (
     <div className="min-h-screen bg-slate-50/60 py-8 font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
@@ -606,6 +613,47 @@ export const CreatorDashboardView: React.FC = () => {
             </button>
           </div>
         </div>
+
+        {/* === Profile Completion Progress Bar === */}
+        {completionPct < 100 && (
+          <div className={`rounded-2xl border px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3 animate-fadeIn ${
+            completionPct >= 80 ? 'bg-emerald-50 border-emerald-200' :
+            completionPct >= 50 ? 'bg-amber-50 border-amber-200' :
+            'bg-rose-50 border-rose-200'
+          }`}>
+            <div className="flex-1 space-y-1.5">
+              <div className="flex items-center justify-between text-xs font-bold">
+                <span className={completionPct >= 80 ? 'text-emerald-800' : completionPct >= 50 ? 'text-amber-800' : 'text-rose-800'}>
+                  ✦ Profile {completionPct}% Complete
+                </span>
+                <span className="text-slate-500 font-semibold text-[10px]">{completedCount}/{profileFields.length} sections filled</span>
+              </div>
+              {/* Progress Bar */}
+              <div className="w-full h-2 rounded-full bg-white/70 border border-slate-200 overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-700 ease-out ${
+                    completionPct >= 80 ? 'bg-emerald-500' :
+                    completionPct >= 50 ? 'bg-amber-500' :
+                    'bg-rose-500'
+                  }`}
+                  style={{ width: `${completionPct}%` }}
+                />
+              </div>
+              {incompletedFields.length > 0 && (
+                <p className="text-[10px] text-slate-500 font-medium">
+                  Missing: {incompletedFields.slice(0, 3).join(', ')}{incompletedFields.length > 3 ? ` +${incompletedFields.length - 3} more` : ''}
+                </p>
+              )}
+            </div>
+            <button
+              onClick={() => setActiveTab('profile')}
+              className="shrink-0 px-3 py-1.5 bg-slate-900 text-white text-[11px] font-bold rounded-xl hover:bg-black transition cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
+            >
+              <Edit3 className="w-3 h-3" />
+              Complete Profile
+            </button>
+          </div>
+        )}
 
         {/* Dashboard Tabs */}
         <div className="flex border-b border-slate-200 text-xs font-bold gap-1 overflow-x-auto">

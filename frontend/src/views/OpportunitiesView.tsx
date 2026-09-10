@@ -5,7 +5,7 @@ import { CampaignRequirement } from '../types';
 import { CATEGORIES_LIST, CITIES_LIST } from '../data/initialData';
 
 export const OpportunitiesView: React.FC = () => {
-  const { campaigns, applyToCampaign, activeCreatorId, navigateTo, categories, cities } = usePlatform();
+  const { campaigns, applyToCampaign, activeCreatorId, navigateTo, categories, cities, requireRole } = usePlatform();
   const [selectedCampaign, setSelectedCampaign] = useState<CampaignRequirement | null>(null);
   const [pitchText, setPitchText] = useState('');
   const [hasApplied, setHasApplied] = useState<string | null>(null);
@@ -29,6 +29,7 @@ export const OpportunitiesView: React.FC = () => {
   });
 
   const handleApply = (campaign: CampaignRequirement) => {
+    if (!requireRole('CREATOR', 'pitch for a brand campaign', 'opportunities')) return;
     setSelectedCampaign(campaign);
     setPitchText(`Hi ${campaign.companyName}! I love this campaign concept. My audience is heavily concentrated in ${campaign.city} and aligns directly with your target demographic.`);
   };
@@ -36,6 +37,7 @@ export const OpportunitiesView: React.FC = () => {
   const submitApplication = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCampaign) return;
+    if (!requireRole('CREATOR', 'submit a pitch proposal', 'opportunities')) return;
     applyToCampaign(selectedCampaign.id, activeCreatorId, pitchText);
     setHasApplied(selectedCampaign.id);
     setTimeout(() => {
@@ -64,8 +66,11 @@ export const OpportunitiesView: React.FC = () => {
             </div>
 
             <button
-              onClick={() => navigateTo('post-requirement')}
-              className="px-4 py-2.5 bg-black hover:bg-zinc-900 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 shrink-0"
+              onClick={() => {
+                if (!requireRole('BRAND', 'post a campaign brief', 'post-requirement')) return;
+                navigateTo('post-requirement');
+              }}
+              className="px-4 py-2.5 bg-black hover:bg-zinc-900 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 shrink-0 cursor-pointer"
             >
               <PlusCircle className="w-3.5 h-3.5" />
               <span>Post New Brand Brief</span>

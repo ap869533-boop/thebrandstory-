@@ -3,6 +3,13 @@ import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
 import dotenv from 'dotenv';
+
+// Load environment variables before any application routes or utils are imported
+dotenv.config();
+if (!process.env.DB_NAME) {
+  dotenv.config({ path: path.resolve(__dirname, '../.env') });
+}
+
 import { getDbPool } from './config/db';
 
 // Modular Route Handlers
@@ -17,18 +24,23 @@ import shortlistRoutes from './routes/shortlistRoutes';
 import blogRoutes from './routes/blogRoutes';
 import brandPartnerRoutes from './routes/brandPartnerRoutes';
 
-// Load environment variables from backend or root .env
-dotenv.config();
-if (!process.env.DB_NAME) {
-  dotenv.config({ path: path.resolve(__dirname, '../.env') });
-}
-
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 5000;
 
+const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
+  .split(',')
+  .map(origin => origin.trim())
+  .filter(Boolean);
+
 // Middleware with 50mb limit for uploads
 app.use(cors({
-  origin: true,
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+    callback(new Error('Origin not allowed by CORS'));
+  },
   credentials: true
 }));
 app.use(express.json({ limit: '50mb' }));

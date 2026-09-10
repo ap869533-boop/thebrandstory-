@@ -69,9 +69,9 @@ export interface AppNotification {
 
 interface PlatformContextType {
   // Navigation / Route View
-  currentView: string; // 'home' | 'influencer-detail' | 'city-page' | 'category-page' | 'city-category-page' | 'explore' | 'post-requirement' | 'opportunities' | 'brand-dashboard' | 'creator-dashboard' | 'admin-dashboard' | 'blog' | 'blog-post'
-  viewParams: { id?: string; slug?: string; username?: string; citySlug?: string; categorySlug?: string; blogSlug?: string };
-  navigateTo: (view: string, params?: { id?: string; slug?: string; username?: string; citySlug?: string; categorySlug?: string; blogSlug?: string }) => void;
+  currentView: string; // 'home' | 'login' | 'influencer-detail' | 'city-page' | 'category-page' | 'city-category-page' | 'explore' | 'post-requirement' | 'opportunities' | 'brand-dashboard' | 'creator-dashboard' | 'admin-dashboard' | 'blog' | 'blog-post'
+  viewParams: { id?: string; slug?: string; username?: string; citySlug?: string; categorySlug?: string; blogSlug?: string; redirectAfter?: string; role?: UserRole; message?: string; mode?: 'login' | 'signup' };
+  navigateTo: (view: string, params?: { id?: string; slug?: string; username?: string; citySlug?: string; categorySlug?: string; blogSlug?: string; redirectAfter?: string; role?: UserRole; message?: string; mode?: 'login' | 'signup' }) => void;
 
   // Role & Auth
   currentRole: UserRole;
@@ -153,7 +153,11 @@ interface PlatformContextType {
   setAuthUser: (user: AuthUser | null) => void;
   authModalOpen: boolean;
   authModalInitialMode: 'login' | 'signup';
-  openAuthModal: (mode?: 'login' | 'signup') => void;
+  authModalPreferredRole: UserRole;
+  authModalNotice: string | null;
+  authModalRedirectAfter: string | null;
+  openAuthModal: (mode?: 'login' | 'signup', preferredRole?: UserRole, notice?: string, redirectAfter?: string) => void;
+  requireRole: (requiredRole: 'CREATOR' | 'BRAND', actionLabel?: string, redirectAfter?: string) => boolean;
   closeAuthModal: () => void;
   logout: () => void;
 
@@ -203,11 +207,38 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [currentView, setCurrentView] = useState<string>(() => {
     const path = window.location.pathname;
     if (path === '/admin') return 'admin-dashboard';
+    if (path === '/login') return 'login';
+    if (path === '/post-requirement') return 'post-requirement';
     return 'home';
   });
-  const [viewParams, setViewParams] = useState<{ username?: string; citySlug?: string; categorySlug?: string; blogSlug?: string }>({});
+  const [viewParams, setViewParams] = useState<{
+    id?: string;
+    slug?: string;
+    username?: string;
+    citySlug?: string;
+    categorySlug?: string;
+    blogSlug?: string;
+    redirectAfter?: string;
+    role?: UserRole;
+    message?: string;
+    mode?: 'login' | 'signup';
+  }>({});
 
-  const navigateTo = (view: string, params: { id?: string; slug?: string; username?: string; citySlug?: string; categorySlug?: string; blogSlug?: string } = {}) => {
+  const navigateTo = (
+    view: string,
+    params: {
+      id?: string;
+      slug?: string;
+      username?: string;
+      citySlug?: string;
+      categorySlug?: string;
+      blogSlug?: string;
+      redirectAfter?: string;
+      role?: UserRole;
+      message?: string;
+      mode?: 'login' | 'signup';
+    } = {}
+  ) => {
     setCurrentView(view);
     setViewParams(params);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -215,38 +246,87 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // Sync the browser URL to match the view
     if (view === 'admin-dashboard') {
       window.history.pushState({}, '', '/admin');
+    } else if (view === 'login') {
+      window.history.pushState({}, '', '/login');
+    } else if (view === 'post-requirement') {
+      window.history.pushState({}, '', '/post-requirement');
     } else if (view === 'home') {
       window.history.pushState({}, '', '/');
     }
   };
-
-  // Role
-  const [currentRole, setCurrentRole] = useState<UserRole>('GUEST');
-  const [activeCreatorId, setActiveCreatorId] = useState<string>('c1');
-  const [activeBrandName] = useState<string>('Urban Style Brands Ltd');
 
   // Auth State
   const [authUser, setAuthUser] = useState<AuthUser | null>(() => {
     const saved = localStorage.getItem('sc_auth_user');
     return saved ? JSON.parse(saved) : null;
   });
+
+  // Role
+  const [currentRole, setCurrentRole] = useState<UserRole>(() => {
+    const saved = localStorage.getItem('sc_auth_user');
+    if (saved) {
+      try {
+        const u = JSON.parse(saved);
+        return u.role || 'GUEST';
+      } catch (e) {
+        return 'GUEST';
+      }
+    }
+    return 'GUEST';
+  });
+  const [activeCreatorId, setActiveCreatorId] = useState<string>('c1');
+  const [activeBrandName] = useState<string>('Urban Style Brands Ltd');
+
   const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
   const [authModalInitialMode, setAuthModalInitialMode] = useState<'login' | 'signup'>('login');
+  const [authModalPreferredRole, setAuthModalPreferredRole] = useState<UserRole>('CREATOR');
+  const [authModalNotice, setAuthModalNotice] = useState<string | null>(null);
+  const [authModalRedirectAfter, setAuthModalRedirectAfter] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (window.location.pathname === '/login') {
-      setAuthModalInitialMode('login');
-      setAuthModalOpen(true);
-      // Clean up the URL visually without reloading
-      window.history.replaceState({}, '', '/');
-    }
-  }, []);
-
-  const openAuthModal = (mode: 'login' | 'signup' = 'login') => {
+  const openAuthModal = (
+    mode: 'login' | 'signup' = 'login',
+    preferredRole: UserRole = 'CREATOR',
+    notice?: string,
+    redirectAfter?: string
+  ) => {
     setAuthModalInitialMode(mode);
+    setAuthModalPreferredRole(preferredRole);
+    setAuthModalNotice(notice || null);
+    setAuthModalRedirectAfter(redirectAfter || null);
     setAuthModalOpen(true);
   };
-  const closeAuthModal = () => setAuthModalOpen(false);
+
+  const closeAuthModal = () => {
+    setAuthModalOpen(false);
+    setAuthModalNotice(null);
+    setAuthModalRedirectAfter(null);
+  };
+
+  const requireRole = (
+    requiredRole: 'CREATOR' | 'BRAND',
+    actionLabel?: string,
+    redirectAfter?: string
+  ): boolean => {
+    if (authUser && authUser.role === requiredRole) {
+      return true;
+    }
+
+    const roleName = requiredRole === 'CREATOR' ? 'an Influencer' : 'a Brand';
+    const actionDesc = actionLabel ? ` to ${actionLabel}` : '';
+    const message = `${requiredRole === 'CREATOR' ? 'Influencer' : 'Brand'} Login Required: Please sign in as ${roleName}${actionDesc}.`;
+
+    console.info(message);
+
+    // Redirect to the dedicated login page
+    navigateTo('login', {
+      role: requiredRole,
+      redirectAfter: redirectAfter || (requiredRole === 'BRAND' ? 'post-requirement' : 'home'),
+      message
+    });
+
+    return false;
+  };
+
   const logout = () => {
     localStorage.removeItem('sc_auth_token');
     localStorage.removeItem('sc_auth_user');
@@ -1318,7 +1398,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const deletePartnerBrand = async (id: string) => {
     setPartnerBrands(prev => prev.filter(b => b.id !== id));
     try {
-      await fetch(`/api/partner-brands/${id}`, { method: 'DELETE' });
+      await fetch(apiUrl(`/api/partner-brands/${id}`), { method: 'DELETE' });
     } catch {}
     addNotification({
       title: 'Brand Partner Removed',
@@ -1437,7 +1517,11 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setAuthUser,
         authModalOpen,
         authModalInitialMode,
+        authModalPreferredRole,
+        authModalNotice,
+        authModalRedirectAfter,
         openAuthModal,
+        requireRole,
         closeAuthModal,
         logout,
 

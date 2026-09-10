@@ -22,6 +22,7 @@ import { BrandDashboardView } from './views/BrandDashboardView';
 import { AdminDashboardView } from './views/AdminDashboardView';
 import { BlogView } from './views/BlogView';
 import { BlogPostView } from './views/BlogPostView';
+import { LoginView } from './views/LoginView';
 
 const MainAppContent: React.FC = () => {
   const { currentView } = usePlatform();
@@ -30,6 +31,8 @@ const MainAppContent: React.FC = () => {
     switch (currentView) {
       case 'home':
         return <HomeView />;
+      case 'login':
+        return <LoginView />;
       case 'explore':
         return <ExploreView />;
       case 'creator-detail':
