@@ -1396,17 +1396,17 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const deletePartnerBrand = async (id: string) => {
-    // Optimistically update UI, but ensure backend deletion succeeded
     try {
       const response = await fetch(apiUrl(`/api/partner-brands/${id}`), { method: 'DELETE' });
       if (!response.ok) {
         throw new Error('Failed to delete brand on server');
       }
-      // Server confirmed deletion, update local state
+      // Backend returns the updated list of brands
       const data = await response.json();
       if (data.success && data.brands) {
         setPartnerBrands(() => data.brands);
       } else {
+        // fallback: remove the brand locally
         setPartnerBrands(prev => prev.filter(b => b.id !== id));
       }
       addNotification({
@@ -1420,9 +1420,9 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       try {
         const res = await fetch(apiUrl('/api/partner-brands'));
         if (res.ok) {
-          const data = await res.json();
-          if (data.success && data.brands) {
-            setPartnerBrands(data.brands);
+          const fresh = await res.json();
+          if (fresh.success && fresh.brands) {
+            setPartnerBrands(() => fresh.brands);
           }
         }
       } catch (e) {
