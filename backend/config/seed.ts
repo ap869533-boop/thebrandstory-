@@ -9,8 +9,8 @@ import {
   INITIAL_STATS,
   INITIAL_CAMPAIGNS,
   BLOG_POSTS,
+  INITIAL_BRAND_PARTNERS,
 } from '../data/initialData';
-import { INITIAL_BRAND_PARTNERS } from '../controllers/brandPartnerController';
 
 dotenv.config();
 
