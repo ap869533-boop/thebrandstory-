@@ -147,9 +147,12 @@ export const LiveOpportunitiesBoard: React.FC = () => {
                   <div>
                     <span className="text-[10px] font-medium text-slate-400 block uppercase tracking-wider">Openings</span>
                     <span className="font-bold text-slate-800 text-xs truncate block mt-0.5">
-                      {camp.influencersCount?.toLowerCase().includes('creator') 
-                        ? camp.influencersCount 
-                        : `${camp.influencersCount} ${Number(camp.influencersCount) === 1 ? 'Creator' : 'Creators'}`}
+                      {(() => {
+                        const countValue = String(camp.influencersCount ?? '');
+                        return countValue.toLowerCase().includes('creator')
+                          ? countValue
+                          : `${countValue} ${Number(countValue) === 1 ? 'Creator' : 'Creators'}`;
+                      })()}
                     </span>
                   </div>
                 </div>
