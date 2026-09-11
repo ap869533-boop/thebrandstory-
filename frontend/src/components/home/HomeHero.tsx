@@ -29,6 +29,21 @@ export const HomeHero: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState(filters.category || 'all');
   const [selectedCity, setSelectedCity] = useState(filters.city || 'all');
 
+  const syncCitySelection = (city: string) => {
+    setSelectedCity(city);
+    setDetectedCityBadge(city === 'all' ? null : city);
+    setFilters((prev) => ({
+      ...prev,
+      city,
+    }));
+  };
+
+  const applyDetectedLocation = async (city: string | null) => {
+    if (!city || city === 'all') return;
+    syncCitySelection(city);
+    sessionStorage.setItem('sc_detected_city', city);
+  };
+
   // Geolocation states
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [detectedCityBadge, setDetectedCityBadge] = useState<string | null>(null);
@@ -44,23 +59,45 @@ export const HomeHero: React.FC = () => {
   useEffect(() => {
     const savedGeo = sessionStorage.getItem('sc_detected_city');
     if (savedGeo && savedGeo !== 'all') {
-      setSelectedCity(savedGeo);
-      setDetectedCityBadge(savedGeo);
+      syncCitySelection(savedGeo);
       return;
     }
 
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          fetchCityFromCoordinates(position.coords.latitude, position.coords.longitude);
-        },
-        () => {
-          // Keep All India default
-        },
-        { timeout: 8000, enableHighAccuracy: true }
-      );
-    }
+    const tryAutoDetectLocation = async () => {
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            fetchCityFromCoordinates(position.coords.latitude, position.coords.longitude);
+          },
+          async () => {
+            await fetchDetectedCityFallback();
+          },
+          { timeout: 8000, enableHighAccuracy: true }
+        );
+        return;
+      }
+
+      await fetchDetectedCityFallback();
+    };
+
+    void tryAutoDetectLocation();
   }, []);
+
+  const fetchDetectedCityFallback = async () => {
+    setIsDetectingLocation(true);
+    try {
+      const res = await fetch('/api/detect-location');
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.success && data.matchedCity) {
+        await applyDetectedLocation(data.matchedCity);
+      }
+    } catch {
+      // Keep All India if no location is detected
+    } finally {
+      setIsDetectingLocation(false);
+    }
+  };
 
   // Reverse Geocoding API handler for GPS
   const fetchCityFromCoordinates = async (lat: number, lng: number) => {
@@ -70,17 +107,11 @@ export const HomeHero: React.FC = () => {
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.matchedCity) {
-          setSelectedCity(data.matchedCity);
-          setDetectedCityBadge(data.matchedCity);
-          sessionStorage.setItem('sc_detected_city', data.matchedCity);
-          setFilters((prev) => ({
-            ...prev,
-            city: data.matchedCity,
-          }));
+          await applyDetectedLocation(data.matchedCity);
         }
       }
     } catch {
-      // Fallback
+      await fetchDetectedCityFallback();
     } finally {
       setIsDetectingLocation(false);
     }
@@ -88,22 +119,25 @@ export const HomeHero: React.FC = () => {
 
   // Manual Trigger to re-detect location
   const handleManualLocationDetect = () => {
+    setCityDropdownOpen(false);
+
     if (!('geolocation' in navigator)) {
-      alert('Geolocation is not supported by your browser.');
+      void fetchDetectedCityFallback();
+      alert('Geolocation is not supported by your browser, so we tried the nearest available city match instead.');
       return;
     }
 
     setIsDetectingLocation(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        fetchCityFromCoordinates(position.coords.latitude, position.coords.longitude);
-        setCityDropdownOpen(false);
+        void fetchCityFromCoordinates(position.coords.latitude, position.coords.longitude);
       },
-      (error) => {
+      async (error) => {
         setIsDetectingLocation(false);
         if (error.code === error.PERMISSION_DENIED) {
-          alert('Location permission was denied. Please allow location access in your browser settings.');
+          alert('Location permission was denied. We will use your best available city match instead.');
         }
+        await fetchDetectedCityFallback();
       },
       { timeout: 8000, enableHighAccuracy: true }
     );
@@ -146,14 +180,14 @@ export const HomeHero: React.FC = () => {
   };
 
   return (
-    <section className="relative overflow-hidden bg-black text-white flex-1 flex flex-col justify-center py-3 xs:py-5 sm:py-16 sm:min-h-[calc(100vh-64px-60px)] border-b border-zinc-900/60 font-sans w-full max-w-full">
+    <section className="relative overflow-hidden bg-black text-white flex-1 flex flex-col justify-center py-4 xs:py-5 sm:py-10 min-h-[100dvh] sm:min-h-[760px] border-b border-zinc-900/60 font-sans w-full max-w-full">
       {/* Subtle Premium Background Glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-full overflow-hidden pointer-events-none z-0">
         <div className="absolute -top-32 left-1/4 w-[600px] h-[450px] bg-[#D4A338]/10 rounded-full blur-[140px]" />
         <div className="absolute top-1/4 right-1/4 w-[500px] h-[400px] bg-[#D4A338]/5 rounded-full blur-[140px]" />
       </div>
 
-      <div className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 text-center relative z-10 space-y-2.5 xs:space-y-3.5 sm:space-y-8 my-auto w-full max-w-full">
+      <div className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 text-center relative z-10 space-y-3 xs:space-y-3.5 sm:space-y-8 my-auto w-full max-w-full">
         {/* 1. Verified Network Badge */}
         <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-0.5 sm:py-1.5 bg-black text-zinc-300 text-[9.5px] sm:text-xs font-semibold rounded-full border border-zinc-800 shadow-md max-w-full">
           <span className="w-2 h-2 rounded-full bg-[#D4A338] animate-pulse shrink-0" />
@@ -318,7 +352,7 @@ export const HomeHero: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => {
-                        setSelectedCity('all');
+                        syncCitySelection('all');
                         setCityDropdownOpen(false);
                       }}
                       className={`w-full px-3 py-1.5 sm:py-2 rounded-xl text-xs font-medium flex items-center justify-between transition cursor-pointer ${
@@ -336,7 +370,7 @@ export const HomeHero: React.FC = () => {
                         key={idx}
                         type="button"
                         onClick={() => {
-                          setSelectedCity(c.name);
+                          syncCitySelection(c.name);
                           setCityDropdownOpen(false);
                         }}
                         className={`w-full px-3 py-1.5 sm:py-2 rounded-xl text-xs font-medium flex items-center justify-between transition cursor-pointer ${
@@ -368,7 +402,7 @@ export const HomeHero: React.FC = () => {
         </div>
 
         {/* 4. Responsive 2-Action CTA Row */}
-        <div className="pt-0.5 sm:pt-1 flex flex-row items-center justify-center gap-2 sm:gap-3 relative z-10 w-full">
+        <div className="pt-0.5 sm:pt-1 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 relative z-10 w-full">
           <button
             type="button"
             id="hero-post-brief-btn"

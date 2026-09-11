@@ -1,7 +1,17 @@
 import React, { useState } from 'react';
-import { Flame, MapPin, IndianRupee, ArrowRight, CheckCircle2, PlusCircle, Sparkles, Send, Building2, Tag, Users, Clock } from 'lucide-react';
+import {
+  Flame,
+  MapPin,
+  ArrowRight,
+  CheckCircle2,
+  PlusCircle,
+  Sparkles,
+  Send,
+  Tag,
+  Clock,
+} from 'lucide-react';
 import { usePlatform } from '../../context/PlatformContext';
-import { CampaignRequirement } from '../../types';
+import type { CampaignRequirement } from '../../types';
 
 export const LiveOpportunitiesBoard: React.FC = () => {
   const { campaigns, applyToCampaign, activeCreatorId, navigateTo, requireRole } = usePlatform();
@@ -12,10 +22,12 @@ export const LiveOpportunitiesBoard: React.FC = () => {
   const handleApply = (campaign: CampaignRequirement) => {
     if (!requireRole('CREATOR', 'pitch for a brand campaign', 'home')) return;
     setSelectedCampaign(campaign);
-    setPitchText(`Hi ${campaign.companyName}! I am interested in collaborating on this campaign. My audience is based in ${campaign.city} and strongly matches your target audience.`);
+    setPitchText(
+      `Hi ${campaign.companyName}! I am interested in collaborating on this campaign. My audience is based in ${campaign.city} and strongly matches your target audience.`
+    );
   };
 
-  const submitApplication = (e: React.FormEvent) => {
+  const submitApplication = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!selectedCampaign) return;
     if (!requireRole('CREATOR', 'submit a pitch proposal', 'home')) return;
@@ -27,10 +39,18 @@ export const LiveOpportunitiesBoard: React.FC = () => {
     }, 1500);
   };
 
+  const getOpeningLabel = (value: string | number | undefined) => {
+    const countValue = String(value ?? '');
+    if (!countValue) return '0 Creators';
+    const normalized = countValue.toLowerCase();
+    if (normalized.includes('creator')) return countValue;
+    const count = Number(countValue);
+    return `${countValue} ${Number.isFinite(count) && count === 1 ? 'Creator' : 'Creators'}`;
+  };
+
   return (
     <section className="py-16 bg-slate-50/70 text-slate-900 border-b border-slate-200/80 font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 gap-4">
           <div>
             <div className="flex items-center gap-1.5 text-[#D4A338] text-xs font-bold uppercase tracking-wider mb-1.5">
@@ -47,6 +67,7 @@ export const LiveOpportunitiesBoard: React.FC = () => {
 
           <div className="flex items-center gap-3 shrink-0">
             <button
+              type="button"
               onClick={() => {
                 if (!requireRole('BRAND', 'post a campaign brief', 'post-requirement')) return;
                 navigateTo('post-requirement');
@@ -57,6 +78,7 @@ export const LiveOpportunitiesBoard: React.FC = () => {
               <span>Post Campaign Brief</span>
             </button>
             <button
+              type="button"
               onClick={() => navigateTo('opportunities')}
               className="text-xs font-bold text-slate-600 hover:text-[#D4A338] flex items-center gap-1 group cursor-pointer transition"
             >
@@ -66,7 +88,6 @@ export const LiveOpportunitiesBoard: React.FC = () => {
           </div>
         </div>
 
-        {/* Clean, Attractive Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {campaigns.slice(0, 6).map((camp) => (
             <div
@@ -74,16 +95,13 @@ export const LiveOpportunitiesBoard: React.FC = () => {
               className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-2xs hover:shadow-xl hover:border-[#D4A338]/60 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group"
             >
               <div className="space-y-3.5">
-                {/* 1. Header: Brand Avatar + Name + Live Badge */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-50 to-amber-100/90 border border-amber-200/80 text-amber-900 font-black text-xs flex items-center justify-center shrink-0 shadow-2xs">
                       {camp.companyName.trim().slice(0, 2).toUpperCase() || 'BR'}
                     </div>
                     <div className="min-w-0">
-                      <h4 className="font-bold text-slate-900 text-xs truncate">
-                        {camp.companyName}
-                      </h4>
+                      <h4 className="font-bold text-slate-900 text-xs truncate">{camp.companyName}</h4>
                       <span className="text-[11px] text-slate-400 font-medium flex items-center gap-1 truncate mt-0.5">
                         <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
                         <span>{camp.city || 'Pan India'}</span>
@@ -91,21 +109,18 @@ export const LiveOpportunitiesBoard: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Live Active Pill */}
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/60 shrink-0">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                     Active
                   </span>
                 </div>
 
-                {/* 2. Campaign Title */}
                 <div>
                   <h3 className="font-bold text-slate-900 text-sm leading-snug group-hover:text-[#b88628] transition line-clamp-2">
                     {camp.campaignTitle}
                   </h3>
                 </div>
 
-                {/* 3. Category & Tags */}
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-[#8e6819] border border-amber-200/60">
                     <Tag className="w-2.5 h-2.5 text-[#b88628]" />
@@ -128,44 +143,33 @@ export const LiveOpportunitiesBoard: React.FC = () => {
                   )}
                 </div>
 
-                {/* 4. Deliverables snippet */}
                 <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">
                   {camp.deliverablesNeeded || camp.requirements || camp.campaignDescription || 'Open for creator pitches with custom deliverables.'}
                 </p>
               </div>
 
-              {/* 5. Bottom Meta & Action */}
               <div className="pt-4 mt-4 border-t border-slate-100 space-y-3">
-                {/* 2-Column Info Box */}
                 <div className="grid grid-cols-2 gap-2 p-2.5 bg-slate-50/80 rounded-xl border border-slate-100 text-xs">
                   <div>
                     <span className="text-[10px] font-medium text-slate-400 block uppercase tracking-wider">Budget</span>
-                    <span className="font-black text-emerald-600 text-xs truncate block mt-0.5">
-                      {camp.budget}
-                    </span>
+                    <span className="font-black text-emerald-600 text-xs truncate block mt-0.5">{camp.budget}</span>
                   </div>
                   <div>
                     <span className="text-[10px] font-medium text-slate-400 block uppercase tracking-wider">Openings</span>
-                    <span className="font-bold text-slate-800 text-xs truncate block mt-0.5">
-                      {(() => {
-                        const countValue = String(camp.influencersCount ?? '');
-                        return countValue.toLowerCase().includes('creator')
-                          ? countValue
-                          : `${countValue} ${Number(countValue) === 1 ? 'Creator' : 'Creators'}`;
-                      })()}
-                    </span>
+                    <span className="font-bold text-slate-800 text-xs truncate block mt-0.5">{getOpeningLabel(camp.influencersCount)}</span>
                   </div>
                 </div>
 
-                {/* Footer with Applicants + Pitch Button */}
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[11px] text-slate-500 font-medium">
                     <strong className="text-slate-800 font-bold">
-                      {Array.isArray(camp.applicants) ? camp.applicants.length : (camp.applicantsCount || 0)}
-                    </strong> applied
+                      {Array.isArray(camp.applicants) ? camp.applicants.length : camp.applicantsCount || 0}
+                    </strong>{' '}
+                    applied
                   </span>
 
                   <button
+                    type="button"
                     onClick={() => handleApply(camp)}
                     className="px-4 py-2 bg-black hover:bg-[#D4A338] hover:text-black text-white font-bold text-xs rounded-xl shadow-xs transition-all duration-200 flex items-center gap-1.5 cursor-pointer group/btn"
                   >
@@ -180,7 +184,6 @@ export const LiveOpportunitiesBoard: React.FC = () => {
         </div>
       </div>
 
-      {/* Pitch Modal */}
       {selectedCampaign && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn"
@@ -194,9 +197,7 @@ export const LiveOpportunitiesBoard: React.FC = () => {
               <div className="text-center py-6 space-y-2">
                 <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto" />
                 <h3 className="font-bold text-lg text-slate-900">Pitch Submitted!</h3>
-                <p className="text-xs text-slate-500">
-                  {selectedCampaign.companyName} has received your pitch proposal.
-                </p>
+                <p className="text-xs text-slate-500">{selectedCampaign.companyName} has received your pitch proposal.</p>
               </div>
             ) : (
               <form onSubmit={submitApplication} className="space-y-4">
