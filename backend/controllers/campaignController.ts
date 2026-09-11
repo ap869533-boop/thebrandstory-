@@ -193,3 +193,27 @@ export async function applyToCampaign(req: Request, res: Response) {
 
   res.status(201).json({ success: true, application });
 }
+
+export async function updateApplicantStatus(req: Request, res: Response) {
+  const { id, creatorId } = req.params;
+  const { status } = req.body;
+  const campaign = campaignsStore.find((c) => c.id === id);
+  if (!campaign) {
+    return res.status(404).json({ success: false, error: 'Campaign not found' });
+  }
+
+  if (campaign.applicants) {
+    const applicant = campaign.applicants.find(a => a.creatorId === creatorId);
+    if (applicant) {
+      applicant.status = status;
+    }
+  }
+
+  dbQuery(
+    `UPDATE campaign_applicants SET status = ? WHERE campaign_id = ? AND creator_id = ?`,
+    [status, id, creatorId]
+  ).catch(err => console.warn('MySQL applicant status update notice:', err));
+
+  res.json({ success: true, status });
+}
+

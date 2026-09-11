@@ -56,17 +56,37 @@ export async function updateShortlist(req: Request, res: Response) {
     const { id } = req.params;
     const { name, creatorIds } = req.body;
 
+    // Update memory store
     const folderIndex = memoryFolders.findIndex(f => f.id === id);
     if (folderIndex !== -1) {
       if (name) memoryFolders[folderIndex].name = name;
       if (creatorIds) memoryFolders[folderIndex].creatorIds = creatorIds;
+    } else {
+      // Add to memory if not found (e.g., f_default)
+      memoryFolders.unshift({
+        id,
+        name: name || 'My Saved Creators',
+        creatorIds: Array.isArray(creatorIds) ? creatorIds : [],
+        createdAt: new Date().toISOString().split('T')[0],
+      });
     }
 
-    // MySQL Update
-    dbQuery(
-      'UPDATE saved_folders SET name = COALESCE(?, name), creator_ids = COALESCE(?, creator_ids) WHERE id = ?',
-      [name || null, creatorIds ? JSON.stringify(creatorIds) : null, id]
-    ).catch(err => console.warn('MySQL folder update notice:', err));
+    // MySQL UPSERT: try UPDATE first, if 0 rows affected then INSERT
+    try {
+      const result: any = await dbQuery(
+        'UPDATE saved_folders SET name = COALESCE(?, name), creator_ids = COALESCE(?, creator_ids) WHERE id = ?',
+        [name || null, creatorIds ? JSON.stringify(creatorIds) : null, id]
+      );
+      // If no rows were updated, insert a new record
+      if (result && result.affectedRows === 0) {
+        await dbQuery(
+          'INSERT INTO saved_folders (id, user_id, name, creator_ids) VALUES (?, ?, ?, ?)',
+          [id, null, name || 'My Saved Creators', JSON.stringify(Array.isArray(creatorIds) ? creatorIds : [])]
+        );
+      }
+    } catch (dbErr) {
+      console.warn('MySQL folder upsert notice:', dbErr);
+    }
 
     res.json({ success: true, message: 'Shortlist updated' });
   } catch (err) {

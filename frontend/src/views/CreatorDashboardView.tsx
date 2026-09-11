@@ -43,6 +43,7 @@ export const CreatorDashboardView: React.FC = () => {
     campaigns,
     updateCreatorProfile,
     updateEnquiryStatus,
+    updateApplicantStatus,
     navigateTo,
     openTrustScoreModal,
     authUser,
@@ -432,7 +433,57 @@ export const CreatorDashboardView: React.FC = () => {
         onChange={(e) => { if (e.target.files?.[0]) handleCardReelUpload(e.target.files[0]); }} />
     </>
   );
-  const myEnquiries = enquiries.filter((e) => e.creatorId === creator.id || e.creatorId === 'all');
+  const myEnquiries = enquiries.filter(
+    (e) =>
+      e.creatorId === creator.id ||
+      e.creatorId === 'all' ||
+      (creator.username && (e as any).creatorUsername === creator.username) ||
+      (creator.name && (e as any).creatorName && (e as any).creatorName.toLowerCase() === creator.name.toLowerCase())
+  );
+
+  // Confirm a brand inquiry -> marks enquiry Converted + syncs campaign applicant status to Accepted
+  const handleConfirmEnquiry = (lead: typeof myEnquiries[0]) => {
+    updateEnquiryStatus(lead.id, 'Converted', undefined, 'Accepted by creator');
+    // Try to find a matching campaign and update the applicant status
+    const matchedCamp = campaigns.find(
+      (c) =>
+        (lead.brandName && c.companyName && c.companyName.toLowerCase() === lead.brandName.toLowerCase()) ||
+        (lead.campaignDescription && c.id && lead.campaignDescription.includes(c.id)) ||
+        (lead.campaignDescription && c.campaignTitle && lead.campaignDescription.includes(c.campaignTitle))
+    );
+    if (matchedCamp) {
+      updateApplicantStatus(matchedCamp.id, creator.id, 'Accepted');
+    }
+    try {
+      // Simple confetti via CSS animation fallback (no npm package needed)
+      const el = document.createElement('div');
+      el.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;';
+      el.innerHTML = '🎉🎊✨🎉🎊✨';
+      el.style.fontSize = '3rem';
+      el.style.display = 'flex';
+      el.style.alignItems = 'center';
+      el.style.justifyContent = 'center';
+      el.style.opacity = '0.9';
+      el.style.transition = 'opacity 1.5s';
+      document.body.appendChild(el);
+      setTimeout(() => { el.style.opacity = '0'; }, 500);
+      setTimeout(() => { el.remove(); }, 2000);
+    } catch (_) {}
+  };
+
+  // Decline a brand inquiry
+  const handleDeclineEnquiry = (lead: typeof myEnquiries[0]) => {
+    updateEnquiryStatus(lead.id, 'Closed', undefined, 'Declined by creator');
+    const matchedCamp = campaigns.find(
+      (c) =>
+        (lead.brandName && c.companyName && c.companyName.toLowerCase() === lead.brandName.toLowerCase()) ||
+        (lead.campaignDescription && c.id && lead.campaignDescription.includes(c.id)) ||
+        (lead.campaignDescription && c.campaignTitle && lead.campaignDescription.includes(c.campaignTitle))
+    );
+    if (matchedCamp) {
+      updateApplicantStatus(matchedCamp.id, creator.id, 'Declined');
+    }
+  };
 
   const handleSaveRates = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1367,50 +1418,129 @@ export const CreatorDashboardView: React.FC = () => {
         {/* Tab 2: Direct Brand Enquiries */}
         {activeTab === 'leads' && (
           <div className="space-y-4 animate-fadeIn">
+            {/* Summary header */}
+            {myEnquiries.length > 0 && (
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-slate-500 font-medium">
+                  {myEnquiries.length} enquir{myEnquiries.length !== 1 ? 'ies' : 'y'} received •{' '}
+                  <span className="text-emerald-600 font-bold">
+                    {myEnquiries.filter(e => e.status === 'Converted').length} confirmed
+                  </span>
+                </p>
+                {myEnquiries.filter(e => e.status !== 'Converted' && e.status !== 'Closed').length > 0 && (
+                  <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-bold rounded-full">
+                    {myEnquiries.filter(e => e.status !== 'Converted' && e.status !== 'Closed').length} awaiting action
+                  </span>
+                )}
+              </div>
+            )}
+
             {myEnquiries.length === 0 ? (
               <div className="bg-white p-12 text-center rounded-3xl border border-slate-200 space-y-2">
                 <MessageSquare className="w-10 h-10 text-slate-300 mx-auto" />
                 <h3 className="font-bold text-slate-800 text-sm">No Enquiries Yet</h3>
-                <p className="text-xs text-slate-500">When brands send you messages or booking requests, they will appear here.</p>
+                <p className="text-xs text-slate-500">When brands pitch or send you collaboration requests, they will appear here for you to accept or decline.</p>
               </div>
             ) : (
-              myEnquiries.map((lead) => (
-                <div key={lead.id} className="bg-white p-5 rounded-2xl border border-slate-200 hover:border-indigo-200 hover:shadow-sm transition">
-                  <div className="flex items-start gap-4">
-                    <div className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0">
-                      <span className="text-indigo-600 font-black text-sm">{lead.brandName?.charAt(0).toUpperCase()}</span>
-                    </div>
-                    <div className="flex-1 min-w-0 space-y-1.5">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-black text-slate-900 text-sm">{lead.brandName}</span>
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          lead.campaignType === 'Brand Pitch Response'
-                            ? 'bg-indigo-100 text-indigo-700'
-                            : 'bg-blue-50 text-[#b88628]'
-                        }`}>
-                          {lead.campaignType === 'Brand Pitch Response' ? '📩 Replied to your pitch' : (lead.campaignType || lead.collaborationType || 'Enquiry')}
-                        </span>
-                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ml-auto ${
-                          lead.status === 'Converted' ? 'bg-emerald-100 text-emerald-700' :
-                          lead.status === 'New' ? 'bg-amber-100 text-amber-700' :
-                          'bg-slate-100 text-slate-600'
-                        }`}>{lead.status}</span>
+              myEnquiries.map((lead) => {
+                const isConfirmed = lead.status === 'Converted';
+                const isDeclined = lead.status === 'Closed';
+                const isPending = !isConfirmed && !isDeclined;
+                return (
+                  <div
+                    key={lead.id}
+                    className={`bg-white p-5 rounded-2xl border transition-all ${
+                      isConfirmed
+                        ? 'border-emerald-300 bg-emerald-50/20 shadow-sm'
+                        : isDeclined
+                        ? 'border-slate-200 opacity-60'
+                        : 'border-indigo-200 hover:border-indigo-400 hover:shadow-sm'
+                    }`}
+                  >
+                    <div className="flex items-start gap-4">
+                      {/* Brand Initial Avatar */}
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 font-black text-base border ${
+                        isConfirmed ? 'bg-emerald-100 border-emerald-300 text-emerald-700' : 'bg-indigo-50 border-indigo-100 text-indigo-600'
+                      }`}>
+                        {lead.brandName?.charAt(0).toUpperCase()}
                       </div>
-                      {lead.campaignDescription && lead.campaignDescription !== lead.message && (
-                        <p className="text-[11px] text-slate-400 font-medium">{lead.campaignDescription}</p>
-                      )}
-                      <div className="bg-slate-50 rounded-xl px-3 py-2">
-                        <p className="text-xs text-slate-700 leading-relaxed">"{lead.message}"</p>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400">
-                        {lead.budget && <span>💰 Budget: <strong className="text-slate-600">{lead.budget}</strong></span>}
-                        {lead.email && <span>📧 {lead.email}</span>}
-                        <span>🕒 {lead.createdAt}</span>
+
+                      <div className="flex-1 min-w-0 space-y-2">
+                        {/* Brand name + type badge + status */}
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-black text-slate-900 text-sm">{lead.brandName}</span>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            lead.campaignType === 'Brand Pitch Response'
+                              ? 'bg-indigo-100 text-indigo-700'
+                              : 'bg-blue-50 text-[#b88628]'
+                          }`}>
+                            {lead.campaignType === 'Brand Pitch Response' ? '📩 Brand replied to your pitch' : (lead.campaignType || lead.collaborationType || 'Direct Enquiry')}
+                          </span>
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ml-auto ${
+                            isConfirmed ? 'bg-emerald-100 text-emerald-700' :
+                            isDeclined ? 'bg-slate-200 text-slate-500' :
+                            'bg-amber-100 text-amber-700'
+                          }`}>
+                            {isConfirmed ? '✅ Confirmed' : isDeclined ? 'Declined' : lead.status || 'New'}
+                          </span>
+                        </div>
+
+                        {/* Campaign context */}
+                        {lead.campaignDescription && lead.campaignDescription !== lead.message && (
+                          <p className="text-[11px] text-slate-400 font-medium">{lead.campaignDescription}</p>
+                        )}
+
+                        {/* Message */}
+                        <div className="bg-slate-50 rounded-xl px-3 py-2.5">
+                          <p className="text-xs text-slate-700 leading-relaxed">&ldquo;{lead.message}&rdquo;</p>
+                        </div>
+
+                        {/* Budget / contact / time */}
+                        <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400">
+                          {lead.budget && <span>💰 Budget: <strong className="text-slate-600">{lead.budget}</strong></span>}
+                          {lead.email && <span>📧 {lead.email}</span>}
+                          <span>🕒 {lead.createdAt}</span>
+                        </div>
+
+                        {/* Status Banners */}
+                        {isConfirmed && (
+                          <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900 font-bold flex items-center gap-2">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                            <span>🎉 Collaboration Confirmed! Your acceptance has been sent to the brand.</span>
+                          </div>
+                        )}
+
+                        {isPending && (
+                          <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 font-medium flex items-center gap-2">
+                            <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                            <span>Brand is awaiting your confirmation. Accept or decline this collaboration request.</span>
+                          </div>
+                        )}
+
+                        {/* Action Buttons */}
+                        {isPending && (
+                          <div className="flex flex-wrap gap-2 pt-1">
+                            <button
+                              onClick={() => handleConfirmEnquiry(lead)}
+                              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              Confirm & Accept Collaboration
+                            </button>
+                            <button
+                              onClick={() => handleDeclineEnquiry(lead)}
+                              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-xl transition flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                              Decline
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         )}

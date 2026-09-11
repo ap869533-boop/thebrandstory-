@@ -119,6 +119,7 @@ interface PlatformContextType {
   campaigns: CampaignRequirement[];
   postCampaignRequirement: (campaign: Omit<CampaignRequirement, 'id' | 'applicantsCount' | 'applicants' | 'createdAt' | 'status'>) => string;
   applyToCampaign: (campaignId: string, creatorId: string, pitch: string) => void;
+  updateApplicantStatus: (campaignId: string, creatorId: string, status: 'Pending' | 'Shortlisted' | 'Accepted' | 'Declined') => void;
 
   // Stats
   platformStats: PlatformStatsConfig;
@@ -452,6 +453,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           blogsRes,
           statsRes,
           brandsRes,
+          shortlistsRes,
         ] = await Promise.all([
           fetch(apiUrl('/api/creators')),
           fetch(apiUrl('/api/campaigns')),
@@ -462,6 +464,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           fetch(apiUrl('/api/blogs')),
           fetch(apiUrl('/api/stats')),
           fetch(apiUrl('/api/partner-brands')),
+          fetch(apiUrl('/api/shortlists')),
         ]);
 
         if (creatorsRes.ok) {
@@ -524,6 +527,19 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           const brandData = await brandsRes.json();
           if (brandData.brands && brandData.brands.length > 0) {
             setPartnerBrands(brandData.brands);
+          }
+        }
+
+        // Fetch saved shortlists/wishlist from server
+        if (shortlistsRes.ok) {
+          const slData = await shortlistsRes.json();
+          if (slData.folders && slData.folders.length > 0) {
+            setSavedFolders(slData.folders);
+            // Also restore savedCreatorIds from the default folder
+            const defaultFolder = slData.folders.find((f: SavedFolder) => f.id === 'f_default');
+            if (defaultFolder && defaultFolder.creatorIds.length > 0) {
+              setSavedCreatorIds(defaultFolder.creatorIds);
+            }
           }
         }
       } catch (err) {
@@ -589,6 +605,20 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         )
       );
 
+      // FIXED: Also update the default savedFolder so brand dashboard shortlist tab shows creators
+      setSavedFolders((prevFolders) => {
+        const defaultIdx = prevFolders.findIndex((f) => f.id === 'f_default');
+        if (defaultIdx === -1) {
+          return [
+            { id: 'f_default', name: folderName, creatorIds: next, createdAt: new Date().toISOString().split('T')[0] },
+            ...prevFolders,
+          ];
+        }
+        const updated = [...prevFolders];
+        updated[defaultIdx] = { ...updated[defaultIdx], creatorIds: next };
+        return updated;
+      });
+
       // Notification
       addNotification({
         title: isNowSaved ? '❤️ Added to Saved' : '🤍 Removed from Saved',
@@ -598,16 +628,26 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         type: 'campaign',
       });
 
-      // Background MySQL sync
-      fetch(apiUrl('/api/shortlists'), {
-        method: 'POST',
+      // Background MySQL sync - upsert the default folder
+      fetch(apiUrl('/api/shortlists/f_default'), {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id: 'f_default',
           name: folderName,
           creatorIds: next,
         }),
-      }).catch(() => {});
+      }).catch(() => {
+        // Fallback: try POST if PUT fails (first time)
+        fetch(apiUrl('/api/shortlists'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: 'f_default',
+            name: folderName,
+            creatorIds: next,
+          }),
+        }).catch(() => {});
+      });
 
       return next;
     });
@@ -834,12 +874,33 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const applyToCampaign = (campaignId: string, creatorId: string, pitch: string) => {
-    const creator = creators.find(c => c.id === creatorId);
+    let creator = creators.find(c => c.id === creatorId);
+    if (!creator && authUser?.creatorProfile) {
+      creator = authUser.creatorProfile;
+    }
+    if (!creator && authUser?.role === 'CREATOR') {
+      creator = {
+        id: authUser.id || creatorId || 'c1',
+        name: authUser.name || 'Creator',
+        username: (authUser.name || 'creator').toLowerCase().replace(/[^a-z0-9_]/g, ''),
+        avatar: authUser.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400',
+        currentCity: 'Pan India',
+        primaryCategory: 'Influencer',
+        trustScore: 92,
+        followers: 25000,
+        engagementRate: 5.2,
+      } as any;
+    }
+    if (!creator) {
+      creator = creators[0];
+    }
     if (!creator) return;
+
+    const targetCamp = campaigns.find(c => c.id === campaignId);
 
     setCampaigns(prev => prev.map(camp => {
       if (camp.id === campaignId) {
-        const alreadyApplied = camp.applicants.some(a => a.creatorId === creatorId);
+        const alreadyApplied = (camp.applicants || []).some(a => a.creatorId === creator.id || a.creatorName === creator.name);
         if (alreadyApplied) return camp;
         const newApplicant = {
           creatorId: creator.id,
@@ -851,8 +912,8 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         };
         return {
           ...camp,
-          applicantsCount: camp.applicantsCount + 1,
-          applicants: [...camp.applicants, newApplicant],
+          applicantsCount: (camp.applicantsCount || 0) + 1,
+          applicants: [newApplicant, ...(camp.applicants || [])],
         };
       }
       return camp;
@@ -862,15 +923,46 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     fetch(apiUrl(`/api/campaigns/${campaignId}/apply`), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ creatorId, pitch }),
+      body: JSON.stringify({ creatorId: creator.id, pitch }),
     }).catch(err => console.warn('Backend pitch sync notice:', err));
 
     addNotification({
-      title: 'Application Submitted!',
-      message: `You applied to campaign "${campaigns.find(c => c.id === campaignId)?.campaignTitle}"`,
+      title: 'New Pitch Received!',
+      message: `${creator.name} pitched for "${targetCamp?.campaignTitle || 'Campaign'}"`,
+      type: 'campaign',
+      linkTo: 'brand-dashboard',
+    });
+  };
+
+  const updateApplicantStatus = (campaignId: string, creatorId: string, status: 'Pending' | 'Shortlisted' | 'Accepted' | 'Declined') => {
+    setCampaigns(prev => prev.map(camp => {
+      if (camp.id === campaignId) {
+        return {
+          ...camp,
+          applicants: (camp.applicants || []).map(a => {
+            if (a.creatorId === creatorId || a.creatorName === creatorId) {
+              return { ...a, status };
+            }
+            return a;
+          }),
+        };
+      }
+      return camp;
+    }));
+
+    fetch(apiUrl(`/api/campaigns/${campaignId}/applicants/${creatorId}/status`), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    }).catch(err => console.warn('Backend applicant status update notice:', err));
+
+    addNotification({
+      title: status === 'Accepted' ? 'Collaboration Confirmed!' : `Application ${status}`,
+      message: `Pitch status updated to ${status}`,
       type: 'campaign',
     });
   };
+
 
   // Platform Stats
   const [platformStats, setPlatformStats] = useState<PlatformStatsConfig>(() => {
@@ -1444,6 +1536,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         campaigns,
         postCampaignRequirement,
         applyToCampaign,
+        updateApplicantStatus,
 
         platformStats,
         updatePlatformStats,

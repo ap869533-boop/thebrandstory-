@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Flame, MapPin, IndianRupee, ArrowRight, CheckCircle2, PlusCircle, Sparkles, Send, Building2 } from 'lucide-react';
+import { Flame, MapPin, IndianRupee, ArrowRight, CheckCircle2, PlusCircle, Sparkles, Send, Building2, Tag, Users, Clock } from 'lucide-react';
 import { usePlatform } from '../../context/PlatformContext';
 import { CampaignRequirement } from '../../types';
 
@@ -66,65 +66,107 @@ export const LiveOpportunitiesBoard: React.FC = () => {
           </div>
         </div>
 
-        {/* Clean, Professional Cards Grid */}
+        {/* Clean, Attractive Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {campaigns.slice(0, 6).map((camp) => (
             <div
               key={camp.id}
-              className="bg-white rounded-2xl p-6 border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-[#D4A338] transition-all duration-300 flex flex-col justify-between space-y-5 group"
+              className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-2xs hover:shadow-xl hover:border-[#D4A338]/60 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group"
             >
-              <div className="space-y-3">
-                {/* Top Category & Timing */}
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-[#D4A338]/10 text-[#8e6819] border border-[#D4A338]/20">
-                    {camp.category}
-                  </span>
-                  <span className="text-[11px] text-slate-400 font-medium">
-                    {camp.createdAt || 'Recently Added'}
+              <div className="space-y-3.5">
+                {/* 1. Header: Brand Avatar + Name + Live Badge */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-50 to-amber-100/90 border border-amber-200/80 text-amber-900 font-black text-xs flex items-center justify-center shrink-0 shadow-2xs">
+                      {camp.companyName.trim().slice(0, 2).toUpperCase() || 'BR'}
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="font-bold text-slate-900 text-xs truncate">
+                        {camp.companyName}
+                      </h4>
+                      <span className="text-[11px] text-slate-400 font-medium flex items-center gap-1 truncate mt-0.5">
+                        <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+                        <span>{camp.city || 'Pan India'}</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Live Active Pill */}
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/60 shrink-0">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Active
                   </span>
                 </div>
 
-                {/* Campaign Title & Brand */}
-                <div className="space-y-1">
-                  <h3 className="font-bold text-slate-900 text-base leading-snug group-hover:text-[#D4A338] transition">
+                {/* 2. Campaign Title */}
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm leading-snug group-hover:text-[#b88628] transition line-clamp-2">
                     {camp.campaignTitle}
                   </h3>
-                  <p className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
-                    <Building2 className="w-3.5 h-3.5 text-slate-400" />
-                    <span>{camp.companyName}</span>
-                  </p>
                 </div>
 
-                {/* Deliverables Description */}
-                <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
-                  {camp.requirements || camp.campaignDescription}
+                {/* 3. Category & Tags */}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-[#8e6819] border border-amber-200/60">
+                    <Tag className="w-2.5 h-2.5 text-[#b88628]" />
+                    {camp.category}
+                  </span>
+                  {camp.isBarter ? (
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200/60">
+                      Barter
+                    </span>
+                  ) : camp.followerRange && camp.followerRange !== 'Any Tier' ? (
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
+                      {camp.followerRange}
+                    </span>
+                  ) : null}
+                  {camp.createdAt && (
+                    <span className="text-[10px] text-slate-400 font-medium ml-auto flex items-center gap-1">
+                      <Clock className="w-2.5 h-2.5" />
+                      {camp.createdAt}
+                    </span>
+                  )}
+                </div>
+
+                {/* 4. Deliverables snippet */}
+                <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">
+                  {camp.deliverablesNeeded || camp.requirements || camp.campaignDescription || 'Open for creator pitches with custom deliverables.'}
                 </p>
               </div>
 
-              {/* Bottom Meta & Action */}
-              <div className="space-y-3.5 pt-4 border-t border-slate-100 text-xs">
-                <div className="flex items-center justify-between text-slate-700">
-                  <div className="flex items-center gap-1.5 font-medium">
-                    <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span>{camp.city}</span>
+              {/* 5. Bottom Meta & Action */}
+              <div className="pt-4 mt-4 border-t border-slate-100 space-y-3">
+                {/* 2-Column Info Box */}
+                <div className="grid grid-cols-2 gap-2 p-2.5 bg-slate-50/80 rounded-xl border border-slate-100 text-xs">
+                  <div>
+                    <span className="text-[10px] font-medium text-slate-400 block uppercase tracking-wider">Budget</span>
+                    <span className="font-black text-emerald-600 text-xs truncate block mt-0.5">
+                      {camp.budget}
+                    </span>
                   </div>
-                  <div className="flex items-center gap-0.5 font-bold text-emerald-600">
-                    <span>{camp.budget}</span>
+                  <div>
+                    <span className="text-[10px] font-medium text-slate-400 block uppercase tracking-wider">Openings</span>
+                    <span className="font-bold text-slate-800 text-xs truncate block mt-0.5">
+                      {camp.influencersCount} {Number(camp.influencersCount) === 1 ? 'Creator' : 'Creators'}
+                    </span>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between text-[11px] text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg">
-                  <span>Required: <strong className="text-slate-800">{camp.influencersCount} Creators</strong></span>
-                  <span className="text-[#b88628] font-bold">{camp.applicantsCount || 0} Applied</span>
-                </div>
+                {/* Footer with Applicants + Pitch Button */}
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-slate-500 font-medium">
+                    <strong className="text-slate-800 font-bold">{camp.applicantsCount || 0}</strong> applied
+                  </span>
 
-                <button
-                  onClick={() => handleApply(camp)}
-                  className="w-full py-2.5 bg-black hover:bg-[#D4A338] hover:text-black text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Pitch & Apply Now</span>
-                </button>
+                  <button
+                    onClick={() => handleApply(camp)}
+                    className="px-4 py-2 bg-black hover:bg-[#D4A338] hover:text-black text-white font-bold text-xs rounded-xl shadow-xs transition-all duration-200 flex items-center gap-1.5 cursor-pointer group/btn"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400 group-hover/btn:text-black transition-colors" />
+                    <span>Pitch Now</span>
+                    <ArrowRight className="w-3 h-3 opacity-70 group-hover/btn:opacity-100 group-hover/btn:translate-x-0.5 transition-all" />
+                  </button>
+                </div>
               </div>
             </div>
           ))}

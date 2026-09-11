@@ -35,6 +35,7 @@ export const BrandDashboardView: React.FC = () => {
     authUser,
     openAuthModal,
     submitEnquiry,
+    updateApplicantStatus,
   } = usePlatform();
 
   const [activeTab, setActiveTab] = useState<'briefs' | 'pitches' | 'enquiries' | 'shortlists' | 'settings'>('briefs');
@@ -88,13 +89,20 @@ export const BrandDashboardView: React.FC = () => {
   }
 
   const brandDisplayName = authUser?.companyName || authUser?.name || activeBrandName;
+  const [pitchScope, setPitchScope] = useState<'my' | 'all'>('my');
 
-  const myBriefs = campaigns.filter(
+  // Match briefs belonging to the brand
+  const myBrandBriefs = campaigns.filter(
     (c) =>
-      c.companyName.toLowerCase() === brandDisplayName.toLowerCase() ||
-      c.companyName === 'thebrandsstory. Client' ||
-      c.email?.toLowerCase() === authUser?.email?.toLowerCase()
+      (c.companyName && brandDisplayName && c.companyName.toLowerCase().trim() === brandDisplayName.toLowerCase().trim()) ||
+      (c.companyName && brandDisplayName && c.companyName.toLowerCase().includes(brandDisplayName.toLowerCase().trim())) ||
+      (c.companyName && brandDisplayName && brandDisplayName.toLowerCase().includes(c.companyName.toLowerCase().trim())) ||
+      (c.email && authUser?.email && c.email.toLowerCase() === authUser.email.toLowerCase()) ||
+      c.companyName === 'thebrandsstory. Client'
   );
+
+  // If brand has no direct briefs yet, or selected 'all', show all campaigns with pitches so nothing is ever missed
+  const myBriefs = (pitchScope === 'all' || myBrandBriefs.length === 0) ? campaigns : myBrandBriefs;
 
   const myEnquiries = enquiries.filter(
     (e) =>
@@ -111,10 +119,11 @@ export const BrandDashboardView: React.FC = () => {
       campaignId: camp.id,
       campaignBudget: camp.budget,
       campaignCategory: camp.category,
+      campaignCompany: camp.companyName,
     }))
   );
 
-  // Send message to creator -> shows in creator's Inquiries
+  // Send message / inquiry to creator -> shows in creator's Inquiries & updates pitch status
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!msgModalCreator || !msgText.trim()) return;
@@ -127,15 +136,20 @@ export const BrandDashboardView: React.FC = () => {
       brandName: brandDisplayName,
       contactPerson: authUser?.name || brandDisplayName,
       email: authUser?.email || '',
-      phone: '',
+      phone: (authUser as any)?.phone || '',
       campaignType: 'Brand Pitch Response',
-      campaignDescription: `Re: ${msgModalCreator.campaignTitle}`,
+      campaignDescription: `Campaign: ${msgModalCreator.campaignTitle}`,
       city: 'Pan India',
       budget: msgBudget || 'Open to discuss',
       influencersRequired: 1,
-      preferredDate: '',
+      preferredDate: 'Immediate',
       message: msgText.trim(),
     });
+
+    // Mark applicant status as Shortlisted (Inquiry Sent)
+    if (msgModalCreator.campaignId) {
+      updateApplicantStatus(msgModalCreator.campaignId, msgModalCreator.creatorId, 'Shortlisted');
+    }
 
     setMsgSent(true);
     setTimeout(() => {
@@ -310,7 +324,7 @@ export const BrandDashboardView: React.FC = () => {
                                 <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">{applicant.pitch}</p>
                               </div>
                               <button
-                                onClick={() => openMessageModal({ ...applicant, campaignTitle: camp.campaignTitle, campaignId: camp.id, campaignBudget: camp.budget, campaignCategory: camp.category })}
+                                onClick={() => openMessageModal({ ...applicant, campaignTitle: camp.campaignTitle, campaignId: camp.id, campaignBudget: camp.budget, campaignCategory: camp.category, campaignCompany: camp.companyName })}
                                 className="ml-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] rounded-lg transition flex items-center gap-1 cursor-pointer shrink-0"
                               >
                                 <MessageSquare className="w-3 h-3" />
@@ -347,20 +361,58 @@ export const BrandDashboardView: React.FC = () => {
               </div>
             ) : (
               <>
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-slate-500 font-medium">
-                    {allPitches.length} pitch{allPitches.length !== 1 ? 'es' : ''} received across {myBriefs.length} brief{myBriefs.length !== 1 ? 's' : ''}
-                  </p>
-                  <span className="px-2 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-lg">
-                    {allPitches.filter(p => p.status === 'Pending').length} Pending Review
-                  </span>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs text-slate-500 font-medium">
+                      {allPitches.length} pitch{allPitches.length !== 1 ? 'es' : ''} received across {myBriefs.length} brief{myBriefs.length !== 1 ? 's' : ''}
+                    </p>
+                    {myBrandBriefs.length > 0 && (
+                      <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg text-[10px] font-bold">
+                        <button
+                          type="button"
+                          onClick={() => setPitchScope('my')}
+                          className={`px-2 py-0.5 rounded-md transition ${pitchScope === 'my' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'}`}
+                        >
+                          My Briefs ({myBrandBriefs.length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPitchScope('all')}
+                          className={`px-2 py-0.5 rounded-md transition ${pitchScope === 'all' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'}`}
+                        >
+                          All Briefs ({campaigns.length})
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {allPitches.filter(p => p.status === 'Accepted').length > 0 && (
+                      <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-lg border border-emerald-200">
+                        {allPitches.filter(p => p.status === 'Accepted').length} Confirmed
+                      </span>
+                    )}
+                    <span className="px-2 py-0.5 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-lg border border-amber-200">
+                      {allPitches.filter(p => p.status === 'Pending').length} Pending Review
+                    </span>
+                  </div>
                 </div>
 
                 <div className="space-y-3">
                   {allPitches.map((applicant, idx) => {
                     const creator = creators.find(c => c.id === applicant.creatorId);
+                    const isConfirmed = applicant.status === 'Accepted';
+                    const isInquired = applicant.status === 'Shortlisted';
                     return (
-                      <div key={idx} className="bg-white p-5 rounded-2xl border border-slate-200 hover:border-indigo-300 hover:shadow-sm transition">
+                      <div
+                        key={idx}
+                        className={`bg-white p-5 rounded-2xl border transition-all ${
+                          isConfirmed
+                            ? 'border-emerald-300 shadow-xs bg-emerald-50/10'
+                            : isInquired
+                            ? 'border-blue-200 shadow-xs'
+                            : 'border-slate-200 hover:border-[#D4A338] hover:shadow-xs'
+                        }`}
+                      >
                         <div className="flex items-start gap-4">
                           {/* Avatar */}
                           <img
@@ -380,12 +432,25 @@ export const BrandDashboardView: React.FC = () => {
                                     {creator.followers?.toLocaleString('en-IN')} followers • {creator.engagementRate}% eng
                                   </span>
                                 )}
-                                <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${
-                                  applicant.status === 'Accepted' ? 'bg-emerald-100 text-emerald-700' :
-                                  applicant.status === 'Shortlisted' ? 'bg-blue-100 text-blue-700' :
-                                  applicant.status === 'Declined' ? 'bg-red-100 text-red-600' :
-                                  'bg-amber-100 text-amber-700'
-                                }`}>{applicant.status}</span>
+                                <span className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full flex items-center gap-1 ${
+                                  isConfirmed
+                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                    : isInquired
+                                    ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                                    : applicant.status === 'Declined'
+                                    ? 'bg-red-100 text-red-700'
+                                    : 'bg-amber-100 text-amber-700'
+                                }`}>
+                                  {isConfirmed && <CheckCircle2 className="w-3 h-3 text-emerald-600" />}
+                                  {isInquired && <Clock className="w-3 h-3 text-blue-600" />}
+                                  {isConfirmed
+                                    ? 'Confirmed by Creator'
+                                    : isInquired
+                                    ? 'Inquiry Sent (Awaiting Confirmation)'
+                                    : applicant.status === 'Declined'
+                                    ? 'Declined'
+                                    : 'New Pitch'}
+                                </span>
                               </div>
                               <span className="text-[11px] text-slate-400 flex items-center gap-1 shrink-0">
                                 <Clock className="w-3 h-3" />
@@ -417,14 +482,39 @@ export const BrandDashboardView: React.FC = () => {
                               </div>
                             )}
 
+                            {/* Status Banners */}
+                            {isConfirmed && (
+                              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900 font-bold flex items-center gap-2 mb-3">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                                <span>Collaboration Confirmed! The influencer has accepted your collaboration proposal.</span>
+                              </div>
+                            )}
+
+                            {isInquired && (
+                              <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-800 font-medium flex items-center gap-2 mb-3">
+                                <Clock className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                                <span>Inquiry sent to creator. Waiting for creator to confirm on their dashboard.</span>
+                              </div>
+                            )}
+
                             {/* Action buttons */}
                             <div className="flex flex-wrap gap-2">
                               <button
                                 onClick={() => openMessageModal(applicant)}
-                                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 cursor-pointer"
+                                className={`px-4 py-2 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 cursor-pointer ${
+                                  isConfirmed
+                                    ? 'bg-emerald-600 hover:bg-emerald-700 shadow-xs'
+                                    : isInquired
+                                    ? 'bg-blue-600 hover:bg-blue-700 shadow-xs'
+                                    : 'bg-black hover:bg-[#D4A338] hover:text-black shadow-xs'
+                                }`}
                               >
-                                <MessageSquare className="w-3.5 h-3.5" />
-                                Message Creator
+                                <Send className="w-3.5 h-3.5" />
+                                {isConfirmed
+                                  ? 'Message Confirmed Creator'
+                                  : isInquired
+                                  ? 'Send Follow-up Inquiry'
+                                  : 'Inquire & Invite Creator'}
                               </button>
                               {creator && (
                                 <button

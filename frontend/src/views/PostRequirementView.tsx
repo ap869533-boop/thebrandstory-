@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Building2, Sparkles, Send, CheckCircle2, ArrowRight, IndianRupee, MapPin, Users, Calendar, ShieldCheck } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Building2, Sparkles, Send, CheckCircle2, ArrowRight, IndianRupee, MapPin, Users, Calendar, ShieldCheck, ChevronDown, Plus, X, Search, Check } from 'lucide-react';
 import { usePlatform } from '../context/PlatformContext';
 import { CATEGORIES_LIST, CITIES_LIST, INDUSTRIES_LIST, CAMPAIGN_TYPES } from '../data/initialData';
 import confetti from 'canvas-confetti';
@@ -13,14 +13,38 @@ export const PostRequirementView: React.FC = () => {
     }
   }, [authUser]);
 
+  const COUNTRY_CODES = [
+    { code: '+91', flag: '🇮🇳', name: 'India' },
+    { code: '+1',  flag: '🇺🇸', name: 'USA' },
+    { code: '+44', flag: '🇬🇧', name: 'UK' },
+    { code: '+971', flag: '🇦🇪', name: 'UAE' },
+    { code: '+966', flag: '🇸🇦', name: 'Saudi Arabia' },
+    { code: '+65',  flag: '🇸🇬', name: 'Singapore' },
+    { code: '+60',  flag: '🇲🇾', name: 'Malaysia' },
+    { code: '+61',  flag: '🇦🇺', name: 'Australia' },
+    { code: '+49',  flag: '🇩🇪', name: 'Germany' },
+    { code: '+33',  flag: '🇫🇷', name: 'France' },
+    { code: '+81',  flag: '🇯🇵', name: 'Japan' },
+    { code: '+82',  flag: '🇰🇷', name: 'South Korea' },
+    { code: '+86',  flag: '🇨🇳', name: 'China' },
+    { code: '+55',  flag: '🇧🇷', name: 'Brazil' },
+    { code: '+27',  flag: '🇿🇦', name: 'South Africa' },
+    { code: '+234', flag: '🇳🇬', name: 'Nigeria' },
+    { code: '+92',  flag: '🇵🇰', name: 'Pakistan' },
+    { code: '+880', flag: '🇧🇩', name: 'Bangladesh' },
+    { code: '+94',  flag: '🇱🇰', name: 'Sri Lanka' },
+    { code: '+977', flag: '🇳🇵', name: 'Nepal' },
+  ];
+
   const [formData, setFormData] = useState({
     companyName: authUser?.companyName || activeBrandName || '',
     contactPerson: authUser?.name || '',
     email: authUser?.email || '',
+    countryCode: '+91',
     phone: '',
     campaignTitle: '',
     industry: 'Fashion & Lifestyle',
-    category: 'Fashion',
+    categories: ['Fashion'] as string[],
     city: 'Delhi NCR',
     deliverablesNeeded: '1x Instagram Reel (30s) with brand product tagging + 2x Stories with link',
     budget: '₹25,000 - ₹50,000',
@@ -30,6 +54,63 @@ export const PostRequirementView: React.FC = () => {
     campaignStartDate: '',
     customInstructions: '',
   });
+
+  // Custom multi-select dropdown state
+  const [catDropdownOpen, setCatDropdownOpen] = useState(false);
+  const [catSearch, setCatSearch] = useState('');
+  const [newCatInput, setNewCatInput] = useState('');
+  const [customCats, setCustomCats] = useState<string[]>([]);
+  const catDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Custom country code dropdown state
+  const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
+  const countryDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (catDropdownRef.current && !catDropdownRef.current.contains(e.target as Node)) {
+        setCatDropdownOpen(false);
+      }
+      if (countryDropdownRef.current && !countryDropdownRef.current.contains(e.target as Node)) {
+        setCountryDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const toggleCategory = (cat: string) => {
+    setFormData(prev => {
+      const already = prev.categories.includes(cat);
+      return {
+        ...prev,
+        categories: already
+          ? prev.categories.filter(c => c !== cat)
+          : [...prev.categories, cat],
+      };
+    });
+  };
+
+  const addCustomCategory = () => {
+    const trimmed = newCatInput.trim();
+    if (!trimmed) return;
+    if (!customCats.includes(trimmed)) {
+      setCustomCats(prev => [...prev, trimmed]);
+    }
+    if (!formData.categories.includes(trimmed)) {
+      setFormData(prev => ({ ...prev, categories: [...prev.categories, trimmed] }));
+    }
+    setNewCatInput('');
+  };
+
+  const allCategories = [
+    ...(categories && categories.length > 0 ? categories : CATEGORIES_LIST).map(c => c.name),
+    ...customCats,
+  ];
+  const filteredCategories = allCategories.filter(c =>
+    c.toLowerCase().includes(catSearch.toLowerCase().trim())
+  );
 
   const [submittedId, setSubmittedId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,10 +128,10 @@ export const PostRequirementView: React.FC = () => {
         companyName: formData.companyName,
         contactPerson: formData.contactPerson || formData.companyName,
         email: formData.email,
-        phone: formData.phone,
+        phone: `${formData.countryCode} ${formData.phone}`.trim(),
         campaignTitle: formData.campaignTitle,
         industry: formData.industry,
-        category: formData.category,
+        category: formData.categories.join(', '),
         city: formData.city,
         deliverablesNeeded: formData.deliverablesNeeded,
         budget: formData.isBarter ? 'Barter / Product Exchange' : formData.budget,
@@ -189,15 +270,18 @@ export const PostRequirementView: React.FC = () => {
 
                 <div>
                   <label className="block font-bold text-slate-800 text-xs mb-1.5">Brand Industry *</label>
-                  <select
-                    value={formData.industry}
-                    onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] font-medium"
-                  >
-                    {(industries && industries.length > 0 ? industries : INDUSTRIES_LIST).map((ind, idx) => (
-                      <option key={idx} value={ind.name}>{ind.name}</option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={formData.industry}
+                      onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
+                      className="w-full appearance-none px-4 py-3 pr-10 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] text-xs font-medium text-slate-800 transition cursor-pointer"
+                    >
+                      {(industries && industries.length > 0 ? industries : INDUSTRIES_LIST).map((ind, idx) => (
+                        <option key={idx} value={ind.name}>{ind.name}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
                 </div>
               </div>
 
@@ -216,29 +300,168 @@ export const PostRequirementView: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block font-bold text-slate-800 text-xs mb-1.5">Creator Category *</label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] font-medium"
-                  >
-                    {(categories && categories.length > 0 ? categories : CATEGORIES_LIST).map((cat, idx) => (
-                      <option key={idx} value={cat.name}>{cat.name}</option>
-                    ))}
-                  </select>
+
+                  {/* Custom Multi-Select Dropdown */}
+                  <div ref={catDropdownRef} className="relative">
+                    {/* Trigger button */}
+                    <button
+                      type="button"
+                      onClick={() => setCatDropdownOpen(o => !o)}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] text-xs font-medium text-slate-800 text-left flex items-center justify-between gap-2 transition cursor-pointer"
+                      style={{ borderColor: catDropdownOpen ? '#D4A338' : undefined }}
+                    >
+                      <span className="truncate text-slate-800">
+                        {formData.categories.length === 0 ? (
+                          <span className="text-slate-400 font-normal">Select categories…</span>
+                        ) : formData.categories.length === 1 ? (
+                          formData.categories[0]
+                        ) : (
+                          <span>
+                            {formData.categories[0]}{' '}
+                            <span className="text-[11px] font-normal text-slate-500">
+                              (+{formData.categories.length - 1} more)
+                            </span>
+                          </span>
+                        )}
+                      </span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {formData.categories.length > 0 && (
+                          <span className="px-1.5 py-0.5 bg-amber-100 text-[#8e6819] text-[10px] font-bold rounded-md">
+                            {formData.categories.length}
+                          </span>
+                        )}
+                        <ChevronDown
+                          className="w-4 h-4 text-slate-400 transition-transform pointer-events-none"
+                          style={{ transform: catDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                        />
+                      </div>
+                    </button>
+
+                    {/* Dropdown panel */}
+                    {catDropdownOpen && (
+                      <div className="absolute z-50 mt-1.5 w-full bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden text-xs">
+                        {/* Search box for quick filtering */}
+                        <div className="px-2.5 py-1.5 border-b border-slate-100 bg-slate-50/80 flex items-center gap-1.5">
+                          <Search className="w-3 h-3 text-slate-400 shrink-0" />
+                          <input
+                            type="text"
+                            value={catSearch}
+                            onChange={e => setCatSearch(e.target.value)}
+                            placeholder="Search or filter..."
+                            className="w-full bg-transparent text-[11px] outline-none placeholder:text-slate-400"
+                          />
+                          {catSearch && (
+                            <button
+                              type="button"
+                              onClick={() => setCatSearch('')}
+                              className="text-slate-400 hover:text-slate-600"
+                            >
+                              <X className="w-2.5 h-2.5" />
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Option list */}
+                        <ul className="max-h-40 overflow-y-auto py-1 divide-y divide-slate-50/50">
+                          {filteredCategories.map((cat, idx) => {
+                            const selected = formData.categories.includes(cat);
+                            return (
+                              <li
+                                key={idx}
+                                onClick={() => toggleCategory(cat)}
+                                className={`flex items-center justify-between px-3 py-1.5 cursor-pointer transition select-none ${
+                                  selected
+                                    ? 'bg-amber-50/70 font-semibold text-slate-900'
+                                    : 'hover:bg-slate-50 text-slate-700'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 truncate">
+                                  <span
+                                    className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition ${
+                                      selected
+                                        ? 'bg-[#D4A338] border-[#D4A338]'
+                                        : 'border-slate-300 bg-white'
+                                    }`}
+                                  >
+                                    {selected && <Check className="w-2.5 h-2.5 text-white stroke-[3]" />}
+                                  </span>
+                                  <span className="text-xs truncate">{cat}</span>
+                                </div>
+                              </li>
+                            );
+                          })}
+                          {filteredCategories.length === 0 && (
+                            <li className="px-3 py-2 text-center text-slate-400 text-xs">
+                              No category found
+                            </li>
+                          )}
+                        </ul>
+
+                        {/* Add new category */}
+                        <div className="border-t border-slate-100 p-2 bg-slate-50/60 flex gap-1.5">
+                          <input
+                            type="text"
+                            value={newCatInput}
+                            onChange={e => setNewCatInput(e.target.value)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                addCustomCategory();
+                              }
+                            }}
+                            placeholder="Add new category…"
+                            className="flex-1 px-2 py-1 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-[#D4A338] bg-white"
+                          />
+                          <button
+                            type="button"
+                            onClick={addCustomCategory}
+                            className="px-2.5 py-1 bg-[#D4A338] hover:bg-[#b88628] text-white text-xs font-bold rounded-lg flex items-center gap-1 transition shrink-0"
+                          >
+                            <Plus className="w-3 h-3" />
+                            Add
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Selected tags */}
+                  {formData.categories.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {formData.categories.map(cat => (
+                        <span
+                          key={cat}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-900 rounded-md text-[10px] font-semibold"
+                        >
+                          {cat}
+                          <button
+                            type="button"
+                            onClick={() => toggleCategory(cat)}
+                            className="hover:text-red-500 transition ml-0.5"
+                          >
+                            <X className="w-2.5 h-2.5" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div>
                   <label className="block font-bold text-slate-800 text-xs mb-1.5">Target City / Geography *</label>
-                  <select
-                    value={formData.city}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] font-medium"
-                  >
-                    <option value="Pan India">Pan India</option>
-                    {(cities && cities.length > 0 ? cities : CITIES_LIST).map((c, idx) => (
-                      <option key={idx} value={c.name}>{c.name}</option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={formData.city}
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      className="w-full appearance-none px-4 py-3 pr-10 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] text-xs font-medium text-slate-800 transition cursor-pointer"
+                    >
+                      <option value="Pan India">Pan India</option>
+                      {(cities && cities.length > 0 ? cities : CITIES_LIST).map((c, idx) => (
+                        <option key={idx} value={c.name}>{c.name}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
                 </div>
               </div>
             </div>
@@ -275,17 +498,20 @@ export const PostRequirementView: React.FC = () => {
 
                 <div>
                   <label className="block font-bold text-slate-800 text-xs mb-1.5">Desired Follower Tier</label>
-                  <select
-                    value={formData.followerRange}
-                    onChange={(e) => setFormData({ ...formData, followerRange: e.target.value })}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] font-medium"
-                  >
-                    <option value="Any Tier">Any Follower Tier</option>
-                    <option value="1k-10k">Nano (1k - 10k)</option>
-                    <option value="10k-100k">Micro (10k - 100k)</option>
-                    <option value="100k-500k">Macro (100k - 500k)</option>
-                    <option value="500k+">Mega / Celeb (500k+)</option>
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={formData.followerRange}
+                      onChange={(e) => setFormData({ ...formData, followerRange: e.target.value })}
+                      className="w-full appearance-none px-4 py-3 pr-10 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] text-xs font-medium text-slate-800 transition cursor-pointer"
+                    >
+                      <option value="Any Tier">Any Follower Tier</option>
+                      <option value="1k-10k">Nano (1k - 10k)</option>
+                      <option value="10k-100k">Micro (10k - 100k)</option>
+                      <option value="100k-500k">Macro (100k - 500k)</option>
+                      <option value="500k+">Mega / Celeb (500k+)</option>
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
                 </div>
 
                 <div>
@@ -333,14 +559,55 @@ export const PostRequirementView: React.FC = () => {
 
                 <div>
                   <label className="block font-bold text-slate-800 text-xs mb-1.5">WhatsApp / Phone *</label>
-                  <input
-                    type="tel"
-                    required
-                    placeholder="+91 98112 00000"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] font-medium"
-                  />
+                  <div className="relative flex rounded-xl border border-slate-200 bg-slate-50 focus-within:border-[#D4A338] focus-within:bg-white transition">
+                    {/* Custom Country code selector */}
+                    <div ref={countryDropdownRef} className="relative shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setCountryDropdownOpen(o => !o)}
+                        className="h-full px-2.5 py-3 flex items-center gap-1 border-r border-slate-200 hover:bg-slate-100/70 text-xs font-bold text-slate-800 transition cursor-pointer select-none rounded-l-xl"
+                      >
+                        <span>{formData.countryCode}</span>
+                        <ChevronDown
+                          className="w-3 h-3 text-slate-400 shrink-0 transition-transform"
+                          style={{ transform: countryDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                        />
+                      </button>
+
+                      {countryDropdownOpen && (
+                        <div className="absolute left-0 top-full mt-1 w-52 max-h-44 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-xl z-50 py-1">
+                          {COUNTRY_CODES.map((c) => (
+                            <button
+                              key={c.code}
+                              type="button"
+                              onClick={() => {
+                                setFormData(prev => ({ ...prev, countryCode: c.code }));
+                                setCountryDropdownOpen(false);
+                              }}
+                              className={`w-full px-3 py-1.5 text-left text-xs flex items-center justify-between hover:bg-amber-50/80 transition cursor-pointer ${
+                                formData.countryCode === c.code ? 'bg-amber-50 text-[#8e6819] font-bold' : 'text-slate-700'
+                              }`}
+                            >
+                              <span className="truncate">{c.name}</span>
+                              <span className="font-mono text-[11px] text-slate-500 font-semibold shrink-0 ml-2">
+                                {c.code}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Number input */}
+                    <input
+                      type="tel"
+                      required
+                      placeholder="98112 00000"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      className="flex-1 px-3 py-3 bg-transparent focus:outline-none text-xs font-medium text-slate-800 placeholder:text-slate-400 rounded-r-xl"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
