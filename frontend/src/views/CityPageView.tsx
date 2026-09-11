@@ -11,12 +11,22 @@ export const CityPageView: React.FC = () => {
   const allCities = cities && cities.length > 0 ? cities : CITIES_LIST;
   const cityData = allCities.find((c) => c.slug === citySlug) || allCities[0];
 
-  // Filter creators for this city
-  const cityCreators = creators.filter(
-    (c) =>
-      c.currentCity.toLowerCase().includes(cityData.name.toLowerCase()) ||
-      c.preferredCities.some((pc) => pc.toLowerCase().includes(cityData.name.toLowerCase()))
-  );
+  // Filter creators strictly for this city by their actual location (currentCity)
+  const cityTarget = cityData.name.toLowerCase().trim();
+  const cityCreators = creators.filter((c) => {
+    const creatorCity = (c.currentCity || '').toLowerCase().trim();
+    if (cityTarget === 'mumbai') return creatorCity.includes('mumbai') || creatorCity.includes('thane');
+    if (cityTarget === 'delhi' || cityTarget === 'delhi ncr') return creatorCity.includes('delhi') || creatorCity.includes('noida') || creatorCity.includes('gurgaon');
+    if (cityTarget === 'pune') return creatorCity.includes('pune');
+    if (cityTarget === 'bangalore') return creatorCity.includes('bangalore') || creatorCity.includes('bengaluru');
+    if (cityTarget === 'hyderabad') return creatorCity.includes('hyderabad');
+    if (cityTarget === 'jaipur') return creatorCity.includes('jaipur');
+    if (cityTarget === 'chandigarh') return creatorCity.includes('chandigarh');
+    if (cityTarget === 'chennai') return creatorCity.includes('chennai');
+    if (cityTarget === 'lucknow') return creatorCity.includes('lucknow');
+    if (cityTarget === 'ahmedabad') return creatorCity.includes('ahmedabad');
+    return creatorCity.includes(cityTarget);
+  });
 
   return (
     <div className="min-h-screen bg-slate-950 text-white py-8">

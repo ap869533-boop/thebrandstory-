@@ -1472,6 +1472,1561 @@ export const INITIAL_CREATORS: Creator[] = [
     savedCount: 310,
     createdAt: '2024-02-28'
   }
+,
+  {
+    "id": "c13",
+    "name": "Siddharth Malhotra",
+    "username": "siddharth_mumbai",
+    "avatar": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&auto=format&fit=crop&q=80",
+    "coverImage": "https://images.unsplash.com/photo-1445205170230-053b83016050?w=1200&auto=format&fit=crop&q=80",
+    "bio": "Bandra Mumbai-based luxury menswear, streetwear styling and grooming creator. Collaborating with top Indian & international fashion brands.",
+    "currentCity": "Mumbai",
+    "state": "Maharashtra",
+    "preferredCities": [
+      "Mumbai",
+      "Pune",
+      "Goa"
+    ],
+    "primaryCategory": "Fashion",
+    "subCategories": [
+      "Lifestyle",
+      "Luxury",
+      "Beauty"
+    ],
+    "languages": [
+      "Hindi",
+      "English",
+      "Marathi"
+    ],
+    "gender": "Male",
+    "ageGroup": "25-34",
+    "followers": 165000,
+    "engagementRate": 5.4,
+    "avgViews": 112000,
+    "avgLikes": 8900,
+    "avgComments": 520,
+    "brandCollaborationsCount": 38,
+    "trustScore": 95,
+    "trustSignals": {
+      "profileCompleteness": 98,
+      "phoneVerified": true,
+      "emailVerified": true,
+      "socialVerified": true,
+      "engagementQuality": 94,
+      "audienceQuality": 96,
+      "collaborationHistoryScore": 95,
+      "verifiedReviewsCount": 18,
+      "responseRate": 96,
+      "campaignReliability": 97,
+      "accountActivityScore": 95
+    },
+    "isVerified": true,
+    "verificationStepsCompleted": [
+      "Phone",
+      "Email",
+      "Instagram",
+      "Identity",
+      "Social Ownership",
+      "Profile Quality"
+    ],
+    "isTop20": true,
+    "isRising": false,
+    "isFeatured": true,
+    "isTrending": true,
+    "status": "active",
+    "startingPrice": 12000,
+    "pricing": {
+      "reelPrice": 18000,
+      "storyPrice": 6000,
+      "postPrice": 12000,
+      "ugcPrice": 11000,
+      "youtubePrice": 32000,
+      "eventPrice": 28000,
+      "isNegotiable": false,
+      "isBarterAvailable": false,
+      "pricingDisplayType": "exact"
+    },
+    "collaborationTypes": [
+      "Paid",
+      "UGC",
+      "Brand Ambassador",
+      "Event"
+    ],
+    "socialPlatforms": [
+      {
+        "platform": "instagram",
+        "username": "siddharth_mumbai",
+        "url": "https://instagram.com",
+        "followers": 165000,
+        "avgViews": 112000,
+        "engagementRate": 5.4,
+        "verified": true
+      }
+    ],
+    "audience": {
+      "topCities": [
+        {
+          "city": "Mumbai",
+          "percentage": 55
+        },
+        {
+          "city": "Pune",
+          "percentage": 20
+        },
+        {
+          "city": "Delhi NCR",
+          "percentage": 15
+        }
+      ],
+      "topCountries": [
+        {
+          "country": "India",
+          "percentage": 92
+        },
+        {
+          "country": "UAE",
+          "percentage": 5
+        },
+        {
+          "country": "Others",
+          "percentage": 3
+        }
+      ],
+      "ageGroups": [
+        {
+          "bracket": "18-24",
+          "percentage": 38
+        },
+        {
+          "bracket": "25-34",
+          "percentage": 52
+        },
+        {
+          "bracket": "35-44",
+          "percentage": 10
+        }
+      ],
+      "genderSplit": [
+        {
+          "gender": "Male",
+          "percentage": 65
+        },
+        {
+          "gender": "Female",
+          "percentage": 35
+        }
+      ],
+      "topInterests": [
+        "Menswear",
+        "Sneakers",
+        "Luxury Watches",
+        "Grooming"
+      ],
+      "avgReach": 180000,
+      "avgImpressions": 260000
+    },
+    "portfolio": [
+      {
+        "id": "p131",
+        "type": "reel",
+        "title": "Summer Linen Capsule Wardrobe in South Bombay",
+        "thumbnail": "https://images.unsplash.com/photo-1445205170230-053b83016050?w=400&auto=format&fit=crop&q=80",
+        "views": 195000,
+        "likes": 16200,
+        "brandName": "Zara Man"
+      }
+    ],
+    "previousCollaborations": [
+      {
+        "id": "b131",
+        "brandName": "Raymond",
+        "campaignType": "Custom Tailoring Series",
+        "contentType": "Reels",
+        "year": "2025",
+        "verified": true
+      }
+    ],
+    "reviews": [],
+    "profileViews": 19800,
+    "savedCount": 540,
+    "createdAt": "2024-01-15"
+  },
+  {
+    "id": "c14",
+    "name": "Natasha D'Souza",
+    "username": "natasha_bites_mumbai",
+    "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=80",
+    "coverImage": "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200&auto=format&fit=crop&q=80",
+    "bio": "Mumbai food explorer & cafe critic. Covering Bandra, Colaba, BKC and hidden coastal seafood joints. High-converting restaurant footfall reviews.",
+    "currentCity": "Mumbai",
+    "state": "Maharashtra",
+    "preferredCities": [
+      "Mumbai",
+      "Pune",
+      "Goa"
+    ],
+    "primaryCategory": "Food",
+    "subCategories": [
+      "Travel",
+      "Lifestyle",
+      "Local Creators"
+    ],
+    "languages": [
+      "English",
+      "Hindi"
+    ],
+    "gender": "Female",
+    "ageGroup": "22-29",
+    "followers": 98000,
+    "engagementRate": 6.8,
+    "avgViews": 125000,
+    "avgLikes": 9400,
+    "avgComments": 710,
+    "brandCollaborationsCount": 45,
+    "trustScore": 94,
+    "trustSignals": {
+      "profileCompleteness": 97,
+      "phoneVerified": true,
+      "emailVerified": true,
+      "socialVerified": true,
+      "engagementQuality": 96,
+      "audienceQuality": 95,
+      "collaborationHistoryScore": 94,
+      "verifiedReviewsCount": 16,
+      "responseRate": 98,
+      "campaignReliability": 96,
+      "accountActivityScore": 95
+    },
+    "isVerified": true,
+    "verificationStepsCompleted": [
+      "Phone",
+      "Email",
+      "Instagram",
+      "Identity"
+    ],
+    "isTop20": true,
+    "isRising": true,
+    "isFeatured": true,
+    "isTrending": true,
+    "status": "active",
+    "startingPrice": 9000,
+    "pricing": {
+      "reelPrice": 14000,
+      "storyPrice": 4500,
+      "postPrice": 9000,
+      "ugcPrice": 10000,
+      "youtubePrice": 26000,
+      "eventPrice": 22000,
+      "isNegotiable": true,
+      "isBarterAvailable": true,
+      "pricingDisplayType": "starting"
+    },
+    "collaborationTypes": [
+      "Paid",
+      "Barter",
+      "UGC",
+      "Event"
+    ],
+    "socialPlatforms": [
+      {
+        "platform": "instagram",
+        "username": "natasha_bites_mumbai",
+        "url": "https://instagram.com",
+        "followers": 98000,
+        "avgViews": 125000,
+        "engagementRate": 6.8,
+        "verified": true
+      }
+    ],
+    "audience": {
+      "topCities": [
+        {
+          "city": "Mumbai",
+          "percentage": 68
+        },
+        {
+          "city": "Pune",
+          "percentage": 18
+        },
+        {
+          "city": "Thane",
+          "percentage": 14
+        }
+      ],
+      "topCountries": [
+        {
+          "country": "India",
+          "percentage": 95
+        },
+        {
+          "country": "UAE",
+          "percentage": 3
+        },
+        {
+          "country": "Others",
+          "percentage": 2
+        }
+      ],
+      "ageGroups": [
+        {
+          "bracket": "18-24",
+          "percentage": 44
+        },
+        {
+          "bracket": "25-34",
+          "percentage": 46
+        },
+        {
+          "bracket": "35-44",
+          "percentage": 10
+        }
+      ],
+      "genderSplit": [
+        {
+          "gender": "Female",
+          "percentage": 55
+        },
+        {
+          "gender": "Male",
+          "percentage": 45
+        }
+      ],
+      "topInterests": [
+        "Food Tasting",
+        "Cocktail Lounges",
+        "Dessert Spots",
+        "Cafe Culture"
+      ],
+      "avgReach": 160000,
+      "avgImpressions": 220000
+    },
+    "portfolio": [
+      {
+        "id": "p141",
+        "type": "reel",
+        "title": "Top 5 Rooftop Sunsets in Bandra with Cocktails",
+        "thumbnail": "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&auto=format&fit=crop&q=80",
+        "views": 210000,
+        "likes": 18400,
+        "brandName": "Bastian"
+      }
+    ],
+    "previousCollaborations": [],
+    "reviews": [],
+    "profileViews": 16500,
+    "savedCount": 420,
+    "createdAt": "2024-03-20"
+  },
+  {
+    "id": "c15",
+    "name": "Kabir Saxena",
+    "username": "kabir_fitness_mumbai",
+    "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80",
+    "coverImage": "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1200&auto=format&fit=crop&q=80",
+    "bio": "Mumbai strength & mobility coach. Clean nutrition, progressive overload workouts, and science-backed supplement reviews.",
+    "currentCity": "Mumbai",
+    "state": "Maharashtra",
+    "preferredCities": [
+      "Mumbai",
+      "Pune",
+      "Goa"
+    ],
+    "primaryCategory": "Fitness",
+    "subCategories": [
+      "Healthcare",
+      "Lifestyle"
+    ],
+    "languages": [
+      "Hindi",
+      "English"
+    ],
+    "gender": "Male",
+    "ageGroup": "25-34",
+    "followers": 142000,
+    "engagementRate": 5.6,
+    "avgViews": 110000,
+    "avgLikes": 7800,
+    "avgComments": 460,
+    "brandCollaborationsCount": 29,
+    "trustScore": 93,
+    "trustSignals": {
+      "profileCompleteness": 96,
+      "phoneVerified": true,
+      "emailVerified": true,
+      "socialVerified": true,
+      "engagementQuality": 93,
+      "audienceQuality": 95,
+      "collaborationHistoryScore": 92,
+      "verifiedReviewsCount": 11,
+      "responseRate": 95,
+      "campaignReliability": 96,
+      "accountActivityScore": 94
+    },
+    "isVerified": true,
+    "verificationStepsCompleted": [
+      "Phone",
+      "Email",
+      "Instagram",
+      "Identity"
+    ],
+    "isTop20": true,
+    "isRising": false,
+    "isFeatured": false,
+    "isTrending": true,
+    "status": "active",
+    "startingPrice": 10000,
+    "pricing": {
+      "reelPrice": 15000,
+      "storyPrice": 5000,
+      "postPrice": 10000,
+      "ugcPrice": 12000,
+      "youtubePrice": 28000,
+      "eventPrice": 25000,
+      "isNegotiable": true,
+      "isBarterAvailable": false,
+      "pricingDisplayType": "starting"
+    },
+    "collaborationTypes": [
+      "Paid",
+      "UGC",
+      "Brand Ambassador"
+    ],
+    "socialPlatforms": [
+      {
+        "platform": "instagram",
+        "username": "kabir_fitness_mumbai",
+        "url": "https://instagram.com",
+        "followers": 142000,
+        "avgViews": 110000,
+        "engagementRate": 5.6,
+        "verified": true
+      }
+    ],
+    "audience": {
+      "topCities": [
+        {
+          "city": "Mumbai",
+          "percentage": 62
+        },
+        {
+          "city": "Pune",
+          "percentage": 22
+        },
+        {
+          "city": "Nashik",
+          "percentage": 8
+        }
+      ],
+      "topCountries": [
+        {
+          "country": "India",
+          "percentage": 94
+        },
+        {
+          "country": "Others",
+          "percentage": 6
+        }
+      ],
+      "ageGroups": [
+        {
+          "bracket": "18-24",
+          "percentage": 35
+        },
+        {
+          "bracket": "25-34",
+          "percentage": 55
+        },
+        {
+          "bracket": "35-44",
+          "percentage": 10
+        }
+      ],
+      "genderSplit": [
+        {
+          "gender": "Male",
+          "percentage": 70
+        },
+        {
+          "gender": "Female",
+          "percentage": 30
+        }
+      ],
+      "topInterests": [
+        "Strength Training",
+        "Whey Protein",
+        "Gym Wear",
+        "Meal Prep"
+      ],
+      "avgReach": 150000,
+      "avgImpressions": 210000
+    },
+    "portfolio": [],
+    "previousCollaborations": [],
+    "reviews": [],
+    "profileViews": 14100,
+    "savedCount": 390,
+    "createdAt": "2024-02-10"
+  },
+  {
+    "id": "c16",
+    "name": "Ria Mehta",
+    "username": "ria_mumbai_tales",
+    "avatar": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&auto=format&fit=crop&q=80",
+    "coverImage": "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=1200&auto=format&fit=crop&q=80",
+    "bio": "Visual artist & Mumbai lifestyle creator. Aesthetic reel transitions, heritage architecture, monsoon walks, and curated weekend getaways from Mumbai.",
+    "currentCity": "Mumbai",
+    "state": "Maharashtra",
+    "preferredCities": [
+      "Mumbai",
+      "Pune",
+      "Goa"
+    ],
+    "primaryCategory": "Travel",
+    "subCategories": [
+      "Photography",
+      "Lifestyle",
+      "Local Creators"
+    ],
+    "languages": [
+      "English",
+      "Hindi",
+      "Gujarati"
+    ],
+    "gender": "Female",
+    "ageGroup": "22-29",
+    "followers": 110000,
+    "engagementRate": 6.1,
+    "avgViews": 135000,
+    "avgLikes": 11200,
+    "avgComments": 640,
+    "brandCollaborationsCount": 26,
+    "trustScore": 94,
+    "trustSignals": {
+      "profileCompleteness": 98,
+      "phoneVerified": true,
+      "emailVerified": true,
+      "socialVerified": true,
+      "engagementQuality": 96,
+      "audienceQuality": 97,
+      "collaborationHistoryScore": 93,
+      "verifiedReviewsCount": 14,
+      "responseRate": 98,
+      "campaignReliability": 97,
+      "accountActivityScore": 96
+    },
+    "isVerified": true,
+    "verificationStepsCompleted": [
+      "Phone",
+      "Email",
+      "Instagram",
+      "Identity"
+    ],
+    "isTop20": false,
+    "isRising": true,
+    "isFeatured": true,
+    "isTrending": true,
+    "status": "active",
+    "startingPrice": 11000,
+    "pricing": {
+      "reelPrice": 16000,
+      "storyPrice": 5000,
+      "postPrice": 11000,
+      "ugcPrice": 12000,
+      "youtubePrice": 30000,
+      "eventPrice": 24000,
+      "isNegotiable": true,
+      "isBarterAvailable": false,
+      "pricingDisplayType": "exact"
+    },
+    "collaborationTypes": [
+      "Paid",
+      "UGC",
+      "Hotel Showcase"
+    ],
+    "socialPlatforms": [
+      {
+        "platform": "instagram",
+        "username": "ria_mumbai_tales",
+        "url": "https://instagram.com",
+        "followers": 110000,
+        "avgViews": 135000,
+        "engagementRate": 6.1,
+        "verified": true
+      }
+    ],
+    "audience": {
+      "topCities": [
+        {
+          "city": "Mumbai",
+          "percentage": 65
+        },
+        {
+          "city": "Pune",
+          "percentage": 20
+        },
+        {
+          "city": "Goa",
+          "percentage": 15
+        }
+      ],
+      "topCountries": [
+        {
+          "country": "India",
+          "percentage": 93
+        },
+        {
+          "country": "Others",
+          "percentage": 7
+        }
+      ],
+      "ageGroups": [
+        {
+          "bracket": "18-24",
+          "percentage": 48
+        },
+        {
+          "bracket": "25-34",
+          "percentage": 45
+        },
+        {
+          "bracket": "35-44",
+          "percentage": 7
+        }
+      ],
+      "genderSplit": [
+        {
+          "gender": "Female",
+          "percentage": 68
+        },
+        {
+          "gender": "Male",
+          "percentage": 32
+        }
+      ],
+      "topInterests": [
+        "Heritage Travel",
+        "Aesthetic Photography",
+        "Staycations",
+        "Art Galleries"
+      ],
+      "avgReach": 170000,
+      "avgImpressions": 240000
+    },
+    "portfolio": [],
+    "previousCollaborations": [],
+    "reviews": [],
+    "profileViews": 15300,
+    "savedCount": 460,
+    "createdAt": "2024-04-05"
+  },
+  {
+    "id": "c17",
+    "name": "Vikram Rane",
+    "username": "vikram_pune_eats",
+    "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80",
+    "coverImage": "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1200&auto=format&fit=crop&q=80",
+    "bio": "Koregaon Park & FC Road food explorer. Discovering authentic Puneri misal, artisanal breweries, and trending cafe hotspots across Pune.",
+    "currentCity": "Pune",
+    "state": "Maharashtra",
+    "preferredCities": [
+      "Pune",
+      "Mumbai"
+    ],
+    "primaryCategory": "Food",
+    "subCategories": [
+      "Lifestyle",
+      "Local Creators"
+    ],
+    "languages": [
+      "Marathi",
+      "Hindi",
+      "English"
+    ],
+    "gender": "Male",
+    "ageGroup": "22-29",
+    "followers": 88000,
+    "engagementRate": 6.5,
+    "avgViews": 95000,
+    "avgLikes": 7400,
+    "avgComments": 510,
+    "brandCollaborationsCount": 31,
+    "trustScore": 93,
+    "trustSignals": {
+      "profileCompleteness": 95,
+      "phoneVerified": true,
+      "emailVerified": true,
+      "socialVerified": true,
+      "engagementQuality": 94,
+      "audienceQuality": 95,
+      "collaborationHistoryScore": 93,
+      "verifiedReviewsCount": 12,
+      "responseRate": 97,
+      "campaignReliability": 96,
+      "accountActivityScore": 94
+    },
+    "isVerified": true,
+    "verificationStepsCompleted": [
+      "Phone",
+      "Email",
+      "Instagram",
+      "Identity"
+    ],
+    "isTop20": true,
+    "isRising": true,
+    "isFeatured": true,
+    "isTrending": false,
+    "status": "active",
+    "startingPrice": 6000,
+    "pricing": {
+      "reelPrice": 9500,
+      "storyPrice": 3000,
+      "postPrice": 6000,
+      "ugcPrice": 7500,
+      "youtubePrice": 18000,
+      "eventPrice": 15000,
+      "isNegotiable": true,
+      "isBarterAvailable": true,
+      "pricingDisplayType": "starting"
+    },
+    "collaborationTypes": [
+      "Paid",
+      "Barter",
+      "Event"
+    ],
+    "socialPlatforms": [
+      {
+        "platform": "instagram",
+        "username": "vikram_pune_eats",
+        "url": "https://instagram.com",
+        "followers": 88000,
+        "avgViews": 95000,
+        "engagementRate": 6.5,
+        "verified": true
+      }
+    ],
+    "audience": {
+      "topCities": [
+        {
+          "city": "Pune",
+          "percentage": 74
+        },
+        {
+          "city": "Mumbai",
+          "percentage": 18
+        },
+        {
+          "city": "Others",
+          "percentage": 8
+        }
+      ],
+      "topCountries": [
+        {
+          "country": "India",
+          "percentage": 97
+        },
+        {
+          "country": "Others",
+          "percentage": 3
+        }
+      ],
+      "ageGroups": [
+        {
+          "bracket": "18-24",
+          "percentage": 52
+        },
+        {
+          "bracket": "25-34",
+          "percentage": 40
+        },
+        {
+          "bracket": "35-44",
+          "percentage": 8
+        }
+      ],
+      "genderSplit": [
+        {
+          "gender": "Male",
+          "percentage": 54
+        },
+        {
+          "gender": "Female",
+          "percentage": 46
+        }
+      ],
+      "topInterests": [
+        "Pune Food",
+        "Misal Trails",
+        "Cafes",
+        "Weekend Foodies"
+      ],
+      "avgReach": 120000,
+      "avgImpressions": 175000
+    },
+    "portfolio": [],
+    "previousCollaborations": [],
+    "reviews": [],
+    "profileViews": 13400,
+    "savedCount": 360,
+    "createdAt": "2024-03-12"
+  },
+  {
+    "id": "c18",
+    "name": "Aditi Kulkarni",
+    "username": "aditi_puneri_vibe",
+    "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
+    "coverImage": "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=1200&auto=format&fit=crop&q=80",
+    "bio": "Pune-based sustainable fashion & lifestyle creator. Celebrating contemporary Maharashtrian weaves, thrift culture, and aesthetic campus life.",
+    "currentCity": "Pune",
+    "state": "Maharashtra",
+    "preferredCities": [
+      "Pune",
+      "Mumbai"
+    ],
+    "primaryCategory": "Fashion",
+    "subCategories": [
+      "Lifestyle",
+      "Beauty"
+    ],
+    "languages": [
+      "Marathi",
+      "English",
+      "Hindi"
+    ],
+    "gender": "Female",
+    "ageGroup": "22-29",
+    "followers": 120000,
+    "engagementRate": 5.7,
+    "avgViews": 105000,
+    "avgLikes": 8200,
+    "avgComments": 490,
+    "brandCollaborationsCount": 28,
+    "trustScore": 94,
+    "trustSignals": {
+      "profileCompleteness": 98,
+      "phoneVerified": true,
+      "emailVerified": true,
+      "socialVerified": true,
+      "engagementQuality": 95,
+      "audienceQuality": 96,
+      "collaborationHistoryScore": 94,
+      "verifiedReviewsCount": 15,
+      "responseRate": 98,
+      "campaignReliability": 97,
+      "accountActivityScore": 95
+    },
+    "isVerified": true,
+    "verificationStepsCompleted": [
+      "Phone",
+      "Email",
+      "Instagram",
+      "Identity"
+    ],
+    "isTop20": true,
+    "isRising": false,
+    "isFeatured": true,
+    "isTrending": true,
+    "status": "active",
+    "startingPrice": 8500,
+    "pricing": {
+      "reelPrice": 13000,
+      "storyPrice": 4000,
+      "postPrice": 8500,
+      "ugcPrice": 9500,
+      "youtubePrice": 24000,
+      "eventPrice": 20000,
+      "isNegotiable": true,
+      "isBarterAvailable": false,
+      "pricingDisplayType": "exact"
+    },
+    "collaborationTypes": [
+      "Paid",
+      "UGC",
+      "Brand Ambassador"
+    ],
+    "socialPlatforms": [
+      {
+        "platform": "instagram",
+        "username": "aditi_puneri_vibe",
+        "url": "https://instagram.com",
+        "followers": 120000,
+        "avgViews": 105000,
+        "engagementRate": 5.7,
+        "verified": true
+      }
+    ],
+    "audience": {
+      "topCities": [
+        {
+          "city": "Pune",
+          "percentage": 70
+        },
+        {
+          "city": "Mumbai",
+          "percentage": 20
+        },
+        {
+          "city": "Kolhapur",
+          "percentage": 10
+        }
+      ],
+      "topCountries": [
+        {
+          "country": "India",
+          "percentage": 96
+        },
+        {
+          "country": "Others",
+          "percentage": 4
+        }
+      ],
+      "ageGroups": [
+        {
+          "bracket": "18-24",
+          "percentage": 55
+        },
+        {
+          "bracket": "25-34",
+          "percentage": 38
+        },
+        {
+          "bracket": "35-44",
+          "percentage": 7
+        }
+      ],
+      "genderSplit": [
+        {
+          "gender": "Female",
+          "percentage": 78
+        },
+        {
+          "gender": "Male",
+          "percentage": 22
+        }
+      ],
+      "topInterests": [
+        "Sustainable Fashion",
+        "Indian Handlooms",
+        "Thrift Shopping",
+        "Skincare"
+      ],
+      "avgReach": 140000,
+      "avgImpressions": 195000
+    },
+    "portfolio": [],
+    "previousCollaborations": [],
+    "reviews": [],
+    "profileViews": 15800,
+    "savedCount": 480,
+    "createdAt": "2024-02-18"
+  },
+  {
+    "id": "c19",
+    "name": "Nikhil Shinde",
+    "username": "nikhil_pune_tech",
+    "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80",
+    "coverImage": "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=1200&auto=format&fit=crop&q=80",
+    "bio": "Pune tech enthusiast & EV reviewer. Hinjewadi IT corridor tech life, gadget tear downs, and everyday electric scooter real-world range tests.",
+    "currentCity": "Pune",
+    "state": "Maharashtra",
+    "preferredCities": [
+      "Pune",
+      "Mumbai"
+    ],
+    "primaryCategory": "Technology",
+    "subCategories": [
+      "Automotive",
+      "Business"
+    ],
+    "languages": [
+      "Marathi",
+      "English",
+      "Hindi"
+    ],
+    "gender": "Male",
+    "ageGroup": "25-34",
+    "followers": 76000,
+    "engagementRate": 6.2,
+    "avgViews": 82000,
+    "avgLikes": 5300,
+    "avgComments": 410,
+    "brandCollaborationsCount": 22,
+    "trustScore": 92,
+    "trustSignals": {
+      "profileCompleteness": 94,
+      "phoneVerified": true,
+      "emailVerified": true,
+      "socialVerified": true,
+      "engagementQuality": 93,
+      "audienceQuality": 94,
+      "collaborationHistoryScore": 92,
+      "verifiedReviewsCount": 9,
+      "responseRate": 96,
+      "campaignReliability": 95,
+      "accountActivityScore": 93
+    },
+    "isVerified": true,
+    "verificationStepsCompleted": [
+      "Phone",
+      "Email",
+      "Instagram",
+      "Identity"
+    ],
+    "isTop20": false,
+    "isRising": true,
+    "isFeatured": false,
+    "isTrending": false,
+    "status": "active",
+    "startingPrice": 6500,
+    "pricing": {
+      "reelPrice": 10000,
+      "storyPrice": 3500,
+      "postPrice": 6500,
+      "ugcPrice": 8000,
+      "youtubePrice": 20000,
+      "eventPrice": 16000,
+      "isNegotiable": true,
+      "isBarterAvailable": false,
+      "pricingDisplayType": "starting"
+    },
+    "collaborationTypes": [
+      "Paid",
+      "UGC",
+      "Product Review"
+    ],
+    "socialPlatforms": [
+      {
+        "platform": "instagram",
+        "username": "nikhil_pune_tech",
+        "url": "https://instagram.com",
+        "followers": 76000,
+        "avgViews": 82000,
+        "engagementRate": 6.2,
+        "verified": true
+      }
+    ],
+    "audience": {
+      "topCities": [
+        {
+          "city": "Pune",
+          "percentage": 72
+        },
+        {
+          "city": "Mumbai",
+          "percentage": 18
+        },
+        {
+          "city": "Others",
+          "percentage": 10
+        }
+      ],
+      "topCountries": [
+        {
+          "country": "India",
+          "percentage": 95
+        },
+        {
+          "country": "Others",
+          "percentage": 5
+        }
+      ],
+      "ageGroups": [
+        {
+          "bracket": "18-24",
+          "percentage": 38
+        },
+        {
+          "bracket": "25-34",
+          "percentage": 52
+        },
+        {
+          "bracket": "35-44",
+          "percentage": 10
+        }
+      ],
+      "genderSplit": [
+        {
+          "gender": "Male",
+          "percentage": 82
+        },
+        {
+          "gender": "Female",
+          "percentage": 18
+        }
+      ],
+      "topInterests": [
+        "Electric Vehicles",
+        "Smartphone Reviews",
+        "IT Workspaces",
+        "Audio Tech"
+      ],
+      "avgReach": 105000,
+      "avgImpressions": 145000
+    },
+    "portfolio": [],
+    "previousCollaborations": [],
+    "reviews": [],
+    "profileViews": 11800,
+    "savedCount": 290,
+    "createdAt": "2024-04-10"
+  },
+  {
+    "id": "c20",
+    "name": "Meera Sengupta",
+    "username": "meera_delhi_glam",
+    "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
+    "coverImage": "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1200&auto=format&fit=crop&q=80",
+    "bio": "South Delhi beauty & bridal aesthetic content creator. Luxury cosmetic unboxings, dermat skincare, and cocktail evening party glam.",
+    "currentCity": "Delhi NCR",
+    "state": "Delhi",
+    "preferredCities": [
+      "Delhi NCR",
+      "Noida",
+      "Gurgaon"
+    ],
+    "primaryCategory": "Beauty",
+    "subCategories": [
+      "Fashion",
+      "Luxury"
+    ],
+    "languages": [
+      "Hindi",
+      "English",
+      "Bengali"
+    ],
+    "gender": "Female",
+    "ageGroup": "22-29",
+    "followers": 195000,
+    "engagementRate": 5.2,
+    "avgViews": 140000,
+    "avgLikes": 9800,
+    "avgComments": 580,
+    "brandCollaborationsCount": 36,
+    "trustScore": 95,
+    "trustSignals": {
+      "profileCompleteness": 99,
+      "phoneVerified": true,
+      "emailVerified": true,
+      "socialVerified": true,
+      "engagementQuality": 95,
+      "audienceQuality": 97,
+      "collaborationHistoryScore": 95,
+      "verifiedReviewsCount": 17,
+      "responseRate": 98,
+      "campaignReliability": 97,
+      "accountActivityScore": 96
+    },
+    "isVerified": true,
+    "verificationStepsCompleted": [
+      "Phone",
+      "Email",
+      "Instagram",
+      "Identity"
+    ],
+    "isTop20": true,
+    "isRising": false,
+    "isFeatured": true,
+    "isTrending": true,
+    "status": "active",
+    "startingPrice": 14000,
+    "pricing": {
+      "reelPrice": 20000,
+      "storyPrice": 6500,
+      "postPrice": 14000,
+      "ugcPrice": 13000,
+      "youtubePrice": 38000,
+      "eventPrice": 32000,
+      "isNegotiable": false,
+      "isBarterAvailable": false,
+      "pricingDisplayType": "exact"
+    },
+    "collaborationTypes": [
+      "Paid",
+      "UGC",
+      "Event",
+      "Brand Ambassador"
+    ],
+    "socialPlatforms": [
+      {
+        "platform": "instagram",
+        "username": "meera_delhi_glam",
+        "url": "https://instagram.com",
+        "followers": 195000,
+        "avgViews": 140000,
+        "engagementRate": 5.2,
+        "verified": true
+      }
+    ],
+    "audience": {
+      "topCities": [
+        {
+          "city": "Delhi NCR",
+          "percentage": 65
+        },
+        {
+          "city": "Noida",
+          "percentage": 15
+        },
+        {
+          "city": "Gurgaon",
+          "percentage": 12
+        }
+      ],
+      "topCountries": [
+        {
+          "country": "India",
+          "percentage": 94
+        },
+        {
+          "country": "Others",
+          "percentage": 6
+        }
+      ],
+      "ageGroups": [
+        {
+          "bracket": "18-24",
+          "percentage": 40
+        },
+        {
+          "bracket": "25-34",
+          "percentage": 50
+        },
+        {
+          "bracket": "35-44",
+          "percentage": 10
+        }
+      ],
+      "genderSplit": [
+        {
+          "gender": "Female",
+          "percentage": 86
+        },
+        {
+          "gender": "Male",
+          "percentage": 14
+        }
+      ],
+      "topInterests": [
+        "Bridal Makeup",
+        "Luxury Skincare",
+        "Perfumes",
+        "Jewellery"
+      ],
+      "avgReach": 190000,
+      "avgImpressions": 270000
+    },
+    "portfolio": [],
+    "previousCollaborations": [],
+    "reviews": [],
+    "profileViews": 21500,
+    "savedCount": 620,
+    "createdAt": "2024-01-20"
+  },
+  {
+    "id": "c21",
+    "name": "Arjun Chawla",
+    "username": "arjun_delhi_ai",
+    "avatar": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&auto=format&fit=crop&q=80",
+    "coverImage": "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=1200&auto=format&fit=crop&q=80",
+    "bio": "Delhi NCR software engineer & AI tools creator. Practical workflows with Claude, ChatGPT, Cursor, and hardware benchmarks.",
+    "currentCity": "Delhi NCR",
+    "state": "Delhi",
+    "preferredCities": [
+      "Delhi NCR",
+      "Noida",
+      "Gurgaon"
+    ],
+    "primaryCategory": "Technology",
+    "subCategories": [
+      "Business",
+      "Education"
+    ],
+    "languages": [
+      "Hindi",
+      "English"
+    ],
+    "gender": "Male",
+    "ageGroup": "25-34",
+    "followers": 140000,
+    "engagementRate": 5.8,
+    "avgViews": 118000,
+    "avgLikes": 8100,
+    "avgComments": 630,
+    "brandCollaborationsCount": 25,
+    "trustScore": 94,
+    "trustSignals": {
+      "profileCompleteness": 97,
+      "phoneVerified": true,
+      "emailVerified": true,
+      "socialVerified": true,
+      "engagementQuality": 95,
+      "audienceQuality": 96,
+      "collaborationHistoryScore": 93,
+      "verifiedReviewsCount": 13,
+      "responseRate": 97,
+      "campaignReliability": 96,
+      "accountActivityScore": 95
+    },
+    "isVerified": true,
+    "verificationStepsCompleted": [
+      "Phone",
+      "Email",
+      "Instagram",
+      "Identity"
+    ],
+    "isTop20": true,
+    "isRising": false,
+    "isFeatured": false,
+    "isTrending": true,
+    "status": "active",
+    "startingPrice": 10000,
+    "pricing": {
+      "reelPrice": 15000,
+      "storyPrice": 5000,
+      "postPrice": 10000,
+      "ugcPrice": 11000,
+      "youtubePrice": 28000,
+      "eventPrice": 22000,
+      "isNegotiable": true,
+      "isBarterAvailable": false,
+      "pricingDisplayType": "starting"
+    },
+    "collaborationTypes": [
+      "Paid",
+      "UGC",
+      "Product Review"
+    ],
+    "socialPlatforms": [
+      {
+        "platform": "instagram",
+        "username": "arjun_delhi_ai",
+        "url": "https://instagram.com",
+        "followers": 140000,
+        "avgViews": 118000,
+        "engagementRate": 5.8,
+        "verified": true
+      }
+    ],
+    "audience": {
+      "topCities": [
+        {
+          "city": "Delhi NCR",
+          "percentage": 52
+        },
+        {
+          "city": "Bangalore",
+          "percentage": 22
+        },
+        {
+          "city": "Hyderabad",
+          "percentage": 14
+        }
+      ],
+      "topCountries": [
+        {
+          "country": "India",
+          "percentage": 91
+        },
+        {
+          "country": "USA",
+          "percentage": 5
+        },
+        {
+          "country": "Others",
+          "percentage": 4
+        }
+      ],
+      "ageGroups": [
+        {
+          "bracket": "18-24",
+          "percentage": 42
+        },
+        {
+          "bracket": "25-34",
+          "percentage": 50
+        },
+        {
+          "bracket": "35-44",
+          "percentage": 8
+        }
+      ],
+      "genderSplit": [
+        {
+          "gender": "Male",
+          "percentage": 78
+        },
+        {
+          "gender": "Female",
+          "percentage": 22
+        }
+      ],
+      "topInterests": [
+        "Artificial Intelligence",
+        "Coding Tools",
+        "MacBook & Laptops",
+        "Productivity"
+      ],
+      "avgReach": 160000,
+      "avgImpressions": 230000
+    },
+    "portfolio": [],
+    "previousCollaborations": [],
+    "reviews": [],
+    "profileViews": 17200,
+    "savedCount": 490,
+    "createdAt": "2024-03-01"
+  },
+  {
+    "id": "c22",
+    "name": "Deepa Ramanathan",
+    "username": "deepa_bengaluru_bites",
+    "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=80",
+    "coverImage": "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200&auto=format&fit=crop&q=80",
+    "bio": "Bangalore culinary storyteller & craft brewery explorer. Indiranagar, Koramangala & traditional South Indian filter coffee & dosa trails.",
+    "currentCity": "Bangalore",
+    "state": "Karnataka",
+    "preferredCities": [
+      "Bangalore",
+      "Mysore"
+    ],
+    "primaryCategory": "Food",
+    "subCategories": [
+      "Lifestyle",
+      "Local Creators"
+    ],
+    "languages": [
+      "Kannada",
+      "English",
+      "Tamil",
+      "Hindi"
+    ],
+    "gender": "Female",
+    "ageGroup": "22-29",
+    "followers": 115000,
+    "engagementRate": 6.3,
+    "avgViews": 130000,
+    "avgLikes": 9100,
+    "avgComments": 640,
+    "brandCollaborationsCount": 33,
+    "trustScore": 94,
+    "trustSignals": {
+      "profileCompleteness": 98,
+      "phoneVerified": true,
+      "emailVerified": true,
+      "socialVerified": true,
+      "engagementQuality": 95,
+      "audienceQuality": 96,
+      "collaborationHistoryScore": 94,
+      "verifiedReviewsCount": 14,
+      "responseRate": 98,
+      "campaignReliability": 96,
+      "accountActivityScore": 95
+    },
+    "isVerified": true,
+    "verificationStepsCompleted": [
+      "Phone",
+      "Email",
+      "Instagram",
+      "Identity"
+    ],
+    "isTop20": true,
+    "isRising": false,
+    "isFeatured": true,
+    "isTrending": true,
+    "status": "active",
+    "startingPrice": 8000,
+    "pricing": {
+      "reelPrice": 13000,
+      "storyPrice": 4000,
+      "postPrice": 8000,
+      "ugcPrice": 9500,
+      "youtubePrice": 25000,
+      "eventPrice": 20000,
+      "isNegotiable": true,
+      "isBarterAvailable": true,
+      "pricingDisplayType": "starting"
+    },
+    "collaborationTypes": [
+      "Paid",
+      "Barter",
+      "UGC",
+      "Event"
+    ],
+    "socialPlatforms": [
+      {
+        "platform": "instagram",
+        "username": "deepa_bengaluru_bites",
+        "url": "https://instagram.com",
+        "followers": 115000,
+        "avgViews": 130000,
+        "engagementRate": 6.3,
+        "verified": true
+      }
+    ],
+    "audience": {
+      "topCities": [
+        {
+          "city": "Bangalore",
+          "percentage": 76
+        },
+        {
+          "city": "Chennai",
+          "percentage": 12
+        },
+        {
+          "city": "Hyderabad",
+          "percentage": 8
+        }
+      ],
+      "topCountries": [
+        {
+          "country": "India",
+          "percentage": 96
+        },
+        {
+          "country": "Others",
+          "percentage": 4
+        }
+      ],
+      "ageGroups": [
+        {
+          "bracket": "18-24",
+          "percentage": 46
+        },
+        {
+          "bracket": "25-34",
+          "percentage": 48
+        },
+        {
+          "bracket": "35-44",
+          "percentage": 6
+        }
+      ],
+      "genderSplit": [
+        {
+          "gender": "Female",
+          "percentage": 58
+        },
+        {
+          "gender": "Male",
+          "percentage": 42
+        }
+      ],
+      "topInterests": [
+        "Bangalore Cafes",
+        "South Indian Food",
+        "Craft Breweries",
+        "Weekend Brunches"
+      ],
+      "avgReach": 155000,
+      "avgImpressions": 215000
+    },
+    "portfolio": [],
+    "previousCollaborations": [],
+    "reviews": [],
+    "profileViews": 16100,
+    "savedCount": 440,
+    "createdAt": "2024-02-25"
+  }
 ];
 
 export const INITIAL_CAMPAIGNS: CampaignRequirement[] = [
@@ -1494,10 +3049,8 @@ export const INITIAL_CAMPAIGNS: CampaignRequirement[] = [
     platforms: ['Instagram', 'YouTube Shorts'],
     requirements: '1 dedicated Instagram Reel + 2 Stories with trackable coupon link. Genuine application test required.',
     status: 'Open',
-    applicantsCount: 6,
-    applicants: [
-      { creatorId: 'c1', creatorName: 'Priya Sharma', creatorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80', pitch: 'Hey Aditi! I love sunscreen reviews and my Gen-Z audience in Delhi NCR responds heavily to non-sticky SPF trials.', appliedAt: '2 days ago', status: 'Shortlisted' }
-    ],
+    applicantsCount: 0,
+    applicants: [],
     createdAt: '2026-02-20'
   },
   {
@@ -1519,10 +3072,8 @@ export const INITIAL_CAMPAIGNS: CampaignRequirement[] = [
     platforms: ['Instagram'],
     requirements: '1 Aesthetic Reel featuring rooftop ambiance, signature cocktails, and tandoori platters.',
     status: 'Open',
-    applicantsCount: 9,
-    applicants: [
-      { creatorId: 'c2', creatorName: 'Rahul Verma', creatorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80', pitch: 'Noida Sector 104 is my core territory! Can deliver 100k+ organic views on the rooftop ambiance reel.', appliedAt: '1 day ago', status: 'Accepted' }
-    ],
+    applicantsCount: 0,
+    applicants: [],
     createdAt: '2026-02-24'
   },
   {
@@ -1544,7 +3095,7 @@ export const INITIAL_CAMPAIGNS: CampaignRequirement[] = [
     platforms: ['Instagram', 'YouTube'],
     requirements: '1 Reel + 1 YouTube Shorts demonstrating battery life, acceleration, and foldability.',
     status: 'Open',
-    applicantsCount: 4,
+    applicantsCount: 0,
     applicants: [],
     createdAt: '2026-02-25'
   }

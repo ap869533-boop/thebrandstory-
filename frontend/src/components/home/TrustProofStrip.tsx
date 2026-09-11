@@ -42,7 +42,7 @@ export const TrustProofStrip: React.FC = () => {
   ];
 
   return (
-    <div className="bg-black text-white border-b border-zinc-900 py-3.5 sm:py-4 relative overflow-hidden font-sans">
+    <div className="bg-black text-white border-b border-zinc-900 py-3.5 sm:py-4 relative overflow-hidden font-sans shrink-0">
       <div className="max-w-7xl mx-auto px-1 sm:px-6 lg:px-8 overflow-hidden">
         {/* 5 Core Credibility Metrics */}
         <div className="grid grid-cols-5 gap-0 divide-x divide-white/10 text-center overflow-hidden">

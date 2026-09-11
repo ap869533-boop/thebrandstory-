@@ -147,7 +147,9 @@ export const LiveOpportunitiesBoard: React.FC = () => {
                   <div>
                     <span className="text-[10px] font-medium text-slate-400 block uppercase tracking-wider">Openings</span>
                     <span className="font-bold text-slate-800 text-xs truncate block mt-0.5">
-                      {camp.influencersCount} {Number(camp.influencersCount) === 1 ? 'Creator' : 'Creators'}
+                      {camp.influencersCount?.toLowerCase().includes('creator') 
+                        ? camp.influencersCount 
+                        : `${camp.influencersCount} ${Number(camp.influencersCount) === 1 ? 'Creator' : 'Creators'}`}
                     </span>
                   </div>
                 </div>
@@ -155,7 +157,9 @@ export const LiveOpportunitiesBoard: React.FC = () => {
                 {/* Footer with Applicants + Pitch Button */}
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[11px] text-slate-500 font-medium">
-                    <strong className="text-slate-800 font-bold">{camp.applicantsCount || 0}</strong> applied
+                    <strong className="text-slate-800 font-bold">
+                      {Array.isArray(camp.applicants) ? camp.applicants.length : (camp.applicantsCount || 0)}
+                    </strong> applied
                   </span>
 
                   <button

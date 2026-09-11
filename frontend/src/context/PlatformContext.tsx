@@ -836,10 +836,22 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const unreadEnquiriesCount = enquiries.filter(e => !e.isReadByCreator).length;
 
-  // Campaigns State
+  // Campaigns State - strictly real applicant counts
   const [campaigns, setCampaigns] = useState<CampaignRequirement[]>(() => {
     const saved = localStorage.getItem('sc_campaigns');
-    return saved ? JSON.parse(saved) : INITIAL_CAMPAIGNS;
+    const parsed: CampaignRequirement[] = saved ? JSON.parse(saved) : INITIAL_CAMPAIGNS;
+    return parsed.map(c => {
+      // Filter out seed mock pitches from initial dummy data so counts are 100% genuine
+      const realApplicants = (c.applicants || []).filter(
+        a => !(a.creatorId === 'c1' && a.creatorName === 'Priya Sharma' && a.pitch?.includes('Hey Aditi!')) &&
+             !(a.creatorId === 'c2' && a.creatorName === 'Rahul Verma' && a.pitch?.includes('Noida Sector 104'))
+      );
+      return {
+        ...c,
+        applicants: realApplicants,
+        applicantsCount: realApplicants.length,
+      };
+    });
   });
 
   useEffect(() => {
@@ -1394,7 +1406,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const matchName = creator.name.toLowerCase().includes(q);
       const matchUsername = creator.username.toLowerCase().includes(q);
       const matchCategory = creator.primaryCategory.toLowerCase().includes(q) || creator.subCategories.some(s => s.toLowerCase().includes(q));
-      const matchCity = creator.currentCity.toLowerCase().includes(q) || creator.preferredCities.some(c => c.toLowerCase().includes(q));
+      const matchCity = creator.currentCity.toLowerCase().includes(q);
       const matchBio = creator.bio.toLowerCase().includes(q);
       if (!matchName && !matchUsername && !matchCategory && !matchCity && !matchBio) {
         return false;
@@ -1408,10 +1420,22 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (!catMatches) return false;
     }
 
-    // City filter
-    if (filters.city !== 'all') {
-      const cityMatches = creator.currentCity.toLowerCase().includes(filters.city.toLowerCase()) ||
-        creator.preferredCities.some(c => c.toLowerCase().includes(filters.city.toLowerCase()));
+    // City filter - strictly by actual creator location (currentCity)
+    if (filters.city && filters.city !== 'all') {
+      const target = filters.city.toLowerCase().trim();
+      const cCity = (creator.currentCity || '').toLowerCase().trim();
+      let cityMatches = false;
+      if (target === 'mumbai') cityMatches = cCity.includes('mumbai') || cCity.includes('thane');
+      else if (target === 'delhi' || target === 'delhi ncr') cityMatches = cCity.includes('delhi') || cCity.includes('noida') || cCity.includes('gurgaon');
+      else if (target === 'pune') cityMatches = cCity.includes('pune');
+      else if (target === 'bangalore') cityMatches = cCity.includes('bangalore') || cCity.includes('bengaluru');
+      else if (target === 'hyderabad') cityMatches = cCity.includes('hyderabad');
+      else if (target === 'jaipur') cityMatches = cCity.includes('jaipur');
+      else if (target === 'chandigarh') cityMatches = cCity.includes('chandigarh');
+      else if (target === 'chennai') cityMatches = cCity.includes('chennai');
+      else if (target === 'lucknow') cityMatches = cCity.includes('lucknow');
+      else if (target === 'ahmedabad') cityMatches = cCity.includes('ahmedabad');
+      else cityMatches = cCity.includes(target);
       if (!cityMatches) return false;
     }
 

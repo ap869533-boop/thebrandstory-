@@ -4,12 +4,37 @@ import { usePlatform } from '../../context/PlatformContext';
 import { CreatorCard } from '../common/CreatorCard';
 
 export const TopCreatorsSection: React.FC = () => {
-  const { creators, navigateTo, setFilters } = usePlatform();
+  const { creators, navigateTo, setFilters, filters } = usePlatform();
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Top 20 creators ranked by Trust Score and Featured status
+  const cityActive = filters.city && filters.city !== 'all';
+
+  // Top 20 creators ranked by Trust Score and Featured status — filtered by selected city
   const topCreators = creators
-    .filter((c) => c.isTop20 || c.trustScore >= 92 || c.isFeatured)
+    .filter((c) => {
+      const baseMatch = c.isTop20 || c.trustScore >= 92 || c.isFeatured;
+      if (!baseMatch) return false;
+      // Apply city filter from hero dropdown strictly by actual location
+      if (cityActive) {
+        const cityLower = filters.city.toLowerCase().trim();
+        const cCity = (c.currentCity || '').toLowerCase().trim();
+        let cityMatch = false;
+        if (cityLower === 'mumbai') cityMatch = cCity.includes('mumbai') || cCity.includes('thane');
+        else if (cityLower === 'delhi' || cityLower === 'delhi ncr') cityMatch = cCity.includes('delhi') || cCity.includes('noida') || cCity.includes('gurgaon');
+        else if (cityLower === 'pune') cityMatch = cCity.includes('pune');
+        else if (cityLower === 'bangalore') cityMatch = cCity.includes('bangalore') || cCity.includes('bengaluru');
+        else if (cityLower === 'hyderabad') cityMatch = cCity.includes('hyderabad');
+        else if (cityLower === 'jaipur') cityMatch = cCity.includes('jaipur');
+        else if (cityLower === 'chandigarh') cityMatch = cCity.includes('chandigarh');
+        else if (cityLower === 'chennai') cityMatch = cCity.includes('chennai');
+        else if (cityLower === 'lucknow') cityMatch = cCity.includes('lucknow');
+        else if (cityLower === 'ahmedabad') cityMatch = cCity.includes('ahmedabad');
+        else cityMatch = cCity.includes(cityLower);
+
+        if (!cityMatch) return false;
+      }
+      return true;
+    })
     .sort((a, b) => b.trustScore - a.trustScore)
     .slice(0, 10);
 
@@ -25,7 +50,7 @@ export const TopCreatorsSection: React.FC = () => {
       ...prev,
       sortBy: 'trust_score',
       category: 'all',
-      city: 'all',
+      city: filters.city || 'all',
     }));
     navigateTo('explore');
   };
@@ -37,13 +62,15 @@ export const TopCreatorsSection: React.FC = () => {
           <div>
             <div className="flex items-center gap-1.5 text-[#D4A338] text-xs font-extrabold uppercase tracking-wider mb-1">
               <Award className="w-3.5 h-3.5" />
-              <span>India’s Premier Creator Rankings</span>
+              <span>{cityActive ? `${filters.city} Creator Rankings` : "India's Premier Creator Rankings"}</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-              Top 20 Influencers in India
+              {cityActive ? `Top Influencers in ${filters.city}` : 'Top 20 Influencers in India'}
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              Curated leaders with highest thebrandsstory. Trust Scores, verified engagement & proven campaign ROI
+              {cityActive
+                ? `Curated creators from ${filters.city} with highest Trust Scores & verified engagement`
+                : 'Curated leaders with highest thebrandsstory. Trust Scores, verified engagement & proven campaign ROI'}
             </p>
           </div>
 
@@ -80,11 +107,15 @@ export const TopCreatorsSection: React.FC = () => {
           ref={scrollRef}
           className="flex gap-3 sm:gap-5 overflow-x-auto pb-4 pt-1 snap-x scrollbar-none no-scrollbar w-full max-w-full"
         >
-          {topCreators.map((creator) => (
+          {topCreators.length > 0 ? topCreators.map((creator) => (
             <div key={creator.id} className="snap-start shrink-0">
               <CreatorCard creator={creator} variant="carousel" />
             </div>
-          ))}
+          )) : (
+            <div className="w-full text-center py-8">
+              <p className="text-sm text-slate-400 font-medium">No top creators found in {filters.city}. Try selecting a different city.</p>
+            </div>
+          )}
         </div>
       </div>
     </section>

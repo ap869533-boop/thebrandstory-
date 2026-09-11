@@ -163,7 +163,9 @@ export const OpportunitiesView: React.FC = () => {
 
                   <div className="flex items-center justify-between text-[11px] text-slate-500">
                     <span>Followers: <strong>{camp.followerRange}</strong></span>
-                    <span className="text-[#D4A338] font-semibold">{camp.applicantsCount} Pitches</span>
+                    <span className="text-[#D4A338] font-semibold">
+                      {Array.isArray(camp.applicants) ? camp.applicants.length : (camp.applicantsCount || 0)} Pitches
+                    </span>
                   </div>
 
                   <button

@@ -94,9 +94,9 @@ export async function getCreators(req: Request, res: Response) {
     }
 
     if (city && city !== 'all') {
-      sqlConditions.push('(LOWER(current_city) LIKE ? OR LOWER(preferred_cities) LIKE ?)');
-      const cityLower = (city as string).toLowerCase();
-      sqlParams.push(`%${cityLower}%`, `%"${cityLower}"%`);
+      sqlConditions.push('LOWER(current_city) LIKE ?');
+      const cityLower = (city as string).toLowerCase().trim();
+      sqlParams.push(`%${cityLower}%`);
     }
 
     if (searchQuery && typeof searchQuery === 'string' && searchQuery.trim()) {

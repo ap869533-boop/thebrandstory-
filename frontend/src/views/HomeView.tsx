@@ -12,11 +12,11 @@ import { TestimonialsAndFAQ } from '../components/home/TestimonialsAndFAQ';
 export const HomeView: React.FC = () => {
   return (
     <div className="min-h-screen bg-white w-full max-w-full overflow-x-hidden">
-      {/* 1. Clean Minimal Hero Section */}
-      <HomeHero />
-
-      {/* 2. Trust Proof Strip */}
-      <TrustProofStrip />
+      {/* 1 & 2. Hero Section + Trust Proof Strip: Exactly fills mobile screen height with TrustProofStrip as the last element */}
+      <div className="h-[calc(100vh-4rem)] h-[calc(100dvh-4rem)] sm:h-auto flex flex-col justify-between bg-black relative">
+        <HomeHero />
+        <TrustProofStrip />
+      </div>
 
       {/* 3. Brand Partners Slider (Placed right above Top Influencers in India) */}
       <BrandPartnersSlider />

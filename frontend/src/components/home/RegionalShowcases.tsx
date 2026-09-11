@@ -4,69 +4,108 @@ import { usePlatform } from '../../context/PlatformContext';
 import { CreatorCard } from '../common/CreatorCard';
 
 export const RegionalShowcases: React.FC = () => {
-  const { creators, setFilters, navigateTo } = usePlatform();
+  const { creators, setFilters, navigateTo, filters } = usePlatform();
 
-  // Delhi NCR Creators
-  const delhiCreators = creators
-    .filter((c) => c.currentCity.toLowerCase().includes('delhi') || c.currentCity.toLowerCase().includes('noida') || c.currentCity.toLowerCase().includes('gurgaon'))
+  const cityActive = filters.city && filters.city !== 'all';
+
+  // Helper to check if a creator matches the selected city filter strictly by actual location
+  const matchesCity = (c: typeof creators[0]) => {
+    if (!cityActive) return true;
+    const target = filters.city.toLowerCase().trim();
+    const cCity = (c.currentCity || '').toLowerCase().trim();
+    if (target === 'mumbai') return cCity.includes('mumbai') || cCity.includes('thane');
+    if (target === 'delhi' || target === 'delhi ncr') return cCity.includes('delhi') || cCity.includes('noida') || cCity.includes('gurgaon');
+    if (target === 'pune') return cCity.includes('pune');
+    if (target === 'bangalore') return cCity.includes('bangalore') || cCity.includes('bengaluru');
+    if (target === 'hyderabad') return cCity.includes('hyderabad');
+    if (target === 'jaipur') return cCity.includes('jaipur');
+    if (target === 'chandigarh') return cCity.includes('chandigarh');
+    if (target === 'chennai') return cCity.includes('chennai');
+    if (target === 'lucknow') return cCity.includes('lucknow');
+    if (target === 'ahmedabad') return cCity.includes('ahmedabad');
+    return cCity.includes(target);
+  };
+
+  // City-specific Creators (uses filter city or defaults to Delhi NCR)
+  const cityCreators = creators
+    .filter((c) => {
+      if (cityActive) return matchesCity(c);
+      // Default: Delhi NCR
+      return c.currentCity.toLowerCase().includes('delhi') ||
+        c.currentCity.toLowerCase().includes('noida') ||
+        c.currentCity.toLowerCase().includes('gurgaon');
+    })
     .slice(0, 4);
 
-  // Budget Friendly (Under 5k)
+  // Budget Friendly (Under 5k) — also filtered by city
   const budgetCreators = creators
-    .filter((c) => c.startingPrice <= 5000)
+    .filter((c) => c.startingPrice <= 5000 && matchesCity(c))
     .slice(0, 4);
 
-  // Rising Creators
+  // Rising Creators — also filtered by city
   const risingCreators = creators
-    .filter((c) => c.isRising || c.engagementRate >= 5.0)
+    .filter((c) => (c.isRising || c.engagementRate >= 5.0) && matchesCity(c))
     .slice(0, 4);
 
-  const exploreDelhi = () => {
-    setFilters((prev) => ({ ...prev, city: 'Delhi NCR', searchQuery: '', category: 'all' }));
-    navigateTo('city-page', { citySlug: 'delhi-ncr' });
+  const cityLabel = cityActive ? filters.city : 'Delhi NCR';
+
+  const exploreCity = () => {
+    if (cityActive) {
+      setFilters((prev) => ({ ...prev, city: filters.city, searchQuery: '', category: 'all' }));
+      navigateTo('explore');
+    } else {
+      setFilters((prev) => ({ ...prev, city: 'Delhi NCR', searchQuery: '', category: 'all' }));
+      navigateTo('city-page', { citySlug: 'delhi-ncr' });
+    }
   };
 
   const exploreBudget = () => {
-    setFilters((prev) => ({ ...prev, priceRange: 'under-5k', searchQuery: '', category: 'all', city: 'all' }));
+    setFilters((prev) => ({ ...prev, priceRange: 'under-5k', searchQuery: '', category: 'all', city: filters.city || 'all' }));
     navigateTo('explore');
   };
 
   const exploreRising = () => {
-    setFilters((prev) => ({ ...prev, sortBy: 'rising', searchQuery: '', category: 'all', city: 'all' }));
+    setFilters((prev) => ({ ...prev, sortBy: 'rising', searchQuery: '', category: 'all', city: filters.city || 'all' }));
     navigateTo('explore');
   };
 
   return (
     <div className="space-y-12 sm:space-y-16 py-8 sm:py-12 bg-white font-sans w-full max-w-full overflow-hidden">
-      {/* 1. Delhi NCR Section */}
+      {/* 1. City Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-6 sm:mb-8 gap-3 sm:gap-4">
           <div>
             <div className="flex items-center gap-1.5 text-[#D4A338] text-[11px] sm:text-xs font-extrabold uppercase tracking-wider mb-1">
               <MapPin className="w-3.5 h-3.5 text-[#D4A338]" />
-              <span>Capital Region Spotlight</span>
+              <span>{cityActive ? `${filters.city} Spotlight` : 'Capital Region Spotlight'}</span>
             </div>
             <h2 className="text-xl sm:text-3xl font-black text-slate-900 tracking-tight">
-              Top Influencers in Delhi NCR
+              Top Influencers in {cityLabel}
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 mt-0.5 sm:mt-1">
-              Verified lifestyle, fashion, food & tech creators based in Delhi, Noida & Gurgaon
+              {cityActive
+                ? `Verified creators based in ${filters.city} across all categories`
+                : 'Verified lifestyle, fashion, food & tech creators based in Delhi, Noida & Gurgaon'}
             </p>
           </div>
 
           <button
-            onClick={exploreDelhi}
+            onClick={exploreCity}
             className="text-xs font-bold text-[#b88628] hover:text-[#D4A338] flex items-center gap-1 shrink-0 group cursor-pointer self-start sm:self-auto"
           >
-            <span>Explore All Delhi NCR Influencers</span>
+            <span>Explore All {cityLabel} Influencers</span>
             <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition" />
           </button>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-5">
-          {delhiCreators.map((creator) => (
+          {cityCreators.length > 0 ? cityCreators.map((creator) => (
             <CreatorCard key={creator.id} creator={creator} />
-          ))}
+          )) : (
+            <div className="col-span-full text-center py-6">
+              <p className="text-sm text-slate-400 font-medium">No creators found in {cityLabel}.</p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -80,7 +119,7 @@ export const RegionalShowcases: React.FC = () => {
                 <span>High ROI for Startups & Local Outlets</span>
               </div>
               <h2 className="text-xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                Budget-Friendly Influencers (Under ₹5,000 & Barter)
+                Budget-Friendly Influencers{cityActive ? ` in ${filters.city}` : ''} (Under ₹5,000 & Barter)
               </h2>
               <p className="text-xs sm:text-sm text-slate-500 mt-0.5 sm:mt-1">
                 High-converting micro-influencers with engaged niche communities and affordable pricing
@@ -97,9 +136,13 @@ export const RegionalShowcases: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-5">
-            {budgetCreators.map((creator) => (
+            {budgetCreators.length > 0 ? budgetCreators.map((creator) => (
               <CreatorCard key={creator.id} creator={creator} />
-            ))}
+            )) : (
+              <div className="col-span-full text-center py-6">
+                <p className="text-sm text-slate-400 font-medium">No budget-friendly creators found{cityActive ? ` in ${filters.city}` : ''}.</p>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -113,7 +156,7 @@ export const RegionalShowcases: React.FC = () => {
               <span>Fastest Growing Talents</span>
             </div>
             <h2 className="text-xl sm:text-3xl font-black text-slate-900 tracking-tight">
-              Rising Stars & Viral Creators
+              Rising Stars{cityActive ? ` in ${filters.city}` : ''} & Viral Creators
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 mt-0.5 sm:mt-1">
               High-growth influencers with industry-leading organic engagement rates &gt;5.0%
@@ -130,9 +173,13 @@ export const RegionalShowcases: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-5">
-          {risingCreators.map((creator) => (
+          {risingCreators.length > 0 ? risingCreators.map((creator) => (
             <CreatorCard key={creator.id} creator={creator} />
-          ))}
+          )) : (
+            <div className="col-span-full text-center py-6">
+              <p className="text-sm text-slate-400 font-medium">No rising creators found{cityActive ? ` in ${filters.city}` : ''}.</p>
+            </div>
+          )}
         </div>
       </section>
     </div>

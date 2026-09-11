@@ -146,7 +146,7 @@ export const HomeHero: React.FC = () => {
   };
 
   return (
-    <section className="relative overflow-hidden bg-black text-white h-[calc(100dvh-4rem)] min-h-[calc(100dvh-4rem)] max-h-[calc(100dvh-4rem)] sm:h-auto sm:min-h-[calc(100vh-64px-60px)] sm:max-h-none flex flex-col justify-center py-2 sm:py-16 border-b border-zinc-900 font-sans w-full max-w-full">
+    <section className="relative overflow-hidden bg-black text-white flex-1 flex flex-col justify-center py-3 xs:py-5 sm:py-16 sm:min-h-[calc(100vh-64px-60px)] border-b border-zinc-900/60 font-sans w-full max-w-full">
       {/* Subtle Premium Background Glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-full overflow-hidden pointer-events-none z-0">
         <div className="absolute -top-32 left-1/4 w-[600px] h-[450px] bg-[#D4A338]/10 rounded-full blur-[140px]" />
@@ -155,7 +155,7 @@ export const HomeHero: React.FC = () => {
 
       <div className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 text-center relative z-10 space-y-2.5 xs:space-y-3.5 sm:space-y-8 my-auto w-full max-w-full">
         {/* 1. Verified Network Badge */}
-        <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-1 sm:py-1.5 bg-black text-zinc-300 text-[10px] sm:text-xs font-semibold rounded-full border border-zinc-800 shadow-md max-w-full">
+        <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-0.5 sm:py-1.5 bg-black text-zinc-300 text-[9.5px] sm:text-xs font-semibold rounded-full border border-zinc-800 shadow-md max-w-full">
           <span className="w-2 h-2 rounded-full bg-[#D4A338] animate-pulse shrink-0" />
           <ShieldCheck className="w-3.5 h-3.5 text-[#D4A338] shrink-0" />
           <span className="truncate">India's Biggest Influencer Marketplace</span>
@@ -164,11 +164,11 @@ export const HomeHero: React.FC = () => {
         </div>
 
         {/* 2. Responsive Headline & Subtitle */}
-        <div className="space-y-1.5 sm:space-y-3 max-w-3xl mx-auto w-full">
-          <h1 className="text-2xl xs:text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight">
+        <div className="space-y-1 sm:space-y-2.5 max-w-3xl mx-auto w-full">
+          <h1 className="text-xl xs:text-2xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight">
             Search Influencers & Promote Your Brand
           </h1>
-          <p className="text-[11px] sm:text-base text-zinc-300 font-medium max-w-2xl mx-auto leading-snug sm:leading-relaxed">
+          <p className="text-[9.5px] xs:text-[11px] sm:text-sm md:text-base text-zinc-400 font-medium max-w-2xl mx-auto leading-snug sm:leading-relaxed">
             Direct Creator Rates <span className="text-[#D4A338] font-bold">•</span> Verified Analytics <span className="text-[#D4A338] font-bold">•</span> 0% Commission
           </p>
         </div>
