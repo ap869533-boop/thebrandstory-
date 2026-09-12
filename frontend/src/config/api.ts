@@ -23,12 +23,14 @@ export const API_BASE_URL = getApiBaseUrl();
  */
 export const apiUrl = (endpoint: string): string => {
   if (endpoint.startsWith('http://thebrandsstory.com/')) {
-    return `https://thebrandsstory.com/${endpoint.slice('http://thebrandsstory.com/'.length)}`;
+    const path = endpoint.slice('http://thebrandsstory.com/'.length);
+    return `https://thebrandsstory.com/${path.startsWith('uploads/') ? `api/${path}` : path}`;
   }
   if (endpoint.startsWith('https://') || endpoint.startsWith('http://')) {
     return endpoint;
   }
   const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  if (path.startsWith('/uploads/')) return `${API_BASE_URL}/api${path}`;
   return `${API_BASE_URL}${path}`;
 };
 
