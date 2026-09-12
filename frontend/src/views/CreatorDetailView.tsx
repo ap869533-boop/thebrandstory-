@@ -38,6 +38,7 @@ export const CreatorDetailView: React.FC = () => {
   const {
     creators,
     viewParams,
+    authUser,
     navigateTo,
     openEnquiryModal,
     isCreatorSaved,
@@ -51,7 +52,24 @@ export const CreatorDetailView: React.FC = () => {
       (c) =>
         (viewParams.id && c.id === viewParams.id) ||
         (viewParams.username && c.username.toLowerCase() === (viewParams.username as string).toLowerCase())
-    ) || creators[0];
+    ) || (authUser?.role === 'CREATOR' ? authUser.creatorProfile : undefined) || creators[0];
+
+  if (!creator) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 text-center text-white">
+        <div className="max-w-md space-y-4">
+          <h2 className="text-xl font-black">Profile preview unavailable</h2>
+          <p className="text-sm text-slate-400">Your creator profile is still being prepared. Please return to your dashboard and try again.</p>
+          <button
+            onClick={() => navigateTo('creator-dashboard')}
+            className="px-5 py-2.5 rounded-xl bg-[#D4A338] text-black font-bold text-sm"
+          >
+            Return to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const [copiedLink, setCopiedLink] = useState(false);
   const [selectedPost, setSelectedPost] = useState<any | null>(null);
