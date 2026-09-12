@@ -39,6 +39,7 @@ export const AdminDashboardView: React.FC = () => {
   const {
     creators,
     campaigns,
+    deleteCampaign,
     platformStats,
     updatePlatformStats,
     updateCreatorProfile,
@@ -86,6 +87,15 @@ export const AdminDashboardView: React.FC = () => {
       await adminDeleteCreator(creator.id);
     } catch (error) {
       window.alert(error instanceof Error ? error.message : 'Failed to delete influencer');
+    }
+  };
+
+  const handleDeleteCampaign = async (campaignId: string, campaignTitle: string) => {
+    if (!window.confirm(`Delete campaign "${campaignTitle}" permanently?`)) return;
+    try {
+      await deleteCampaign(campaignId);
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'Failed to delete campaign');
     }
   };
 
@@ -891,9 +901,19 @@ export const AdminDashboardView: React.FC = () => {
                       <h4 className="font-bold text-slate-900 text-sm">{camp.campaignTitle}</h4>
                       <p className="text-[11px] text-slate-400 font-semibold">{camp.companyName} • {camp.city}</p>
                     </div>
-                    <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-full text-[10px] font-black">
-                      {camp.status}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-full text-[10px] font-black">
+                        {camp.status}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => void handleDeleteCampaign(camp.id, camp.campaignTitle)}
+                        title="Delete campaign permanently"
+                        className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
 
                   <p className="text-xs text-slate-600 line-clamp-2">{camp.requirements}</p>
@@ -1218,5 +1238,4 @@ export const AdminDashboardView: React.FC = () => {
     </div>
   );
 };
-
 

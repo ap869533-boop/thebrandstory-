@@ -161,6 +161,22 @@ export async function createCampaign(req: Request, res: Response) {
   }
 }
 
+export async function deleteCampaign(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ success: false, error: 'Campaign id is required' });
+
+    await dbQuery('DELETE FROM campaign_applicants WHERE campaign_id = ?', [id]);
+    await dbQuery('DELETE FROM campaign_requirements WHERE id = ?', [id]);
+    campaignsStore = campaignsStore.filter((campaign) => campaign.id !== id);
+
+    return res.json({ success: true, message: 'Campaign deleted successfully' });
+  } catch (error) {
+    console.error('Delete campaign error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to delete campaign' });
+  }
+}
+
 export async function applyToCampaign(req: Request, res: Response) {
   const { id } = req.params;
   const campaign = campaignsStore.find((c) => c.id === id);
@@ -216,4 +232,3 @@ export async function updateApplicantStatus(req: Request, res: Response) {
 
   res.json({ success: true, status });
 }
-
