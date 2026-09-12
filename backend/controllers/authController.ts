@@ -754,7 +754,7 @@ export async function verifyOtp(req: Request, res: Response) {
         user.creatorProfile = createdCreatorProfile;
 
         // DB Insert
-        await dbQuery(
+        const creatorInsertResult = await dbQuery(
           `INSERT INTO creators (
             id, user_id, name, username, avatar, cover_image, reel_video_url, bio, current_city, primary_category,
             followers, engagement_rate, starting_price, reel_price, story_price, post_price,
@@ -791,7 +791,10 @@ export async function verifyOtp(req: Request, res: Response) {
             1,
             'pending'
           ]
-        ).catch(err => console.warn('MySQL creator auto-insert notice:', err));
+        );
+        if (creatorInsertResult === null) {
+          throw new Error('Creator profile could not be saved to the database');
+        }
       }
 
       // Send Welcome Email

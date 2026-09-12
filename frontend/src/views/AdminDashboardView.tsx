@@ -1,5 +1,5 @@
 import { apiUrl } from '../config/api';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ShieldCheck,
   CheckCircle2,
@@ -28,7 +28,8 @@ import {
   Eye,
   Phone,
   Mail,
-  Instagram
+  Instagram,
+  RefreshCw
 } from 'lucide-react';
 import { usePlatform } from '../context/PlatformContext';
 import { TrustScoreBadge } from '../components/common/TrustScoreBadge';
@@ -38,6 +39,7 @@ import { ChangePasswordForm } from '../components/common/ChangePasswordForm';
 export const AdminDashboardView: React.FC = () => {
   const {
     creators,
+    setCreators,
     campaigns,
     deleteCampaign,
     platformStats,
@@ -59,6 +61,26 @@ export const AdminDashboardView: React.FC = () => {
   const [creatorFilterTab, setCreatorFilterTab] = useState<'all' | 'pending' | 'active' | 'suspended'>('all');
   const [creatorSearch, setCreatorSearch] = useState('');
   const [brandSearch, setBrandSearch] = useState('');
+  const [isRefreshingCreators, setIsRefreshingCreators] = useState(false);
+
+  const refreshCreators = async () => {
+    setIsRefreshingCreators(true);
+    try {
+      const response = await fetch(apiUrl(`/api/creators?includePending=true&_refresh=${Date.now()}`));
+      if (!response.ok) throw new Error('Unable to refresh creators');
+      const data = await response.json();
+      if (!Array.isArray(data.creators)) throw new Error('Invalid creators response');
+      setCreators(data.creators);
+    } finally {
+      setIsRefreshingCreators(false);
+    }
+  };
+
+  useEffect(() => {
+    void refreshCreators().catch((error) => {
+      console.error('Failed to refresh admin creators:', error);
+    });
+  }, []);
 
   // Selected Creator for Detailed Review Modal
   const [reviewModalCreator, setReviewModalCreator] = useState<Creator | null>(null);
@@ -461,6 +483,17 @@ export const AdminDashboardView: React.FC = () => {
                   className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:outline-none focus:border-blue-500 font-medium"
                 />
               </div>
+              <button
+                type="button"
+                onClick={() => void refreshCreators().catch((error) => {
+                  console.error('Failed to refresh admin creators:', error);
+                })}
+                disabled={isRefreshingCreators}
+                className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold disabled:opacity-60"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isRefreshingCreators ? 'animate-spin' : ''}`} />
+                Refresh
+              </button>
             </div>
 
             {/* Creators Table */}
@@ -1238,4 +1271,3 @@ export const AdminDashboardView: React.FC = () => {
     </div>
   );
 };
-

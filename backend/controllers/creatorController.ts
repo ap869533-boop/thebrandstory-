@@ -399,7 +399,7 @@ export async function createCreator(req: Request, res: Response) {
     creatorsStore.unshift(newCreator);
 
     // Also persist in MySQL
-    dbQuery(
+    const creatorInsertResult = await dbQuery(
       `INSERT INTO creators (
         id, name, username, avatar, cover_image, bio, current_city, primary_category,
         followers, engagement_rate, starting_price, reel_price, story_price, post_price,
@@ -432,7 +432,15 @@ export async function createCreator(req: Request, res: Response) {
         1,
         'pending',
       ]
-    ).catch(err => console.warn('MySQL creator insert notice:', err));
+    );
+    if (creatorInsertResult === null) {
+      const creatorIndex = creatorsStore.findIndex((creator) => creator.id === newCreator.id);
+      if (creatorIndex !== -1) creatorsStore.splice(creatorIndex, 1);
+      return res.status(503).json({
+        success: false,
+        error: 'Creator profile could not be saved. Please try again.',
+      });
+    }
 
     res.status(201).json({ success: true, creator: newCreator });
   } catch (error) {
