@@ -2,6 +2,7 @@ import React from 'react';
 import { MapPin, IndianRupee, Rocket, ArrowRight } from 'lucide-react';
 import { usePlatform } from '../../context/PlatformContext';
 import { CreatorCard } from '../common/CreatorCard';
+import { matchesCityLocation } from '../../utils/location';
 
 export const RegionalShowcases: React.FC = () => {
   const { creators, setFilters, navigateTo, filters } = usePlatform();
@@ -11,19 +12,7 @@ export const RegionalShowcases: React.FC = () => {
   // Helper to check if a creator matches the selected city filter strictly by actual location
   const matchesCity = (c: typeof creators[0]) => {
     if (!cityActive) return true;
-    const target = filters.city.toLowerCase().trim();
-    const cCity = (c.currentCity || '').toLowerCase().trim();
-    if (target === 'mumbai') return cCity.includes('mumbai') || cCity.includes('thane');
-    if (target === 'delhi' || target === 'delhi ncr') return cCity.includes('delhi') || cCity.includes('noida') || cCity.includes('gurgaon');
-    if (target === 'pune') return cCity.includes('pune');
-    if (target === 'bangalore') return cCity.includes('bangalore') || cCity.includes('bengaluru');
-    if (target === 'hyderabad') return cCity.includes('hyderabad');
-    if (target === 'jaipur') return cCity.includes('jaipur');
-    if (target === 'chandigarh') return cCity.includes('chandigarh');
-    if (target === 'chennai') return cCity.includes('chennai');
-    if (target === 'lucknow') return cCity.includes('lucknow');
-    if (target === 'ahmedabad') return cCity.includes('ahmedabad');
-    return cCity.includes(target);
+    return matchesCityLocation(c.currentCity || '', filters.city);
   };
 
   // City-specific Creators (uses filter city or defaults to Delhi NCR)
@@ -55,7 +44,7 @@ export const RegionalShowcases: React.FC = () => {
       navigateTo('explore');
     } else {
       setFilters((prev) => ({ ...prev, city: 'Delhi NCR', searchQuery: '', category: 'all' }));
-      navigateTo('city-page', { citySlug: 'delhi-ncr' });
+      navigateTo('city-page', { citySlug: 'delhi' });
     }
   };
 

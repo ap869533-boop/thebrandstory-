@@ -86,7 +86,7 @@ export const HomeHero: React.FC = () => {
   const fetchDetectedCityFallback = async () => {
     setIsDetectingLocation(true);
     try {
-      const res = await fetch('/api/detect-location');
+      const res = await fetch(apiUrl('/api/detect-location'));
       if (!res.ok) return;
       const data = await res.json();
       if (data.success && data.matchedCity) {
@@ -103,7 +103,7 @@ export const HomeHero: React.FC = () => {
   const fetchCityFromCoordinates = async (lat: number, lng: number) => {
     setIsDetectingLocation(true);
     try {
-      const res = await fetch(`/api/detect-location?lat=${lat}&lng=${lng}`);
+      const res = await fetch(apiUrl(`/api/detect-location?lat=${lat}&lng=${lng}`));
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.matchedCity) {
@@ -430,5 +430,4 @@ export const HomeHero: React.FC = () => {
     </section>
   );
 };
-
 

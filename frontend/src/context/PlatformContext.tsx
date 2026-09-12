@@ -25,6 +25,7 @@ import {
   CITIES_LIST,
   INDUSTRIES_LIST
 } from '../data/initialData';
+import { matchesCityLocation } from '../utils/location';
 
 export interface FilterState {
   searchQuery: string;
@@ -1422,21 +1423,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     // City filter - strictly by actual creator location (currentCity)
     if (filters.city && filters.city !== 'all') {
-      const target = filters.city.toLowerCase().trim();
-      const cCity = (creator.currentCity || '').toLowerCase().trim();
-      let cityMatches = false;
-      if (target === 'mumbai') cityMatches = cCity.includes('mumbai') || cCity.includes('thane');
-      else if (target === 'delhi' || target === 'delhi ncr') cityMatches = cCity.includes('delhi') || cCity.includes('noida') || cCity.includes('gurgaon');
-      else if (target === 'pune') cityMatches = cCity.includes('pune');
-      else if (target === 'bangalore') cityMatches = cCity.includes('bangalore') || cCity.includes('bengaluru');
-      else if (target === 'hyderabad') cityMatches = cCity.includes('hyderabad');
-      else if (target === 'jaipur') cityMatches = cCity.includes('jaipur');
-      else if (target === 'chandigarh') cityMatches = cCity.includes('chandigarh');
-      else if (target === 'chennai') cityMatches = cCity.includes('chennai');
-      else if (target === 'lucknow') cityMatches = cCity.includes('lucknow');
-      else if (target === 'ahmedabad') cityMatches = cCity.includes('ahmedabad');
-      else cityMatches = cCity.includes(target);
-      if (!cityMatches) return false;
+      if (!matchesCityLocation(creator.currentCity || '', filters.city)) return false;
     }
 
     // Verified only
@@ -1630,5 +1617,4 @@ export const usePlatform = () => {
   }
   return context;
 };
-
 

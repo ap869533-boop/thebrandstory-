@@ -3,30 +3,17 @@ import { MapPin, ShieldCheck, ArrowLeft, Sparkles, Filter, Users } from 'lucide-
 import { usePlatform } from '../context/PlatformContext';
 import { CITIES_LIST } from '../data/initialData';
 import { CreatorCard } from '../components/common/CreatorCard';
+import { matchesCityLocation } from '../utils/location';
 
 export const CityPageView: React.FC = () => {
   const { viewParams, creators, navigateTo, setFilters, cities } = usePlatform();
 
-  const citySlug = viewParams.citySlug || 'delhi-ncr';
+  const citySlug = viewParams.citySlug || 'delhi';
   const allCities = cities && cities.length > 0 ? cities : CITIES_LIST;
-  const cityData = allCities.find((c) => c.slug === citySlug) || allCities[0];
+  const cityData = allCities.find((c) => c.slug === citySlug || (citySlug === 'delhi-ncr' && c.slug === 'delhi')) || allCities[0];
 
   // Filter creators strictly for this city by their actual location (currentCity)
-  const cityTarget = cityData.name.toLowerCase().trim();
-  const cityCreators = creators.filter((c) => {
-    const creatorCity = (c.currentCity || '').toLowerCase().trim();
-    if (cityTarget === 'mumbai') return creatorCity.includes('mumbai') || creatorCity.includes('thane');
-    if (cityTarget === 'delhi' || cityTarget === 'delhi ncr') return creatorCity.includes('delhi') || creatorCity.includes('noida') || creatorCity.includes('gurgaon');
-    if (cityTarget === 'pune') return creatorCity.includes('pune');
-    if (cityTarget === 'bangalore') return creatorCity.includes('bangalore') || creatorCity.includes('bengaluru');
-    if (cityTarget === 'hyderabad') return creatorCity.includes('hyderabad');
-    if (cityTarget === 'jaipur') return creatorCity.includes('jaipur');
-    if (cityTarget === 'chandigarh') return creatorCity.includes('chandigarh');
-    if (cityTarget === 'chennai') return creatorCity.includes('chennai');
-    if (cityTarget === 'lucknow') return creatorCity.includes('lucknow');
-    if (cityTarget === 'ahmedabad') return creatorCity.includes('ahmedabad');
-    return creatorCity.includes(cityTarget);
-  });
+  const cityCreators = creators.filter((c) => matchesCityLocation(c.currentCity || '', cityData.name));
 
   return (
     <div className="min-h-screen bg-slate-950 text-white py-8">
