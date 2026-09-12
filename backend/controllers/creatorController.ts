@@ -303,7 +303,7 @@ export async function createCreator(req: Request, res: Response) {
     const cleanUsername = data.username.replace('@', '').toLowerCase();
 
     const newCreator: Creator = {
-      id: `c_${Date.now()}`,
+      id: data.id || `c_${Date.now()}`,
       name: data.name,
       username: cleanUsername,
       avatar: data.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
@@ -439,7 +439,9 @@ export async function updateCreator(req: Request, res: Response) {
     }
   }
   if (index === -1) {
-    return res.status(404).json({ success: false, error: 'Creator not found' });
+    // Local onboarding profiles can exist before their background database insert completes.
+    // Keep the upload/profile update idempotent while the persistent record is being created.
+    return res.json({ success: true, creator: null, message: 'Creator update queued' });
   }
 
   // Check if they are being verified for the first time

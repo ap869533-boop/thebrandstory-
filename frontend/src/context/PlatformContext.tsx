@@ -1106,6 +1106,12 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setActiveCreatorId(completeCreator.id);
     setCurrentRole('CREATOR');
 
+    fetch(apiUrl('/api/creators'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(completeCreator),
+    }).catch(err => console.warn('Creator registration sync notice:', err));
+
     addNotification({
       title: 'Welcome to thebrandsstory.!',
       message: `Your creator profile @${cleanUsername} has been submitted for admin approval.`,
