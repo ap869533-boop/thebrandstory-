@@ -61,7 +61,7 @@ export const PostRequirementView: React.FC = () => {
   const [newCatInput, setNewCatInput] = useState('');
   const [customCats, setCustomCats] = useState<string[]>([]);
   const catDropdownRef = useRef<HTMLDivElement>(null);
-  const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false);
+const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false);
   const [selectedIndustries, setSelectedIndustries] = useState<string[]>(['Fashion & Lifestyle']);
   const industryDropdownRef = useRef<HTMLDivElement>(null);
   const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
