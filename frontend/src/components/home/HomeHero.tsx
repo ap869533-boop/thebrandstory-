@@ -51,56 +51,39 @@ export const HomeHero: React.FC = () => {
   const categoryRef = useRef<HTMLDivElement>(null);
   const cityRef = useRef<HTMLDivElement>(null);
 
-  // Detect location on entry for the search control without filtering homepage content.
+  // Detect the current location on entry for the search control only.
   useEffect(() => {
-    const savedGeo = sessionStorage.getItem('sc_detected_city');
-    if (savedGeo && savedGeo !== 'all') {
-      syncCitySelection(savedGeo);
-      return;
-    }
-
     if (!('geolocation' in navigator)) return;
 
+    setIsDetectingLocation(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
         void fetchCityFromCoordinates(position.coords.latitude, position.coords.longitude);
       },
       () => {
-        // Keep All India selected when location access is unavailable.
+        setIsDetectingLocation(false);
       },
-      { timeout: 8000, enableHighAccuracy: true }
+      { timeout: 15000, maximumAge: 0, enableHighAccuracy: true }
     );
   }, []);
-
-  const fetchDetectedCityFallback = async () => {
-    setIsDetectingLocation(true);
-    try {
-      const res = await fetch(apiUrl('/api/detect-location'));
-      if (!res.ok) return;
-      const data = await res.json();
-      if (data.success && data.matchedCity) {
-        await applyDetectedLocation(data.matchedCity);
-      }
-    } catch {
-      // Keep All India if no location is detected
-    } finally {
-      setIsDetectingLocation(false);
-    }
-  };
 
   // Reverse Geocoding API handler for GPS
   const fetchCityFromCoordinates = async (lat: number, lng: number) => {
     setIsDetectingLocation(true);
     try {
       const res = await fetch(apiUrl(`/api/detect-location?lat=${lat}&lng=${lng}`));
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && data.matchedCity) {
-          await applyDetectedLocation(data.matchedCity);
-        }
+      if (!res.ok) {
+        throw new Error(`Location lookup failed with status ${res.status}`);
       }
+      const data = await res.json();
+      if (!data.success || !data.matchedCity) {
+        throw new Error('Location lookup did not return a supported city');
+      }
+      await applyDetectedLocation(data.matchedCity);
     } catch {
-      await fetchDetectedCityFallback();
+      sessionStorage.removeItem('sc_detected_city');
+      setSelectedCity('all');
+      setDetectedCityBadge(null);
     } finally {
       setIsDetectingLocation(false);
     }
@@ -111,8 +94,7 @@ export const HomeHero: React.FC = () => {
     setCityDropdownOpen(false);
 
     if (!('geolocation' in navigator)) {
-      void fetchDetectedCityFallback();
-      alert('Geolocation is not supported by your browser, so we tried the nearest available city match instead.');
+      alert('Geolocation is not supported by your browser. Please select your city manually.');
       return;
     }
 
@@ -129,7 +111,7 @@ export const HomeHero: React.FC = () => {
         }
         alert('We could not detect your location. Please select your city manually.');
       },
-      { timeout: 8000, enableHighAccuracy: true }
+      { timeout: 15000, maximumAge: 0, enableHighAccuracy: true }
     );
   };
 
