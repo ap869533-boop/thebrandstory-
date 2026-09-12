@@ -472,7 +472,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
         if (creatorsRes.ok) {
           const cData = await creatorsRes.json();
-          if (cData.creators && cData.creators.length > 0) {
+          if (Array.isArray(cData.creators)) {
             setCreators(cData.creators);
           }
         }
