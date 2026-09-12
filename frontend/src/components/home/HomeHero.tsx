@@ -180,7 +180,7 @@ export const HomeHero: React.FC = () => {
   };
 
   return (
-    <section className="relative overflow-hidden bg-black text-white flex-1 flex flex-col justify-center py-4 xs:py-5 sm:py-10 min-h-[100dvh] sm:min-h-[760px] border-b border-zinc-900/60 font-sans w-full max-w-full">
+    <section className="relative overflow-hidden bg-black text-white flex-1 flex flex-col justify-center py-4 xs:py-5 sm:py-10 min-h-0 border-b border-zinc-900/60 font-sans w-full max-w-full">
       {/* Subtle Premium Background Glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-full overflow-hidden pointer-events-none z-0">
         <div className="absolute -top-32 left-1/4 w-[600px] h-[450px] bg-[#D4A338]/10 rounded-full blur-[140px]" />
@@ -402,7 +402,7 @@ export const HomeHero: React.FC = () => {
         </div>
 
         {/* 4. Responsive 2-Action CTA Row */}
-        <div className="pt-0.5 sm:pt-1 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 relative z-10 w-full">
+        <div className="pt-0.5 sm:pt-1 flex flex-row items-center justify-center gap-1.5 sm:gap-3 relative z-10 w-full max-w-md mx-auto">
           <button
             type="button"
             id="hero-post-brief-btn"
@@ -410,7 +410,7 @@ export const HomeHero: React.FC = () => {
               if (!requireRole('BRAND', 'post a campaign brief', 'post-requirement')) return;
               navigateTo('post-requirement');
             }}
-            className="flex-1 sm:flex-none sm:w-auto px-3 sm:px-6 py-2 sm:py-2.5 rounded-xl bg-[#D4A338] hover:bg-[#b88628] text-black font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-[#D4A338]/25 transition cursor-pointer"
+            className="flex-1 sm:flex-none sm:w-auto px-2 sm:px-6 py-2 sm:py-2.5 rounded-xl bg-[#D4A338] hover:bg-[#b88628] text-black font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-[#D4A338]/25 transition cursor-pointer whitespace-nowrap"
           >
             <Flame className="w-3.5 h-3.5 text-black shrink-0" />
             <span>Post Campaign</span>
@@ -420,7 +420,7 @@ export const HomeHero: React.FC = () => {
             type="button"
             id="hero-list-free-btn"
             onClick={() => navigateTo('login', { mode: 'signup', role: 'CREATOR' })}
-            className="flex-1 sm:flex-none sm:w-auto px-3 sm:px-6 py-2 sm:py-2.5 rounded-xl bg-[#D4A338] hover:bg-[#b88628] text-black font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-[#D4A338]/25 transition cursor-pointer"
+            className="flex-1 sm:flex-none sm:w-auto px-2 sm:px-6 py-2 sm:py-2.5 rounded-xl bg-[#D4A338] hover:bg-[#b88628] text-black font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-[#D4A338]/25 transition cursor-pointer whitespace-nowrap"
           >
             <Sparkles className="w-3.5 h-3.5 text-black shrink-0" />
             <span>Join as Influencer</span>
@@ -430,6 +430,5 @@ export const HomeHero: React.FC = () => {
     </section>
   );
 };
-
 
 

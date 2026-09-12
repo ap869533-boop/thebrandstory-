@@ -13,7 +13,7 @@ export const HomeView: React.FC = () => {
   return (
     <div className="min-h-screen bg-white w-full max-w-full overflow-x-hidden">
       {/* 1 & 2. Hero Section + Trust Proof Strip: Exactly fills mobile screen height with TrustProofStrip as the last element */}
-      <div className="min-h-[100dvh] sm:min-h-[auto] flex flex-col justify-between bg-black relative">
+      <div className="min-h-[100dvh] h-[100dvh] flex flex-col justify-between bg-black relative">
         <HomeHero />
         <TrustProofStrip />
       </div>
