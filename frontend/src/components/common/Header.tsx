@@ -255,14 +255,16 @@ export const Header: React.FC = () => {
               </button>
             )}
 
-            {/* Primary CTA Button - hidden on mobile */}
-            <button
-              id="header-list-free-btn"
-              onClick={() => openAuthModal('signup')}
-              className="hidden sm:inline-flex bg-[#D4A338] hover:bg-[#b88628] text-black px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer items-center gap-1 shrink-0 shadow-sm"
-            >
-              <span>List Free</span>
-            </button>
+            {/* Primary CTA Button - available only to logged-out visitors */}
+            {!authUser && (
+              <button
+                id="header-list-free-btn"
+                onClick={() => openAuthModal('signup')}
+                className="hidden sm:inline-flex bg-[#D4A338] hover:bg-[#b88628] text-black px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer items-center gap-1 shrink-0 shadow-sm"
+              >
+                <span>List Free</span>
+              </button>
+            )}
 
             {/* Mobile Menu Toggle */}
             <button
