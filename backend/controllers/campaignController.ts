@@ -78,32 +78,30 @@ let campaignsStore: CampaignRequirement[] = [
 export async function getCampaigns(req: Request, res: Response) {
   try {
     const dbRows = await dbQuery('SELECT * FROM campaign_requirements ORDER BY created_at DESC');
-    if (dbRows && dbRows.length > 0) {
-      const mapped = dbRows.map((r: any) => ({
-        id: r.id,
-        companyName: r.company_name,
-        contactPerson: r.contact_person,
-        email: r.email,
-        phone: r.phone || '',
-        industry: r.industry || 'General',
-        campaignTitle: r.campaign_title,
-        campaignDescription: r.campaign_description,
-        city: r.city,
-        influencersCount: r.influencers_count,
-        followerRange: r.follower_range,
-        budget: r.budget,
-        category: r.category,
-        collaborationType: r.collaboration_type,
-        campaignDate: r.campaign_date || 'Upcoming',
-        platforms: typeof r.platforms === 'string' ? JSON.parse(r.platforms) : (r.platforms || ['instagram']),
-        requirements: r.requirements || r.campaign_description,
-        status: r.status || 'Open',
-        applicantsCount: Number(r.applicants_count) || 0,
-        applicants: [],
-        createdAt: 'Recently',
-      }));
-      return res.json({ success: true, total: mapped.length, campaigns: mapped });
-    }
+    const mapped = dbRows.map((r: any) => ({
+      id: r.id,
+      companyName: r.company_name,
+      contactPerson: r.contact_person,
+      email: r.email,
+      phone: r.phone || '',
+      industry: r.industry || 'General',
+      campaignTitle: r.campaign_title,
+      campaignDescription: r.campaign_description,
+      city: r.city,
+      influencersCount: r.influencers_count,
+      followerRange: r.follower_range,
+      budget: r.budget,
+      category: r.category,
+      collaborationType: r.collaboration_type,
+      campaignDate: r.campaign_date || 'Upcoming',
+      platforms: typeof r.platforms === 'string' ? JSON.parse(r.platforms) : (r.platforms || ['instagram']),
+      requirements: r.requirements || r.campaign_description,
+      status: r.status || 'Open',
+      applicantsCount: Number(r.applicants_count) || 0,
+      applicants: [],
+      createdAt: 'Recently',
+    }));
+    return res.json({ success: true, total: mapped.length, campaigns: mapped });
   } catch (err) {
     console.warn('MySQL getCampaigns notice:', err);
   }

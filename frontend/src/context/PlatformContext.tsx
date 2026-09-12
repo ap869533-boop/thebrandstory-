@@ -479,7 +479,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
         if (campaignsRes.ok) {
           const campData = await campaignsRes.json();
-          if (campData.campaigns && campData.campaigns.length > 0) {
+          if (Array.isArray(campData.campaigns)) {
             setCampaigns(campData.campaigns);
           }
         }
