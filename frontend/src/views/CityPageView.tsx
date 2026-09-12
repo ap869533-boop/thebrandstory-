@@ -13,7 +13,7 @@ export const CityPageView: React.FC = () => {
   const cityData = allCities.find((c) => c.slug === citySlug || (citySlug === 'delhi-ncr' && c.slug === 'delhi')) || allCities[0];
 
   // Filter creators strictly for this city by their actual location (currentCity)
-  const cityCreators = creators.filter((c) => matchesCityLocation(c.currentCity || '', cityData.name));
+  const cityCreators = creators.filter((c) => c.status === 'active' && matchesCityLocation(c.currentCity || '', cityData.name));
 
   return (
     <div className="min-h-screen bg-slate-950 text-white py-8">

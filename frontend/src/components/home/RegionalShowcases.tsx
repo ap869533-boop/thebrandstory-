@@ -18,6 +18,7 @@ export const RegionalShowcases: React.FC = () => {
   // City-specific Creators (uses filter city or defaults to Delhi NCR)
   const cityCreators = creators
     .filter((c) => {
+      if (c.status !== 'active') return false;
       if (cityActive) return matchesCity(c);
       // Default: Delhi NCR
       return c.currentCity.toLowerCase().includes('delhi') ||
@@ -28,12 +29,12 @@ export const RegionalShowcases: React.FC = () => {
 
   // Budget Friendly (Under 5k) — also filtered by city
   const budgetCreators = creators
-    .filter((c) => c.startingPrice <= 5000 && matchesCity(c))
+    .filter((c) => c.status === 'active' && c.startingPrice <= 5000 && matchesCity(c))
     .slice(0, 4);
 
   // Rising Creators — also filtered by city
   const risingCreators = creators
-    .filter((c) => (c.isRising || c.engagementRate >= 5.0) && matchesCity(c))
+    .filter((c) => c.status === 'active' && (c.isRising || c.engagementRate >= 5.0) && matchesCity(c))
     .slice(0, 4);
 
   const cityLabel = cityActive ? filters.city : 'Delhi NCR';

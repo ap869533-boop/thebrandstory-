@@ -84,7 +84,7 @@ export async function getCreators(req: Request, res: Response) {
     } = req.query;
 
     // 1. Build Optimized Indexed SQL Query for MySQL
-    const sqlConditions: string[] = ["status != 'suspended'"];
+    const sqlConditions: string[] = [req.query.includePending === 'true' ? "status != 'suspended'" : "status = 'active'"];
     const sqlParams: any[] = [];
 
     if (category && category !== 'all') {
@@ -343,7 +343,7 @@ export async function createCreator(req: Request, res: Response) {
       isRising: true,
       isFeatured: false,
       isTrending: true,
-      status: 'active',
+      status: 'pending',
       startingPrice: parseInt(data.startingPrice || '5000', 10),
       pricing: data.pricing || {
         reelPrice: parseInt(data.startingPrice || '5000', 10) * 1.5,
@@ -391,8 +391,8 @@ export async function createCreator(req: Request, res: Response) {
         id, name, username, avatar, cover_image, bio, current_city, primary_category,
         followers, engagement_rate, starting_price, reel_price, story_price, post_price,
         ugc_price, is_barter_available, collaboration_types, preferred_cities, sub_categories,
-        languages, trust_score
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        languages, trust_score, is_verified, verification_requested, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
       [
         newCreator.id,
         newCreator.name,
@@ -415,6 +415,9 @@ export async function createCreator(req: Request, res: Response) {
         JSON.stringify(newCreator.subCategories),
         JSON.stringify(newCreator.languages),
         newCreator.trustScore,
+        0,
+        1,
+        'pending',
       ]
     ).catch(err => console.warn('MySQL creator insert notice:', err));
 
@@ -426,7 +429,14 @@ export async function createCreator(req: Request, res: Response) {
 
 export async function updateCreator(req: Request, res: Response) {
   const { id } = req.params;
-  const index = creatorsStore.findIndex((c) => c.id === id);
+  let index = creatorsStore.findIndex((c) => c.id === id);
+  if (index === -1) {
+    const dbRows = await dbQuery('SELECT * FROM creators WHERE id = ? LIMIT 1', [id]);
+    if (dbRows && dbRows.length > 0) {
+      creatorsStore.unshift(mapDbRowToCreator(dbRows[0]));
+      index = 0;
+    }
+  }
   if (index === -1) {
     return res.status(404).json({ success: false, error: 'Creator not found' });
   }

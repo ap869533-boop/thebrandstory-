@@ -13,6 +13,7 @@ export const TopCreatorsSection: React.FC = () => {
   // Top 20 creators ranked by Trust Score and Featured status — filtered by selected city
   const topCreators = creators
     .filter((c) => {
+      if (c.status !== 'active') return false;
       const baseMatch = c.isTop20 || c.trustScore >= 92 || c.isFeatured;
       if (!baseMatch) return false;
       // Apply city filter from hero dropdown strictly by actual location

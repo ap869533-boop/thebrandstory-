@@ -458,7 +458,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           brandsRes,
           shortlistsRes,
         ] = await Promise.all([
-          fetch(apiUrl('/api/creators')),
+          fetch(apiUrl('/api/creators?includePending=true')),
           fetch(apiUrl('/api/campaigns')),
           fetch(apiUrl('/api/enquiries')),
           fetch(apiUrl('/api/categories')),
@@ -1063,7 +1063,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       isRising: true,
       isFeatured: false,
       isTrending: false,
-      status: 'active',
+      status: 'pending',
       startingPrice: newCreatorData.startingPrice || 4000,
       pricing: newCreatorData.pricing || {
         reelPrice: 6000,
@@ -1108,7 +1108,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     addNotification({
       title: 'Welcome to thebrandsstory.!',
-      message: `Your free creator profile @${cleanUsername} is now live and searchable across India.`,
+      message: `Your creator profile @${cleanUsername} has been submitted for admin approval.`,
       type: 'verification',
     });
 
@@ -1419,7 +1419,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // Filtered Creators Engine
   const filteredCreators = creators.filter(creator => {
-    if (creator.status === 'suspended') return false;
+    if (creator.status !== 'active') return false;
 
     // Search query
     if (filters.searchQuery.trim()) {
