@@ -261,7 +261,7 @@ export async function getCreatorByIdOrUsername(req: Request, res: Response) {
   const param = idOrUsername.toLowerCase();
 
   // Try MySQL first
-  const dbRows = await dbQuery('SELECT * FROM creators WHERE LOWER(id) = ? OR LOWER(username) = ? LIMIT 1', [param, param]);
+  const dbRows = await dbQuery("SELECT * FROM creators WHERE (LOWER(id) = ? OR LOWER(username) = ?) AND status = 'active' LIMIT 1", [param, param]);
   if (dbRows && dbRows.length > 0) {
     const creator = mapDbRowToCreator(dbRows[0]);
     // Fetch creator reviews from MySQL
@@ -282,7 +282,8 @@ export async function getCreatorByIdOrUsername(req: Request, res: Response) {
 
   // Fallback to memory store
   const creator = creatorsStore.find(
-    (c) => c.id.toLowerCase() === param || c.username.toLowerCase() === param
+    (c) => c.status === 'active' &&
+      (c.id.toLowerCase() === param || c.username.toLowerCase() === param)
   );
 
   if (!creator) {

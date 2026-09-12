@@ -70,7 +70,7 @@ export const CreatorOnboardingModal: React.FC = () => {
 
       closeOnboardingModal();
       setStep(1);
-      navigateTo('influencer-detail', { username: newCreator.username });
+      navigateTo('creator-dashboard');
     }
   };
 
