@@ -1,87 +1,113 @@
+import { randomUUID } from 'crypto';
+import fs from 'fs';
+import path from 'path';
 import { Request, Response } from 'express';
-import { v2 as cloudinary } from 'cloudinary';
 import { dbQuery } from '../config/db';
 import { creatorsStore } from './creatorController';
 
-// Configure Cloudinary from environment variables
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'demo',
-  api_key: process.env.CLOUDINARY_API_KEY || '',
-  api_secret: process.env.CLOUDINARY_API_SECRET || '',
-  secure: true,
-});
+const uploadsDir = path.resolve(__dirname, '../uploads');
+const allowedTypes = new Set(['avatar', 'cover', 'reel_video', 'reel_thumbnail']);
+
+function ensureUploadsDirectory() {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+function getFileExtension(dataUri: string, type: string) {
+  const mimeType = dataUri.match(/^data:([^;]+);base64,/i)?.[1]?.toLowerCase();
+  const extensions: Record<string, string> = {
+    'image/jpeg': '.jpg',
+    'image/png': '.png',
+    'image/webp': '.webp',
+    'image/gif': '.gif',
+    'video/mp4': '.mp4',
+    'video/webm': '.webm',
+    'video/quicktime': '.mov',
+  };
+  return extensions[mimeType || ''] || (type === 'reel_video' ? '.mp4' : '.jpg');
+}
+
+function removeLocalFile(fileUrl?: string) {
+  if (!fileUrl || !fileUrl.includes('/uploads/')) return;
+  const fileName = path.basename(new URL(fileUrl, 'http://localhost').pathname);
+  const filePath = path.resolve(uploadsDir, fileName);
+  if (path.dirname(filePath) !== uploadsDir) return;
+  if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+}
+
+function getPreviousUrl(creatorId: string, type: string) {
+  const creator = creatorsStore.find((item) => item.id === creatorId);
+  if (!creator) return undefined;
+  if (type === 'avatar') return creator.avatar;
+  if (type === 'cover') return creator.coverImage;
+  return undefined;
+}
 
 export async function uploadImage(req: Request, res: Response) {
   try {
     const { image, creatorId, type = 'avatar' } = req.body;
-
-    if (!image) {
-      return res.status(400).json({ success: false, error: 'Image data is required (base64 or URL)' });
+    if (!image || typeof image !== 'string' || !image.startsWith('data:')) {
+      return res.status(400).json({ success: false, error: 'A base64 file is required' });
+    }
+    if (!allowedTypes.has(type)) {
+      return res.status(400).json({ success: false, error: 'Unsupported upload type' });
     }
 
-    let imageUrl = image;
-    const isVideo = type === 'reel_video';
-
-    // If Cloudinary API credentials are provided, upload to Cloudinary CDN
-    if (process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET && process.env.CLOUDINARY_CLOUD_NAME) {
-      try {
-        if (isVideo) {
-          const uploadResponse = await cloudinary.uploader.upload(image, {
-            folder: `social_cults/reels`,
-            resource_type: 'video',
-            transformation: [
-              { quality: 'auto' },
-              { fetch_format: 'auto' }
-            ]
-          });
-          imageUrl = uploadResponse.secure_url;
-        } else {
-          const uploadResponse = await cloudinary.uploader.upload(image, {
-            folder: `social_cults/${type}s`,
-            resource_type: 'image',
-            transformation: [
-              { width: type === 'avatar' ? 500 : 1200, crop: 'limit' },
-              { quality: 'auto' },
-              { fetch_format: 'auto' }
-            ]
-          });
-          imageUrl = uploadResponse.secure_url;
-        }
-      } catch (cloudErr) {
-        console.warn('Cloudinary upload notice:', cloudErr);
-      }
+    const encodedData = image.split(',')[1];
+    if (!encodedData) {
+      return res.status(400).json({ success: false, error: 'Invalid base64 file data' });
     }
 
-    // If creatorId is provided, update the MySQL creators table directly
-    if (creatorId) {
-      if (type === 'avatar' || type === 'cover') {
-        const field = type === 'cover' ? 'cover_image' : 'avatar';
-        dbQuery(`UPDATE creators SET ${field} = ? WHERE id = ?`, [imageUrl, creatorId]).catch(err =>
-          console.warn('MySQL avatar update notice:', err)
-        );
+    ensureUploadsDirectory();
+    const fileName = `${randomUUID()}${getFileExtension(image, type)}`;
+    const filePath = path.join(uploadsDir, fileName);
+    fs.writeFileSync(filePath, Buffer.from(encodedData, 'base64'));
+    const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${fileName}`;
 
-        // Also update in-memory store
-        const cIndex = creatorsStore.findIndex(c => c.id === creatorId);
-        if (cIndex !== -1) {
-          if (type === 'cover') {
-            creatorsStore[cIndex].coverImage = imageUrl;
-          } else {
-            creatorsStore[cIndex].avatar = imageUrl;
-          }
-        }
+    if (creatorId && (type === 'avatar' || type === 'cover')) {
+      const field = type === 'cover' ? 'cover_image' : 'avatar';
+      await dbQuery(`UPDATE creators SET ${field} = ? WHERE id = ?`, [imageUrl, creatorId]);
+      removeLocalFile(getPreviousUrl(creatorId, type));
+
+      const cIndex = creatorsStore.findIndex((c) => c.id === creatorId);
+      if (cIndex !== -1) {
+        if (type === 'cover') creatorsStore[cIndex].coverImage = imageUrl;
+        else creatorsStore[cIndex].avatar = imageUrl;
       }
-      // For reel_video and reel_thumbnail types, the URL is returned and
-      // the frontend handles saving it to the portfolio via updateCreatorProfile
     }
 
     res.json({
       success: true,
       url: imageUrl,
-      message: isVideo ? 'Video uploaded successfully' : 'Photo uploaded successfully',
+      message: type === 'reel_video' ? 'Video uploaded successfully' : 'Photo uploaded successfully',
     });
-  } catch (error: any) {
-    console.error('Upload error:', error);
-    res.status(500).json({ success: false, error: 'Failed to upload file' });
+  } catch (error) {
+    console.error('Local upload error:', error);
+    res.status(500).json({ success: false, error: 'Failed to save file locally' });
   }
 }
 
+export async function deleteImage(req: Request, res: Response) {
+  try {
+    const { creatorId } = req.params;
+    const { type } = req.body;
+    if (!creatorId || (type !== 'avatar' && type !== 'cover')) {
+      return res.status(400).json({ success: false, error: 'Creator and image type are required' });
+    }
+
+    const previousUrl = getPreviousUrl(creatorId, type);
+    const field = type === 'cover' ? 'cover_image' : 'avatar';
+    await dbQuery(`UPDATE creators SET ${field} = NULL WHERE id = ?`, [creatorId]);
+    removeLocalFile(previousUrl);
+
+    const cIndex = creatorsStore.findIndex((c) => c.id === creatorId);
+    if (cIndex !== -1) {
+      if (type === 'cover') creatorsStore[cIndex].coverImage = '';
+      else creatorsStore[cIndex].avatar = '';
+    }
+
+    res.json({ success: true, url: '', message: 'Photo deleted successfully' });
+  } catch (error) {
+    console.error('Local delete error:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete file locally' });
+  }
+}
