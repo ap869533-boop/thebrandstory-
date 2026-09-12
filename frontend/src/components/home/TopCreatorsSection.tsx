@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { Award, ChevronLeft, ChevronRight, ArrowRight, Sparkles } from 'lucide-react';
 import { usePlatform } from '../../context/PlatformContext';
 import { CreatorCard } from '../common/CreatorCard';
+import { matchesCityLocation } from '../../utils/location';
 
 export const TopCreatorsSection: React.FC = () => {
   const { creators, navigateTo, setFilters, filters } = usePlatform();
@@ -16,22 +17,7 @@ export const TopCreatorsSection: React.FC = () => {
       if (!baseMatch) return false;
       // Apply city filter from hero dropdown strictly by actual location
       if (cityActive) {
-        const cityLower = filters.city.toLowerCase().trim();
-        const cCity = (c.currentCity || '').toLowerCase().trim();
-        let cityMatch = false;
-        if (cityLower === 'mumbai') cityMatch = cCity.includes('mumbai') || cCity.includes('thane');
-        else if (cityLower === 'delhi' || cityLower === 'delhi ncr') cityMatch = cCity.includes('delhi') || cCity.includes('noida') || cCity.includes('gurgaon');
-        else if (cityLower === 'pune') cityMatch = cCity.includes('pune');
-        else if (cityLower === 'bangalore') cityMatch = cCity.includes('bangalore') || cCity.includes('bengaluru');
-        else if (cityLower === 'hyderabad') cityMatch = cCity.includes('hyderabad');
-        else if (cityLower === 'jaipur') cityMatch = cCity.includes('jaipur');
-        else if (cityLower === 'chandigarh') cityMatch = cCity.includes('chandigarh');
-        else if (cityLower === 'chennai') cityMatch = cCity.includes('chennai');
-        else if (cityLower === 'lucknow') cityMatch = cCity.includes('lucknow');
-        else if (cityLower === 'ahmedabad') cityMatch = cCity.includes('ahmedabad');
-        else cityMatch = cCity.includes(cityLower);
-
-        if (!cityMatch) return false;
+        if (!matchesCityLocation(c.currentCity || '', filters.city)) return false;
       }
       return true;
     })
