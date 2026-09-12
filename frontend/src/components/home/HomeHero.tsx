@@ -51,12 +51,25 @@ export const HomeHero: React.FC = () => {
   const categoryRef = useRef<HTMLDivElement>(null);
   const cityRef = useRef<HTMLDivElement>(null);
 
-  // Restore the last detected city in the search control without filtering homepage content.
+  // Detect location on entry for the search control without filtering homepage content.
   useEffect(() => {
     const savedGeo = sessionStorage.getItem('sc_detected_city');
     if (savedGeo && savedGeo !== 'all') {
       syncCitySelection(savedGeo);
+      return;
     }
+
+    if (!('geolocation' in navigator)) return;
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        void fetchCityFromCoordinates(position.coords.latitude, position.coords.longitude);
+      },
+      () => {
+        // Keep All India selected when location access is unavailable.
+      },
+      { timeout: 8000, enableHighAccuracy: true }
+    );
   }, []);
 
   const fetchDetectedCityFallback = async () => {
