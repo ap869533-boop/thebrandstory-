@@ -27,15 +27,11 @@ export const HomeHero: React.FC = () => {
 
   const [keyword, setKeyword] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(filters.category || 'all');
-  const [selectedCity, setSelectedCity] = useState(filters.city || 'all');
+  const [selectedCity, setSelectedCity] = useState('all');
 
   const syncCitySelection = (city: string) => {
     setSelectedCity(city);
     setDetectedCityBadge(city === 'all' ? null : city);
-    setFilters((prev) => ({
-      ...prev,
-      city,
-    }));
   };
 
   const applyDetectedLocation = async (city: string | null) => {
@@ -55,32 +51,12 @@ export const HomeHero: React.FC = () => {
   const categoryRef = useRef<HTMLDivElement>(null);
   const cityRef = useRef<HTMLDivElement>(null);
 
-  // Auto-request location on component mount only with real GPS
+  // Restore the last detected city in the search control without filtering homepage content.
   useEffect(() => {
     const savedGeo = sessionStorage.getItem('sc_detected_city');
     if (savedGeo && savedGeo !== 'all') {
       syncCitySelection(savedGeo);
-      return;
     }
-
-    const tryAutoDetectLocation = async () => {
-      if ('geolocation' in navigator) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            fetchCityFromCoordinates(position.coords.latitude, position.coords.longitude);
-          },
-          async () => {
-            await fetchDetectedCityFallback();
-          },
-          { timeout: 8000, enableHighAccuracy: true }
-        );
-        return;
-      }
-
-      await fetchDetectedCityFallback();
-    };
-
-    void tryAutoDetectLocation();
   }, []);
 
   const fetchDetectedCityFallback = async () => {
@@ -135,9 +111,10 @@ export const HomeHero: React.FC = () => {
       async (error) => {
         setIsDetectingLocation(false);
         if (error.code === error.PERMISSION_DENIED) {
-          alert('Location permission was denied. We will use your best available city match instead.');
+          alert('Location permission was denied. Please allow location access and try again.');
+          return;
         }
-        await fetchDetectedCityFallback();
+        alert('We could not detect your location. Please select your city manually.');
       },
       { timeout: 8000, enableHighAccuracy: true }
     );
@@ -430,4 +407,3 @@ export const HomeHero: React.FC = () => {
     </section>
   );
 };
-

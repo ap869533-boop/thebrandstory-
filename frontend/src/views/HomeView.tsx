@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { HomeHero } from '../components/home/HomeHero';
+import { usePlatform } from '../context/PlatformContext';
 import { TrustProofStrip } from '../components/home/TrustProofStrip';
 import { BrandPartnersSlider } from '../components/home/BrandPartnersSlider';
 import { TopCreatorsSection } from '../components/home/TopCreatorsSection';
@@ -10,6 +11,12 @@ import { CTABanners } from '../components/home/CTABanners';
 import { TestimonialsAndFAQ } from '../components/home/TestimonialsAndFAQ';
 
 export const HomeView: React.FC = () => {
+  const { setFilters } = usePlatform();
+
+  useEffect(() => {
+    setFilters((prev) => ({ ...prev, city: 'all' }));
+  }, [setFilters]);
+
   return (
     <div className="min-h-screen bg-white w-full max-w-full overflow-x-hidden">
       {/* 1 & 2. Hero Section + Trust Proof Strip: Exactly fills mobile screen height with TrustProofStrip as the last element */}
