@@ -4,6 +4,7 @@ import {
   getCreatorByIdOrUsername,
   createCreator,
   updateCreator,
+  deleteCreator,
   addCreatorReview
 } from '../controllers/creatorController';
 
@@ -13,6 +14,7 @@ router.get('/', getCreators);
 router.get('/:idOrUsername', getCreatorByIdOrUsername);
 router.post('/', createCreator);
 router.put('/:id', updateCreator);
+router.delete('/:id', deleteCreator);
 router.post('/:id/reviews', addCreatorReview);
 
 export default router;

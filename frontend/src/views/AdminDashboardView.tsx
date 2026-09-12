@@ -48,6 +48,7 @@ export const AdminDashboardView: React.FC = () => {
     addPartnerBrand,
     deletePartnerBrand,
     adminUpdateCreatorStatus,
+    adminDeleteCreator,
     categories,
     addCategory,
     deleteCategory,
@@ -56,6 +57,7 @@ export const AdminDashboardView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'creators' | 'stats' | 'campaigns' | 'brands' | 'categories' | 'settings'>('creators');
   const [creatorFilterTab, setCreatorFilterTab] = useState<'all' | 'pending' | 'active' | 'suspended'>('all');
   const [creatorSearch, setCreatorSearch] = useState('');
+  const [brandSearch, setBrandSearch] = useState('');
 
   // Selected Creator for Detailed Review Modal
   const [reviewModalCreator, setReviewModalCreator] = useState<Creator | null>(null);
@@ -77,6 +79,15 @@ export const AdminDashboardView: React.FC = () => {
   const [isSubmittingCat, setIsSubmittingCat] = useState(false);
   const [catSuccessMsg, setCatSuccessMsg] = useState(false);
   const [categorySearch, setCategorySearch] = useState('');
+
+  const handleDeleteCreator = async (creator: Creator) => {
+    if (!window.confirm(`Delete influencer "${creator.name}" permanently?`)) return;
+    try {
+      await adminDeleteCreator(creator.id);
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'Failed to delete influencer');
+    }
+  };
 
   // RBAC Strict Admin Protection: Only ADMIN / SALES role
   if (!authUser || (authUser.role !== 'ADMIN' && authUser.role !== 'SALES')) {
@@ -634,6 +645,14 @@ export const AdminDashboardView: React.FC = () => {
                                     Suspend
                                   </button>
                                 )}
+                                <button
+                                  type="button"
+                                  onClick={() => void handleDeleteCreator(c)}
+                                  title="Delete influencer permanently"
+                                  className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition cursor-pointer"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
                               </div>
                             </td>
                           </tr>
@@ -741,12 +760,21 @@ export const AdminDashboardView: React.FC = () => {
             {/* Existing Brand Partners List */}
             <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-xs space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-sm font-black text-slate-900">Current Partner Brands ({partnerBrands.length})</h3>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900">All Partner Brands ({partnerBrands.length})</h3>
+                  <p className="text-[11px] text-slate-400">Every active brand currently available in the partner list</p>
+                </div>
+                <input
+                  value={brandSearch}
+                  onChange={(e) => setBrandSearch(e.target.value)}
+                  placeholder="Search brands..."
+                  className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                />
                 <span className="text-[11px] text-slate-400">Displayed in continuous 100% full-width marquee slider</span>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                {partnerBrands.map((brand) => (
+                {partnerBrands.filter((brand) => brand.name.toLowerCase().includes(brandSearch.toLowerCase())).map((brand) => (
                   <div
                     key={brand.id}
                     className="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col items-center justify-between space-y-2 group hover:border-blue-300 transition"
@@ -1190,7 +1218,5 @@ export const AdminDashboardView: React.FC = () => {
     </div>
   );
 };
-
-
 
 

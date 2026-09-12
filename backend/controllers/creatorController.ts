@@ -493,6 +493,20 @@ export async function updateCreator(req: Request, res: Response) {
   res.json({ success: true, creator: creatorsStore[index] });
 }
 
+export async function deleteCreator(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ success: false, error: 'Creator id is required' });
+
+    await dbQuery('DELETE FROM creators WHERE id = ?', [id]);
+    creatorsStore = creatorsStore.filter((creator) => creator.id !== id);
+    return res.json({ success: true, message: 'Influencer deleted successfully' });
+  } catch (error) {
+    console.error('Delete creator error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to delete influencer' });
+  }
+}
+
 export async function addCreatorReview(req: Request, res: Response) {
   const { id } = req.params;
   const creator = creatorsStore.find((c) => c.id === id);
