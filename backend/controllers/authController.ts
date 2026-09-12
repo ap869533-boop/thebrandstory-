@@ -268,7 +268,7 @@ export async function signup(req: Request, res: Response) {
           createdCreatorProfile.phone,
           createdCreatorProfile.email,
         ]
-      ).catch(err => console.warn('MySQL creator auto-insert notice:', err));
+      );
     }
 
     // Generate JWT Token
@@ -425,7 +425,7 @@ export async function fetchOrCreateCreatorProfile(user: any): Promise<Creator | 
         followers, engagement_rate, starting_price, reel_price, story_price, post_price,
         ugc_price, is_barter_available, collaboration_types, preferred_cities, sub_categories,
         languages, trust_score, phone, email, is_verified, verification_requested, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
       [
         newCreator.id,
         user.id,
@@ -760,7 +760,7 @@ export async function verifyOtp(req: Request, res: Response) {
             followers, engagement_rate, starting_price, reel_price, story_price, post_price,
             ugc_price, is_barter_available, collaboration_types, preferred_cities, sub_categories,
             languages, trust_score, phone, email, is_verified, verification_requested, status
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
           [
             createdCreatorProfile.id,
             userId,
