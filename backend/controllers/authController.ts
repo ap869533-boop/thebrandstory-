@@ -374,7 +374,7 @@ export async function fetchOrCreateCreatorProfile(user: any): Promise<Creator | 
     isRising: true,
     isFeatured: false,
     isTrending: true,
-    status: 'active',
+    status: 'pending',
     startingPrice: 5000,
     pricing: {
       reelPrice: 6000,
@@ -759,8 +759,8 @@ export async function verifyOtp(req: Request, res: Response) {
             id, user_id, name, username, avatar, cover_image, reel_video_url, bio, current_city, primary_category,
             followers, engagement_rate, starting_price, reel_price, story_price, post_price,
             ugc_price, is_barter_available, collaboration_types, preferred_cities, sub_categories,
-            languages, trust_score, phone, email
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            languages, trust_score, phone, email, is_verified, verification_requested, status
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
           [
             createdCreatorProfile.id,
             userId,
@@ -786,7 +786,10 @@ export async function verifyOtp(req: Request, res: Response) {
             JSON.stringify(createdCreatorProfile.languages),
             createdCreatorProfile.trustScore,
             createdCreatorProfile.phone || null,
-            createdCreatorProfile.email || null
+            createdCreatorProfile.email || null,
+            0,
+            1,
+            'pending'
           ]
         ).catch(err => console.warn('MySQL creator auto-insert notice:', err));
       }
