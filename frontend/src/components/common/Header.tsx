@@ -339,12 +339,14 @@ export const Header: React.FC = () => {
                 Sign In
               </button>
             )}
-            <button
-              onClick={() => { setMobileMenuOpen(false); openAuthModal('signup'); }}
-              className="flex-1 p-2.5 bg-[#D4A338] text-black rounded-lg text-center font-bold text-xs hover:bg-[#b88628] transition"
-            >
-              List Influencer Free
-            </button>
+            {!authUser && (
+              <button
+                onClick={() => { setMobileMenuOpen(false); openAuthModal('signup'); }}
+                className="flex-1 p-2.5 bg-[#D4A338] text-black rounded-lg text-center font-bold text-xs hover:bg-[#b88628] transition"
+              >
+                List Influencer Free
+              </button>
+            )}
           </div>
         </div>
       )}
