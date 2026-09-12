@@ -136,6 +136,7 @@ interface PlatformContextType {
   adminToggleVerify: (creatorId: string) => void;
   adminToggleBadge: (creatorId: string, badgeType: 'isFeatured' | 'isTop20' | 'isRising' | 'isTrending' | 'isSponsored') => void;
   adminUpdateCreatorStatus: (creatorId: string, status: 'active' | 'pending' | 'suspended') => void;
+  adminDeleteCreator: (creatorId: string) => Promise<void>;
 
   // Modals & UI States
   enquiryModalCreator: Creator | null;
@@ -1242,6 +1243,15 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }).catch(e => console.warn('Admin status sync notice:', e));
   };
 
+  const adminDeleteCreator = async (creatorId: string) => {
+    const response = await fetch(apiUrl(`/api/creators/${creatorId}`), { method: 'DELETE' });
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || 'Failed to delete influencer');
+    }
+    setCreators((prev) => prev.filter((creator) => creator.id !== creatorId));
+  };
+
   // Modals & Popups
   const [enquiryModalCreator, setEnquiryModalCreator] = useState<Creator | null>(null);
   const openEnquiryModal = (creator?: Creator) => setEnquiryModalCreator(creator || creators[0] || null);
@@ -1560,6 +1570,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         adminToggleVerify,
         adminToggleBadge,
         adminUpdateCreatorStatus,
+        adminDeleteCreator,
 
         enquiryModalCreator,
         openEnquiryModal,
@@ -1617,4 +1628,3 @@ export const usePlatform = () => {
   }
   return context;
 };
-
