@@ -342,7 +342,7 @@ export const CreatorDashboardView: React.FC = () => {
     }
   };
 
-  // Handle Photo Upload to Cloudinary & Database
+  // Handle photo upload to local storage and database
   const handlePhotoUpload = async (file: File, type: 'avatar' | 'cover') => {
     if (type === 'avatar') setIsUploadingAvatar(true);
     else setIsUploadingCover(true);
@@ -367,22 +367,41 @@ export const CreatorDashboardView: React.FC = () => {
         if (data.success && data.url) {
           if (type === 'avatar') {
             updateCreatorProfile(creator.id, { avatar: data.url });
-            setUploadNotice('Profile avatar uploaded to Cloudinary & updated in database!');
+            setUploadNotice('Profile avatar saved locally and updated in database!');
           } else {
             updateCreatorProfile(creator.id, { coverImage: data.url });
-            setUploadNotice('Cover banner uploaded to Cloudinary & updated in database!');
+            setUploadNotice('Cover banner saved locally and updated in database!');
           }
           setTimeout(() => setUploadNotice(null), 3000);
         } else {
           throw new Error(data.error || 'Upload failed');
         }
       };
+
     } catch (err: any) {
       console.error('Photo upload error:', err);
       setUploadNotice('Failed to upload photo. Please try again.');
     } finally {
       if (type === 'avatar') setIsUploadingAvatar(false);
       else setIsUploadingCover(false);
+    }
+  };
+
+  const handlePhotoDelete = async (type: 'avatar' | 'cover') => {
+    try {
+      const res = await fetch(apiUrl(`/api/upload/${creator.id}`), {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Delete failed');
+      updateCreatorProfile(creator.id, type === 'avatar' ? { avatar: '' } : { coverImage: '' });
+      setUploadNotice(`${type === 'avatar' ? 'Avatar' : 'Cover'} deleted successfully.`);
+      setTimeout(() => setUploadNotice(null), 3000);
+    } catch (err) {
+      console.error('Photo delete error:', err);
+      setUploadNotice('Failed to delete photo. Please try again.');
     }
   };
 
@@ -587,7 +606,7 @@ export const CreatorDashboardView: React.FC = () => {
                 onClick={() => avatarInputRef.current?.click()}
                 disabled={isUploadingAvatar}
                 className="absolute inset-0 rounded-2xl bg-black/50 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center text-white text-[10px] font-bold cursor-pointer"
-                title="Upload Photo to Cloudinary"
+                title="Upload photo"
               >
                 {isUploadingAvatar ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
@@ -617,7 +636,6 @@ export const CreatorDashboardView: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
-            {/* Cloudinary Photo Change Buttons */}
             <button
               onClick={() => avatarInputRef.current?.click()}
               disabled={isUploadingAvatar}
@@ -630,6 +648,15 @@ export const CreatorDashboardView: React.FC = () => {
               )}
               <span>Upload Avatar</span>
             </button>
+            {creator.avatar && (
+              <button
+                onClick={() => void handlePhotoDelete('avatar')}
+                className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border border-red-200"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete Avatar</span>
+              </button>
+            )}
 
             <button
               onClick={() => coverInputRef.current?.click()}
@@ -643,6 +670,15 @@ export const CreatorDashboardView: React.FC = () => {
               )}
               <span>Change Cover</span>
             </button>
+            {creator.coverImage && (
+              <button
+                onClick={() => void handlePhotoDelete('cover')}
+                className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border border-red-200"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete Cover</span>
+              </button>
+            )}
 
             <div
               className="flex items-center gap-2 p-1.5 px-2.5 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer"
@@ -815,7 +851,7 @@ export const CreatorDashboardView: React.FC = () => {
                         <div className="flex gap-2">
                           <input
                             type="url"
-                            placeholder="https://res.cloudinary.com/.../video.mp4 or direct video link"
+                            placeholder="Paste a direct video link"
                             value={reelVideoUrl}
                             onChange={(e) => setReelVideoUrl(e.target.value)}
                             className="flex-1 px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-violet-500 outline-none"
@@ -1318,7 +1354,7 @@ export const CreatorDashboardView: React.FC = () => {
                     <span className="text-xs font-bold text-slate-800 block">Option A: Paste Video URL</span>
                     <input
                       type="url"
-                      placeholder="https://res.cloudinary.com/.../video.mp4 or Reel Link"
+                      placeholder="Paste a direct video link or reel link"
                       value={uploadedReelUrl}
                       onChange={(e) => setUploadedReelUrl(e.target.value)}
                       className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 outline-none"
@@ -1584,7 +1620,4 @@ export const CreatorDashboardView: React.FC = () => {
     </div>
   );
 };
-
-
-
 
