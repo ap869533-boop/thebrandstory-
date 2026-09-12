@@ -61,7 +61,8 @@ export async function uploadImage(req: Request, res: Response) {
     const fileName = `${randomUUID()}${getFileExtension(image, type)}`;
     const filePath = path.join(uploadsDir, fileName);
     fs.writeFileSync(filePath, Buffer.from(encodedData, 'base64'));
-    const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${fileName}`;
+    // Return a relative URL so the frontend resolves it against the configured API origin.
+    const imageUrl = `/uploads/${fileName}`;
 
     if (creatorId && (type === 'avatar' || type === 'cover')) {
       const field = type === 'cover' ? 'cover_image' : 'avatar';

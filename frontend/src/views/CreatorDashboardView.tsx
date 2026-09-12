@@ -254,10 +254,10 @@ export const CreatorDashboardView: React.FC = () => {
         const data = await res.json();
         if (data.success && data.url) {
           if (type === 'video') {
-            setUploadedReelUrl(data.url);
+            setUploadedReelUrl(apiUrl(data.url));
             setUploadNotice('Video uploaded successfully!');
           } else {
-            setUploadedThumbnailUrl(data.url);
+            setUploadedThumbnailUrl(apiUrl(data.url));
             setUploadNotice('Thumbnail uploaded successfully!');
           }
           setTimeout(() => setUploadNotice(null), 3000);
@@ -327,7 +327,7 @@ export const CreatorDashboardView: React.FC = () => {
         if (data.success && data.url) {
           // Save to reelVideoUrl - this shows on creator card homepage
           updateCreatorProfile(creator.id, { reelVideoUrl: data.url });
-          setReelVideoUrl(data.url);
+          setReelVideoUrl(apiUrl(data.url));
           setUploadNotice('🎬 Card reel uploaded! It will now autoplay on your profile card on the home page.');
           setTimeout(() => setUploadNotice(null), 5000);
         } else {
@@ -365,11 +365,12 @@ export const CreatorDashboardView: React.FC = () => {
 
         const data = await res.json();
         if (data.success && data.url) {
+          const uploadedUrl = apiUrl(data.url);
           if (type === 'avatar') {
-            updateCreatorProfile(creator.id, { avatar: data.url });
+            updateCreatorProfile(creator.id, { avatar: uploadedUrl });
             setUploadNotice('Profile avatar saved locally and updated in database!');
           } else {
-            updateCreatorProfile(creator.id, { coverImage: data.url });
+            updateCreatorProfile(creator.id, { coverImage: uploadedUrl });
             setUploadNotice('Cover banner saved locally and updated in database!');
           }
           setTimeout(() => setUploadNotice(null), 3000);
@@ -1620,4 +1621,3 @@ export const CreatorDashboardView: React.FC = () => {
     </div>
   );
 };
-
