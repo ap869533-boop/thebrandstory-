@@ -708,7 +708,7 @@ export async function verifyOtp(req: Request, res: Response) {
           isRising: true,
           isFeatured: false,
           isTrending: true,
-          status: 'active',
+          status: 'pending',
           startingPrice: 5000,
           pricing: {
             reelPrice: 7500,

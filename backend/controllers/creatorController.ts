@@ -11,7 +11,8 @@ function normalizeMediaUrl(value?: string) {
   if (!value) return '';
   try {
     const parsed = new URL(value, 'https://thebrandsstory.com');
-    if (parsed.pathname.startsWith('/uploads/')) return parsed.pathname;
+    if (parsed.pathname.startsWith('/api/uploads/')) return parsed.pathname;
+    if (parsed.pathname.startsWith('/uploads/')) return `/api${parsed.pathname}`;
   } catch {
     // Keep non-URL media values unchanged.
   }
