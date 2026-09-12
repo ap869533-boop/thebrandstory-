@@ -44,15 +44,15 @@ export const ExploreView: React.FC = () => {
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
   // Compute total counts for quick criteria pills
-  const totalTalentCount = creators.filter((c) => c.status !== 'suspended').length;
+  const totalTalentCount = creators.filter((c) => c.status === 'active').length;
   const highEngagementCount = creators.filter(
-    (c) => c.engagementRate >= 4.5 && c.status !== 'suspended'
+    (c) => c.engagementRate >= 4.5 && c.status === 'active'
   ).length;
   const risingStarsCount = creators.filter(
-    (c) => (c.isRising || c.followers < 25000) && c.status !== 'suspended'
+    (c) => (c.isRising || c.followers < 25000) && c.status === 'active'
   ).length;
   const verifiedCount = creators.filter(
-    (c) => c.isVerified && c.status !== 'suspended'
+    (c) => c.isVerified && c.status === 'active'
   ).length;
 
   const isAnyQuickFilterActive =
@@ -739,4 +739,3 @@ export const ExploreView: React.FC = () => {
     </div>
   );
 };
-

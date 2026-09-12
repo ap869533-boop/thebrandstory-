@@ -14,8 +14,9 @@ export const CategoryPageView: React.FC = () => {
   // Filter creators for this category
   const categoryCreators = creators.filter(
     (c) =>
-      c.primaryCategory.toLowerCase() === categoryData.name.toLowerCase() ||
-      c.subCategories.some((sc) => sc.toLowerCase() === categoryData.name.toLowerCase())
+      c.status === 'active' &&
+      (c.primaryCategory.toLowerCase() === categoryData.name.toLowerCase() ||
+        c.subCategories.some((sc) => sc.toLowerCase() === categoryData.name.toLowerCase()))
   );
 
   return (
