@@ -22,7 +22,10 @@ export const API_BASE_URL = getApiBaseUrl();
  * Example: apiUrl('/api/creators') -> 'https://thebrandsstory.com/api/creators'
  */
 export const apiUrl = (endpoint: string): string => {
-  if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
+  if (endpoint.startsWith('http://thebrandsstory.com/')) {
+    return `https://thebrandsstory.com/${endpoint.slice('http://thebrandsstory.com/'.length)}`;
+  }
+  if (endpoint.startsWith('https://') || endpoint.startsWith('http://')) {
     return endpoint;
   }
   const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
@@ -44,4 +47,3 @@ export async function readApiResponse(response: Response): Promise<any> {
     };
   }
 }
-

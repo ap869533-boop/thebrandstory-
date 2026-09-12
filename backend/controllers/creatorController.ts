@@ -7,14 +7,25 @@ import { sendApprovalEmail } from '../utils/mailer';
 // In-Memory store initialized with seed data as resilient fallback
 export let creatorsStore: Creator[] = [...INITIAL_CREATORS];
 
+function normalizeMediaUrl(value?: string) {
+  if (!value) return '';
+  try {
+    const parsed = new URL(value, 'https://thebrandsstory.com');
+    if (parsed.pathname.startsWith('/uploads/')) return parsed.pathname;
+  } catch {
+    // Keep non-URL media values unchanged.
+  }
+  return value;
+}
+
 export function mapDbRowToCreator(row: any): Creator {
   return {
     id: row.id,
     name: row.name,
     username: row.username,
-    avatar: row.avatar || '',
-    coverImage: row.cover_image || '',
-    reelVideoUrl: row.reel_video_url || '',
+    avatar: normalizeMediaUrl(row.avatar),
+    coverImage: normalizeMediaUrl(row.cover_image),
+    reelVideoUrl: normalizeMediaUrl(row.reel_video_url),
     bio: row.bio || '',
     currentCity: row.current_city,
     state: row.state || 'Delhi',

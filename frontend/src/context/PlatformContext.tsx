@@ -16,6 +16,13 @@ import {
   CityInfo,
   IndustryCardInfo
 } from '../types';
+
+const normalizeCreatorMedia = (creator: Creator): Creator => ({
+  ...creator,
+  avatar: creator.avatar ? apiUrl(creator.avatar) : creator.avatar,
+  coverImage: creator.coverImage ? apiUrl(creator.coverImage) : creator.coverImage,
+  reelVideoUrl: creator.reelVideoUrl ? apiUrl(creator.reelVideoUrl) : creator.reelVideoUrl,
+});
 import {
   INITIAL_CREATORS,
   INITIAL_CAMPAIGNS,
@@ -342,7 +349,8 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Creators State
   const [creators, setCreators] = useState<Creator[]>(() => {
     const saved = localStorage.getItem('sc_creators');
-    return saved ? JSON.parse(saved) : INITIAL_CREATORS;
+    const parsed = saved ? JSON.parse(saved) : INITIAL_CREATORS;
+    return parsed.map(normalizeCreatorMedia);
   });
 
   useEffect(() => {
@@ -473,7 +481,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (creatorsRes.ok) {
           const cData = await creatorsRes.json();
           if (Array.isArray(cData.creators)) {
-            setCreators(cData.creators);
+            setCreators(cData.creators.map(normalizeCreatorMedia));
           }
         }
 
