@@ -299,9 +299,37 @@ export const Header: React.FC = () => {
             <PlusCircle className="w-4 h-4 text-[#D4A338]" />
             <span>+ Post Requirement</span>
           </button>
-          {/* Mobile-only Sign In & CTA */}
+          {/* Mobile-only account actions */}
           <div className="flex gap-2 pt-1">
-            {!authUser && (
+            {authUser ? (
+              <>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    if (authUser.role === 'CREATOR') navigateTo('creator-dashboard');
+                    else if (authUser.role === 'BRAND') navigateTo('brand-dashboard');
+                    else if (authUser.role === 'ADMIN' || authUser.role === 'SALES') navigateTo('admin-dashboard');
+                    else navigateTo('home');
+                  }}
+                  className="flex-1 p-2.5 bg-slate-900 text-white rounded-lg text-center font-bold text-xs"
+                >
+                  {authUser.role === 'CREATOR'
+                    ? 'Creator Dashboard'
+                    : authUser.role === 'BRAND'
+                    ? 'Brand Dashboard'
+                    : 'Admin Dashboard'}
+                </button>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    logout();
+                  }}
+                  className="p-2.5 bg-rose-50 text-rose-600 rounded-lg text-center font-bold text-xs"
+                >
+                  Sign Out
+                </button>
+              </>
+            ) : (
               <button
                 onClick={() => { setMobileMenuOpen(false); navigateTo('login'); }}
                 className="flex-1 p-2.5 bg-slate-50 text-slate-700 rounded-lg text-center font-bold text-xs"
