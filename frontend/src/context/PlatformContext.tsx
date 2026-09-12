@@ -119,6 +119,7 @@ interface PlatformContextType {
   // Campaigns & Requirements
   campaigns: CampaignRequirement[];
   postCampaignRequirement: (campaign: Omit<CampaignRequirement, 'id' | 'applicantsCount' | 'applicants' | 'createdAt' | 'status'>) => string;
+  deleteCampaign: (campaignId: string) => Promise<void>;
   applyToCampaign: (campaignId: string, creatorId: string, pitch: string) => void;
   updateApplicantStatus: (campaignId: string, creatorId: string, status: 'Pending' | 'Shortlisted' | 'Accepted' | 'Declined') => void;
 
@@ -887,6 +888,15 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return newId;
   };
 
+  const deleteCampaign = async (campaignId: string) => {
+    const response = await fetch(apiUrl(`/api/campaigns/${campaignId}`), { method: 'DELETE' });
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || 'Failed to delete campaign');
+    }
+    setCampaigns((prev) => prev.filter((campaign) => campaign.id !== campaignId));
+  };
+
   const applyToCampaign = (campaignId: string, creatorId: string, pitch: string) => {
     let creator = creators.find(c => c.id === creatorId);
     if (!creator && authUser?.creatorProfile) {
@@ -1556,6 +1566,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
         campaigns,
         postCampaignRequirement,
+        deleteCampaign,
         applyToCampaign,
         updateApplicantStatus,
 
