@@ -61,6 +61,12 @@ export const PostRequirementView: React.FC = () => {
   const [newCatInput, setNewCatInput] = useState('');
   const [customCats, setCustomCats] = useState<string[]>([]);
   const catDropdownRef = useRef<HTMLDivElement>(null);
+  const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false);
+  const [selectedIndustries, setSelectedIndustries] = useState<string[]>(['Fashion & Lifestyle']);
+  const industryDropdownRef = useRef<HTMLDivElement>(null);
+  const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
+  const [selectedCities, setSelectedCities] = useState<string[]>(['Delhi NCR']);
+  const cityDropdownRef = useRef<HTMLDivElement>(null);
 
   // Custom country code dropdown state
   const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
@@ -71,6 +77,12 @@ export const PostRequirementView: React.FC = () => {
     const handler = (e: MouseEvent) => {
       if (catDropdownRef.current && !catDropdownRef.current.contains(e.target as Node)) {
         setCatDropdownOpen(false);
+      }
+      if (industryDropdownRef.current && !industryDropdownRef.current.contains(e.target as Node)) {
+        setIndustryDropdownOpen(false);
+      }
+      if (cityDropdownRef.current && !cityDropdownRef.current.contains(e.target as Node)) {
+        setCityDropdownOpen(false);
       }
       if (countryDropdownRef.current && !countryDropdownRef.current.contains(e.target as Node)) {
         setCountryDropdownOpen(false);
@@ -89,6 +101,22 @@ export const PostRequirementView: React.FC = () => {
           ? prev.categories.filter(c => c !== cat)
           : [...prev.categories, cat],
       };
+    });
+  };
+
+  const toggleIndustry = (industry: string) => {
+    setSelectedIndustries(prev =>
+      prev.includes(industry) ? prev.filter(item => item !== industry) : [...prev, industry]
+    );
+  };
+
+  const toggleCity = (city: string) => {
+    setSelectedCities(prev => {
+      if (city === 'Pan India') return ['Pan India'];
+      const withoutPanIndia = prev.filter(item => item !== 'Pan India');
+      return withoutPanIndia.includes(city)
+        ? withoutPanIndia.filter(item => item !== city)
+        : [...withoutPanIndia, city];
     });
   };
 
@@ -130,9 +158,9 @@ export const PostRequirementView: React.FC = () => {
         email: formData.email,
         phone: `${formData.countryCode} ${formData.phone}`.trim(),
         campaignTitle: formData.campaignTitle,
-        industry: formData.industry,
+        industry: selectedIndustries.join(', '),
         category: formData.categories.join(', '),
-        city: formData.city,
+        city: selectedCities.join(', '),
         deliverablesNeeded: formData.deliverablesNeeded,
         budget: formData.isBarter ? 'Barter / Product Exchange' : formData.budget,
         influencersCount: Number(formData.influencersCount) || 1,
@@ -270,18 +298,55 @@ export const PostRequirementView: React.FC = () => {
 
                 <div>
                   <label className="block font-bold text-slate-800 text-xs mb-1.5">Brand Industry *</label>
-                  <div className="relative">
-                    <select
-                      value={formData.industry}
-                      onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
-                      className="w-full appearance-none px-4 py-3 pr-10 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] text-xs font-medium text-slate-800 transition cursor-pointer"
+                  <div ref={industryDropdownRef} className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setIndustryDropdownOpen(open => !open)}
+                      className="w-full min-h-[46px] px-4 py-3 pr-10 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none text-left flex items-center justify-between gap-2 transition cursor-pointer"
+                      style={{ borderColor: industryDropdownOpen ? '#D4A338' : undefined }}
                     >
-                      {(industries && industries.length > 0 ? industries : INDUSTRIES_LIST).map((ind, idx) => (
-                        <option key={idx} value={ind.name}>{ind.name}</option>
-                      ))}
-                    </select>
-                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <span className="truncate text-slate-800 font-medium">
+                        {selectedIndustries.length === 0 ? 'Select industries…' : selectedIndustries.join(', ')}
+                      </span>
+                      <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${industryDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    {industryDropdownOpen && (
+                      <div className="absolute z-50 mt-1.5 w-full bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden">
+                        <div className="px-3 py-2 border-b border-slate-100 bg-slate-50/80 text-[10px] text-slate-500">
+                          Select one or more industries
+                        </div>
+                        <ul className="max-h-48 overflow-y-auto py-1">
+                          {(industries && industries.length > 0 ? industries : INDUSTRIES_LIST).map(ind => {
+                            const selected = selectedIndustries.includes(ind.name);
+                            return (
+                              <li
+                                key={ind.id}
+                                onClick={() => toggleIndustry(ind.name)}
+                                className={`flex items-center gap-2 px-3 py-2 cursor-pointer select-none ${selected ? 'bg-amber-50 font-semibold' : 'hover:bg-slate-50'}`}
+                              >
+                                <span className={`w-4 h-4 rounded border flex items-center justify-center ${selected ? 'bg-[#D4A338] border-[#D4A338]' : 'border-slate-300'}`}>
+                                  {selected && <Check className="w-3 h-3 text-white stroke-[3]" />}
+                                </span>
+                                <span>{ind.name}</span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+                    )}
                   </div>
+                  {selectedIndustries.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {selectedIndustries.map(industry => (
+                        <span key={industry} className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-900 rounded-md text-[10px] font-semibold">
+                          {industry}
+                          <button type="button" onClick={() => toggleIndustry(industry)} className="hover:text-red-500">
+                            <X className="w-2.5 h-2.5" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -449,19 +514,55 @@ export const PostRequirementView: React.FC = () => {
 
                 <div>
                   <label className="block font-bold text-slate-800 text-xs mb-1.5">Target City / Geography *</label>
-                  <div className="relative">
-                    <select
-                      value={formData.city}
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                      className="w-full appearance-none px-4 py-3 pr-10 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] text-xs font-medium text-slate-800 transition cursor-pointer"
+                  <div ref={cityDropdownRef} className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setCityDropdownOpen(open => !open)}
+                      className="w-full min-h-[46px] px-4 py-3 pr-10 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none text-left flex items-center justify-between gap-2 transition cursor-pointer"
+                      style={{ borderColor: cityDropdownOpen ? '#D4A338' : undefined }}
                     >
-                      <option value="Pan India">Pan India</option>
-                      {(cities && cities.length > 0 ? cities : CITIES_LIST).map((c, idx) => (
-                        <option key={idx} value={c.name}>{c.name}</option>
-                      ))}
-                    </select>
-                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <span className="truncate text-slate-800 font-medium">
+                        {selectedCities.length === 0 ? 'Select cities…' : selectedCities.join(', ')}
+                      </span>
+                      <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${cityDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    {cityDropdownOpen && (
+                      <div className="absolute z-50 mt-1.5 w-full bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden">
+                        <div className="px-3 py-2 border-b border-slate-100 bg-slate-50/80 text-[10px] text-slate-500">
+                          Select one or more cities
+                        </div>
+                        <ul className="max-h-48 overflow-y-auto py-1">
+                          {[{ name: 'Pan India', id: 'pan-india' }, ...(cities && cities.length > 0 ? cities : CITIES_LIST)].map(city => {
+                            const selected = selectedCities.includes(city.name);
+                            return (
+                              <li
+                                key={city.id}
+                                onClick={() => toggleCity(city.name)}
+                                className={`flex items-center gap-2 px-3 py-2 cursor-pointer select-none ${selected ? 'bg-amber-50 font-semibold' : 'hover:bg-slate-50'}`}
+                              >
+                                <span className={`w-4 h-4 rounded border flex items-center justify-center ${selected ? 'bg-[#D4A338] border-[#D4A338]' : 'border-slate-300'}`}>
+                                  {selected && <Check className="w-3 h-3 text-white stroke-[3]" />}
+                                </span>
+                                <span>{city.name}</span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+                    )}
                   </div>
+                  {selectedCities.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {selectedCities.map(city => (
+                        <span key={city} className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-900 rounded-md text-[10px] font-semibold">
+                          {city}
+                          <button type="button" onClick={() => toggleCity(city)} className="hover:text-red-500">
+                            <X className="w-2.5 h-2.5" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -634,4 +735,3 @@ export const PostRequirementView: React.FC = () => {
     </div>
   );
 };
-
