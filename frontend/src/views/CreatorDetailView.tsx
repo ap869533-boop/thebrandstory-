@@ -52,7 +52,7 @@ export const CreatorDetailView: React.FC = () => {
       (c) =>
         (viewParams.id && c.id === viewParams.id) ||
         (viewParams.username && c.username.toLowerCase() === (viewParams.username as string).toLowerCase())
-    ) || (authUser?.role === 'CREATOR' ? authUser.creatorProfile : undefined) || creators[0];
+    ) || (authUser?.role === 'CREATOR' ? authUser.creatorProfile : creators[0]);
 
   if (!creator) {
     return (

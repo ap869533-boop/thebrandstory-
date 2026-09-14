@@ -241,7 +241,7 @@ export const AuthModal: React.FC = () => {
             } else {
               navigateTo('home');
             }
-          }, 800);
+          }, 2000);
         }
       } else {
         // SIGNUP MODE

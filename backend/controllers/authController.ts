@@ -442,7 +442,7 @@ export async function fetchOrCreateCreatorProfile(user: any): Promise<Creator | 
         newCreator.phone || null,
         newCreator.email || null,
         0,
-        1,
+        0,
         'pending'
       ]
     );

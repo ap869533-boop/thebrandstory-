@@ -552,6 +552,7 @@ export const CreatorDashboardView: React.FC = () => {
     });
     setProfileSaved(true);
     setTimeout(() => setProfileSaved(false), 2500);
+    navigateTo('creator-dashboard');
   };
 
   // === Profile Completion Calculation ===
