@@ -555,6 +555,9 @@ export const CreatorDashboardView: React.FC = () => {
     navigateTo('creator-dashboard');
   };
 
+  const instagramReelId = reelVideoUrl.match(/instagram\.com\/(?:reel|p)\/([^/?#]+)/i)?.[1];
+  const isInstagramReel = Boolean(instagramReelId);
+
   // === Profile Completion Calculation ===
   const profileFields = [
     { label: 'Profile Photo', done: !!creator.avatar && !creator.avatar.includes('unsplash') },
@@ -848,7 +851,7 @@ export const CreatorDashboardView: React.FC = () => {
                     <div className="lg:col-span-2 space-y-3">
                       <div>
                         <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                          Paste Video / Reel URL (Direct Link)
+                          Paste a direct video URL or Instagram Reel URL
                         </label>
                         <div className="flex gap-2">
                           <input
@@ -890,16 +893,25 @@ export const CreatorDashboardView: React.FC = () => {
                     <div className="relative h-28 bg-slate-900 rounded-xl overflow-hidden border border-slate-700 flex items-center justify-center">
                       {reelVideoUrl ? (
                         <>
-                          <video
-                            src={reelVideoUrl}
-                            autoPlay
-                            muted
-                            loop
-                            playsInline
-                            preload="auto"
-                            onError={(e) => { (e.target as HTMLVideoElement).style.display = 'none'; }}
-                            className="w-full h-full object-cover"
-                          />
+                          {isInstagramReel ? (
+                            <iframe
+                              src={`https://www.instagram.com/reel/${instagramReelId}/embed`}
+                              title="Instagram Reel preview"
+                              allow="autoplay; encrypted-media"
+                              className="w-full h-full border-0"
+                            />
+                          ) : (
+                            <video
+                              src={reelVideoUrl}
+                              autoPlay
+                              muted
+                              loop
+                              playsInline
+                              preload="auto"
+                              onError={(e) => { (e.target as HTMLVideoElement).style.display = 'none'; }}
+                              className="w-full h-full object-cover"
+                            />
+                          )}
                           <div className="absolute top-2 left-2 px-2 py-0.5 bg-black/60 backdrop-blur-xs text-white text-[9px] font-bold rounded">
                             Preview
                           </div>
