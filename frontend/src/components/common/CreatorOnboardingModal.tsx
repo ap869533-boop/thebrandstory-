@@ -11,15 +11,15 @@ export const CreatorOnboardingModal: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     username: '',
-    currentCity: 'Delhi NCR',
-    primaryCategory: 'Fashion',
+    currentCity: '',
+    primaryCategory: '',
     phone: '',
     email: '',
     followers: 0,
     engagementRate: 0,
     avgViews: 0,
     startingPrice: 0,
-    isBarterAvailable: true,
+    isBarterAvailable: false,
     bio: '',
     avatar: '',
   });
@@ -174,6 +174,7 @@ export const CreatorOnboardingModal: React.FC = () => {
                     onChange={(e) => setFormData({ ...formData, currentCity: e.target.value })}
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 font-medium cursor-pointer"
                   >
+                    <option value="" disabled>Select a city</option>
                     {(cities && cities.length > 0 ? cities : CITIES_LIST).map((city, idx) => (
                       <option key={idx} value={city.name}>{city.name}</option>
                     ))}
@@ -187,6 +188,7 @@ export const CreatorOnboardingModal: React.FC = () => {
                     onChange={(e) => setFormData({ ...formData, primaryCategory: e.target.value })}
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 font-medium cursor-pointer"
                   >
+                    <option value="" disabled>Select a niche</option>
                     {(categories && categories.length > 0 ? categories : CATEGORIES_LIST).map((cat, idx) => (
                       <option key={idx} value={cat.name}>{cat.name}</option>
                     ))}
