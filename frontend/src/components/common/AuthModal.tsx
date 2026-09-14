@@ -100,6 +100,7 @@ export const AuthModal: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
 
   if (!authModalOpen) return null;
 
@@ -188,6 +189,7 @@ export const AuthModal: React.FC = () => {
     setIsLoading(true);
     setErrorMsg(null);
     setSuccessMsg(null);
+    setRegistrationSuccess(false);
 
     try {
       if (mode === 'login') {
@@ -279,6 +281,7 @@ export const AuthModal: React.FC = () => {
             phone: phone.trim(),
             companyName: companyName.trim(),
             username: parsedUsername,
+            instagramUrl: role === 'CREATOR' ? username.trim() : '',
             category,
             city,
           };
@@ -316,13 +319,11 @@ export const AuthModal: React.FC = () => {
               setActiveCreatorId(data.user.creatorProfile.id);
             }
 
-            setSuccessMsg(
-              role === 'CREATOR'
-                ? 'Creator Profile created! Redirecting...'
-                : 'Brand Account registered successfully! Redirecting...'
-            );
+            setSuccessMsg(null);
+            setRegistrationSuccess(true);
 
             setTimeout(() => {
+              setRegistrationSuccess(false);
               closeAuthModal();
               if (data.user.role === 'CREATOR') navigateTo('creator-dashboard');
               else if (data.user.role === 'BRAND') navigateTo('brand-dashboard');
@@ -795,12 +796,19 @@ export const AuthModal: React.FC = () => {
             )}
           </button>
         </form>
-
-
+        {registrationSuccess && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-950/60 backdrop-blur-sm animate-fadeIn">
+            <div className="w-full max-w-sm rounded-3xl bg-white p-8 text-center shadow-2xl border border-emerald-100 animate-scaleUp">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 animate-pulse">
+                <CheckCircle2 className="h-9 w-9 text-emerald-600" />
+              </div>
+              <h2 className="text-2xl font-black text-slate-900">Registration Successful</h2>
+              <p className="mt-2 text-sm text-slate-500">Your profile has been created and sent for admin approval.</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 };
-
-
 
