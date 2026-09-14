@@ -46,8 +46,7 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({ creator, variant = 'gr
   };
 
   const displayImage = creator.coverImage || creator.portfolio?.[0]?.thumbnail || creator.avatar;
-  const instagramReelId = creator.reelVideoUrl?.match(/instagram\.com\/(?:reel|p)\/([^/?#]+)/i)?.[1];
-  const isInstagramReel = Boolean(instagramReelId);
+  const isUploadedVideo = Boolean(creator.reelVideoUrl && !/instagram\.com/i.test(creator.reelVideoUrl));
 
   const getFollowerBadge = (count?: number) => {
     const f = count || 0;
@@ -74,14 +73,7 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({ creator, variant = 'gr
     >
       {/* Background: Video (direct URL) or Image */}
       <div className="absolute inset-0 w-full h-full overflow-hidden z-0">
-        {isInstagramReel ? (
-          <iframe
-            src={`https://www.instagram.com/reel/${instagramReelId}/embed`}
-            title={`${creator.name} Instagram Reel`}
-            allow="autoplay; encrypted-media"
-            className="w-full h-full border-0"
-          />
-        ) : creator.reelVideoUrl && !videoError ? (
+        {isUploadedVideo && !videoError ? (
           <video
             ref={videoRef}
             src={creator.reelVideoUrl}
@@ -129,7 +121,7 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({ creator, variant = 'gr
             <Heart className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${isSaved ? 'fill-current' : ''}`} />
           </button>
 
-          {creator.reelVideoUrl && !isInstagramReel && !videoError && (
+          {isUploadedVideo && !videoError && (
             <button
               onClick={handleToggleMute}
               title={isMuted ? 'Unmute' : 'Mute'}

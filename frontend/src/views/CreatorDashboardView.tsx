@@ -555,9 +555,6 @@ export const CreatorDashboardView: React.FC = () => {
     navigateTo('creator-dashboard');
   };
 
-  const instagramReelId = reelVideoUrl.match(/instagram\.com\/(?:reel|p)\/([^/?#]+)/i)?.[1];
-  const isInstagramReel = Boolean(instagramReelId);
-
   // === Profile Completion Calculation ===
   const profileFields = [
     { label: 'Profile Photo', done: !!creator.avatar && !creator.avatar.includes('unsplash') },
@@ -832,7 +829,7 @@ export const CreatorDashboardView: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Card Reel Video URL & Upload - autoplays on homepage card */}
+                {/* Card Reel Video Upload - autoplays on homepage card */}
                 <div className="md:col-span-3 border-2 border-dashed border-violet-300 bg-violet-50/40 rounded-2xl p-5 space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-violet-200/60 pb-3">
                     <div className="flex items-center gap-2 text-violet-900 font-bold text-xs">
@@ -849,69 +846,34 @@ export const CreatorDashboardView: React.FC = () => {
 
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-center">
                     <div className="lg:col-span-2 space-y-3">
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                          Paste a direct video URL or Instagram Reel URL
-                        </label>
-                        <div className="flex gap-2">
-                          <input
-                            type="url"
-                            placeholder="Paste a direct video link"
-                            value={reelVideoUrl}
-                            onChange={(e) => setReelVideoUrl(e.target.value)}
-                            className="flex-1 px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-violet-500 outline-none"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (!reelVideoUrl.trim()) return;
-                              updateCreatorProfile(creator.id, { reelVideoUrl: reelVideoUrl.trim() });
-                              setUploadNotice('🎬 Card reel video URL saved! It will now autoplay on your profile card.');
-                              setTimeout(() => setUploadNotice(null), 4000);
-                            }}
-                            className="px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer shrink-0"
-                          >
-                            Save Reel URL
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
-                        <span>Or upload a video file from your device:</span>
-                        <button
-                          type="button"
-                          onClick={() => cardReelInputRef.current?.click()}
-                          className="text-violet-700 font-bold hover:underline cursor-pointer flex items-center gap-1"
-                        >
-                          <UploadCloud className="w-3.5 h-3.5" />
-                          <span>{isUploadingCardReel ? 'Uploading MP4...' : 'Upload Video File'}</span>
-                        </button>
-                      </div>
+                      <p className="text-[11px] text-slate-600">
+                        Upload an MP4, MOV, or WebM file. Only uploaded video files are shown on your creator card.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => cardReelInputRef.current?.click()}
+                        disabled={isUploadingCardReel}
+                        className="w-full px-4 py-3 bg-violet-600 hover:bg-violet-700 disabled:opacity-60 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer flex items-center justify-center gap-2"
+                      >
+                        <UploadCloud className="w-4 h-4" />
+                        <span>{isUploadingCardReel ? 'Uploading video...' : 'Choose video file'}</span>
+                      </button>
                     </div>
 
                     {/* Live Card Preview Box */}
                     <div className="relative h-28 bg-slate-900 rounded-xl overflow-hidden border border-slate-700 flex items-center justify-center">
                       {reelVideoUrl ? (
                         <>
-                          {isInstagramReel ? (
-                            <iframe
-                              src={`https://www.instagram.com/reel/${instagramReelId}/embed`}
-                              title="Instagram Reel preview"
-                              allow="autoplay; encrypted-media"
-                              className="w-full h-full border-0"
-                            />
-                          ) : (
-                            <video
-                              src={reelVideoUrl}
-                              autoPlay
-                              muted
-                              loop
-                              playsInline
-                              preload="auto"
-                              onError={(e) => { (e.target as HTMLVideoElement).style.display = 'none'; }}
-                              className="w-full h-full object-cover"
-                            />
-                          )}
+                          <video
+                            src={reelVideoUrl}
+                            autoPlay
+                            muted
+                            loop
+                            playsInline
+                            preload="auto"
+                            onError={(e) => { (e.target as HTMLVideoElement).style.display = 'none'; }}
+                            className="w-full h-full object-cover"
+                          />
                           <div className="absolute top-2 left-2 px-2 py-0.5 bg-black/60 backdrop-blur-xs text-white text-[9px] font-bold rounded">
                             Preview
                           </div>
@@ -929,7 +891,7 @@ export const CreatorDashboardView: React.FC = () => {
                   {creator.reelVideoUrl && (
                     <div className="flex items-center justify-between pt-2 border-t border-violet-200/60 text-xs">
                       <span className="text-violet-700 text-[11px] font-semibold">
-                        URL: <code className="bg-white/80 px-2 py-0.5 rounded text-[10px] text-slate-700">{creator.reelVideoUrl}</code>
+                        Uploaded video: <code className="bg-white/80 px-2 py-0.5 rounded text-[10px] text-slate-700">{creator.reelVideoUrl.split('/').pop()}</code>
                       </span>
                       <button
                         type="button"
