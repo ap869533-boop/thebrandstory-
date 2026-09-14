@@ -66,8 +66,8 @@ export const AuthModal: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [phone, setPhone] = useState('');
   const [companyName, setCompanyName] = useState('');
-  const [category, setCategory] = useState('Fashion');
-  const [city, setCity] = useState('Delhi NCR');
+  const [category, setCategory] = useState('');
+  const [city, setCity] = useState('');
 
   // OTP Fields
   const [otpSent, setOtpSent] = useState(false);
@@ -84,6 +84,8 @@ export const AuthModal: React.FC = () => {
       setUsername('');
       setPhone('');
       setCompanyName('');
+      setCategory('');
+      setCity('');
       setOtp('');
       setOtpSent(false);
       setErrorMsg(null);
@@ -239,7 +241,7 @@ export const AuthModal: React.FC = () => {
             } else {
               navigateTo('home');
             }
-          }, 800);
+          }, 2000);
         }
       } else {
         // SIGNUP MODE
@@ -587,11 +589,12 @@ export const AuthModal: React.FC = () => {
                             onChange={(e) => setCategory(e.target.value)}
                             className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 transition cursor-pointer font-medium"
                           >
-                            {(categories && categories.length > 0 ? categories : CATEGORIES_LIST).map((cat) => (
-                              <option key={cat.id} value={cat.name}>
-                                {cat.name}
-                              </option>
-                            ))}
+                            <option value="" disabled>Select a niche</option>
+                              {(categories && categories.length > 0 ? categories : CATEGORIES_LIST).map((cat) => (
+                                <option key={cat.id} value={cat.name}>
+                                  {cat.name}
+                                </option>
+                              ))}
                           </select>
                         </div>
                       </div>
@@ -605,6 +608,7 @@ export const AuthModal: React.FC = () => {
                             onChange={(e) => setCity(e.target.value)}
                             className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 transition cursor-pointer font-medium"
                           >
+                            <option value="" disabled>Select a city</option>
                             {(cities && cities.length > 0 ? cities : CITIES_LIST).map((c) => (
                               <option key={c.id} value={c.name}>
                                 {c.name}
@@ -811,4 +815,3 @@ export const AuthModal: React.FC = () => {
     </div>
   );
 };
-

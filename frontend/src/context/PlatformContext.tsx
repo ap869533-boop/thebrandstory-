@@ -1026,8 +1026,10 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Creator Registration & Updates
   const registerCreator = (newCreatorData: Partial<Creator>): Creator => {
     const newId = `c_${Date.now()}`;
-    const cleanUsername = (newCreatorData.username || newCreatorData.name || 'creator')
+    const submittedUsername = (newCreatorData.username || '').trim();
+    const cleanUsername = (submittedUsername.match(/instagram\.com\/([^/?#]+)/i)?.[1] || submittedUsername || newCreatorData.name || '')
       .toLowerCase()
+      .replace(/^@/, '')
       .replace(/[^a-z0-9_]/g, '');
 
     const completeCreator: Creator = {
@@ -1080,13 +1082,13 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         ugcPrice: 0,
         youtubePrice: 0,
         eventPrice: 0,
-        isNegotiable: true,
-        isBarterAvailable: true,
+        isNegotiable: false,
+        isBarterAvailable: false,
         pricingDisplayType: 'starting',
       },
       collaborationTypes: newCreatorData.collaborationTypes || [],
       socialPlatforms: newCreatorData.socialPlatforms || (cleanUsername ? [
-        { platform: 'instagram', username: cleanUsername, url: `https://instagram.com/${cleanUsername}`, followers: newCreatorData.followers || 0, avgViews: 0, engagementRate: 0, verified: false }
+        { platform: 'instagram', username: cleanUsername, url: submittedUsername.match(/^https?:\/\//i) ? submittedUsername : `https://instagram.com/${cleanUsername}`, followers: newCreatorData.followers || 0, avgViews: 0, engagementRate: 0, verified: false }
       ] : []),
       audience: newCreatorData.audience || {
         topCities: [],

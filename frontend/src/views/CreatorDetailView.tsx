@@ -52,7 +52,7 @@ export const CreatorDetailView: React.FC = () => {
       (c) =>
         (viewParams.id && c.id === viewParams.id) ||
         (viewParams.username && c.username.toLowerCase() === (viewParams.username as string).toLowerCase())
-    ) || (authUser?.role === 'CREATOR' ? authUser.creatorProfile : undefined) || creators[0];
+    ) || (authUser?.role === 'CREATOR' ? authUser.creatorProfile : creators[0]);
 
   if (!creator) {
     return (
@@ -148,7 +148,7 @@ export const CreatorDetailView: React.FC = () => {
   // Real audience geographic distribution from database
   const audienceCities = (creator.audience?.topCities && creator.audience.topCities.length > 0)
     ? creator.audience.topCities
-    : [{ city: creator.currentCity, percentage: 45 }, { city: 'Mumbai', percentage: 25 }, { city: 'Delhi NCR', percentage: 18 }, { city: 'Bangalore', percentage: 12 }];
+    : [];
 
   // Real past brand collaborations from database
   const pastBrandPartners = (creator.previousCollaborations && creator.previousCollaborations.length > 0)
@@ -228,7 +228,7 @@ export const CreatorDetailView: React.FC = () => {
                   {creator.name}
                 </h1>
                 <a
-                  href={`https://instagram.com/${creator.username}`}
+                  href={creator.socialPlatforms?.find((platform) => platform.platform === 'instagram')?.url || `https://instagram.com/${creator.username}`}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-[#D4A338] transition bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-200"
@@ -240,14 +240,14 @@ export const CreatorDetailView: React.FC = () => {
 
               {/* Bio & Specialty */}
               <p className="text-xs text-slate-600 leading-relaxed max-w-xl">
-                {creator.bio || `${creator.primaryCategory} creator based in ${creator.currentCity}, India.`}
+                {creator.bio || 'Add a bio from your creator dashboard.'}
               </p>
 
               {/* Demographics Strip */}
               <div className="flex flex-wrap items-center gap-2.5 text-xs text-slate-500 font-medium">
                 <span className="flex items-center gap-1">
                   <Users className="w-3.5 h-3.5 text-slate-400" />
-                  <span>{creator.ageGroup ? `${creator.ageGroup} yrs` : '25-34 yrs'}</span>
+                  <span>{creator.ageGroup ? `${creator.ageGroup} yrs` : 'Age not added'}</span>
                 </span>
                 <span>•</span>
                 <span className="flex items-center gap-1">
@@ -256,7 +256,7 @@ export const CreatorDetailView: React.FC = () => {
                 </span>
                 <span>•</span>
                 <span>
-                  Languages: {creator.languages?.join(', ') || 'Hindi, English, Marathi'}
+                  Languages: {creator.languages?.join(', ') || 'Languages not added'}
                 </span>
               </div>
 
@@ -357,7 +357,7 @@ export const CreatorDetailView: React.FC = () => {
               </div>
               <div>
                 <span className="text-3xl font-black text-slate-900 tracking-tight block">
-                  {formatCount(creator.avgLikes || Math.round(creator.followers * 0.058))}
+                  {formatCount(creator.avgLikes || 0)}
                 </span>
                 <span className="text-xs text-slate-400 font-medium block mt-0.5">
                   Likes per reel / post
@@ -378,7 +378,7 @@ export const CreatorDetailView: React.FC = () => {
               </div>
               <div>
                 <span className="text-3xl font-black text-slate-900 tracking-tight block">
-                  {formatCount(creator.avgComments || 690)}
+                  {formatCount(creator.avgComments || 0)}
                 </span>
                 <span className="text-xs text-slate-400 font-medium block mt-0.5">
                   Comments per publication
@@ -399,7 +399,7 @@ export const CreatorDetailView: React.FC = () => {
               </div>
               <div>
                 <span className="text-3xl font-black text-slate-900 tracking-tight block">
-                  {formatCount(creator.avgViews || 110000)}
+                  {formatCount(creator.avgViews || 0)}
                 </span>
                 <span className="text-xs text-slate-400 font-medium block mt-0.5">
                   Average plays per video
@@ -436,7 +436,7 @@ export const CreatorDetailView: React.FC = () => {
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70 text-center space-y-1">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Reel (1x)</span>
               <span className="text-base font-black text-slate-900 block">
-                ₹{(creator.pricing?.reelPrice || (creator.startingPrice || 6000) * 1.5).toLocaleString('en-IN')}
+                ₹{(creator.pricing?.reelPrice || 0).toLocaleString('en-IN')}
               </span>
               <span className="text-[10px] text-emerald-600 font-semibold block">High Reach</span>
             </div>
@@ -444,7 +444,7 @@ export const CreatorDetailView: React.FC = () => {
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70 text-center space-y-1">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Story (3x)</span>
               <span className="text-base font-black text-slate-900 block">
-                ₹{(creator.pricing?.storyPrice || (creator.startingPrice || 6000) * 0.5).toLocaleString('en-IN')}
+                ₹{(creator.pricing?.storyPrice || 0).toLocaleString('en-IN')}
               </span>
               <span className="text-[10px] text-[#D4A338] font-semibold block">Link Click</span>
             </div>
@@ -452,7 +452,7 @@ export const CreatorDetailView: React.FC = () => {
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70 text-center space-y-1">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Feed Post</span>
               <span className="text-base font-black text-slate-900 block">
-                ₹{(creator.pricing?.postPrice || creator.startingPrice || 6000).toLocaleString('en-IN')}
+                ₹{(creator.pricing?.postPrice || 0).toLocaleString('en-IN')}
               </span>
               <span className="text-[10px] text-slate-500 font-semibold block">Carousel / Static</span>
             </div>
@@ -460,7 +460,7 @@ export const CreatorDetailView: React.FC = () => {
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70 text-center space-y-1">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">UGC Video</span>
               <span className="text-base font-black text-slate-900 block">
-                ₹{(creator.pricing?.ugcPrice || (creator.startingPrice || 6000) * 1.2).toLocaleString('en-IN')}
+                ₹{(creator.pricing?.ugcPrice || 0).toLocaleString('en-IN')}
               </span>
               <span className="text-[10px] text-purple-600 font-semibold block">Ad Creative</span>
             </div>
@@ -468,7 +468,7 @@ export const CreatorDetailView: React.FC = () => {
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70 text-center space-y-1">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Event / Visit</span>
               <span className="text-base font-black text-slate-900 block">
-                ₹{(creator.pricing?.eventPrice || (creator.startingPrice || 6000) * 2.5).toLocaleString('en-IN')}
+                ₹{(creator.pricing?.eventPrice || 0).toLocaleString('en-IN')}
               </span>
               <span className="text-[10px] text-amber-600 font-semibold block">Store Presence</span>
             </div>

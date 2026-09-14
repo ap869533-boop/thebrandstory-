@@ -100,7 +100,7 @@ export const CreatorDashboardView: React.FC = () => {
         primaryCategory: '',
         subCategories: [],
         languages: [],
-        gender: 'Female' as any,
+        gender: undefined,
         ageGroup: '',
         followers: 0,
         engagementRate: 0,
@@ -175,11 +175,11 @@ export const CreatorDashboardView: React.FC = () => {
   // Form states synced with creator's database fields
   const [bio, setBio] = useState(creator.bio || '');
   const [reelVideoUrl, setReelVideoUrl] = useState(creator.reelVideoUrl || '');
-  const [startingPrice, setStartingPrice] = useState(creator.startingPrice || 5000);
-  const [reelPrice, setReelPrice] = useState(creator.pricing?.reelPrice || 6000);
-  const [storyPrice, setStoryPrice] = useState(creator.pricing?.storyPrice || 2500);
-  const [ugcPrice, setUgcPrice] = useState(creator.pricing?.ugcPrice || 5000);
-  const [isBarterAvailable, setIsBarterAvailable] = useState(creator.pricing?.isBarterAvailable ?? true);
+  const [startingPrice, setStartingPrice] = useState(creator.startingPrice || 0);
+  const [reelPrice, setReelPrice] = useState(creator.pricing?.reelPrice || 0);
+  const [storyPrice, setStoryPrice] = useState(creator.pricing?.storyPrice || 0);
+  const [ugcPrice, setUgcPrice] = useState(creator.pricing?.ugcPrice || 0);
+  const [isBarterAvailable, setIsBarterAvailable] = useState(creator.pricing?.isBarterAvailable ?? false);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   // === Profile Edit States ===
@@ -187,8 +187,8 @@ export const CreatorDashboardView: React.FC = () => {
   const [profileBio, setProfileBio] = useState(creator.bio || '');
   const [profileCity, setProfileCity] = useState(creator.currentCity || '');
   const [profileState, setProfileState] = useState(creator.state || '');
-  const [profileGender, setProfileGender] = useState(creator.gender || 'Female');
-  const [profileAgeGroup, setProfileAgeGroup] = useState(creator.ageGroup || '22-29');
+  const [profileGender, setProfileGender] = useState(creator.gender || '');
+  const [profileAgeGroup, setProfileAgeGroup] = useState(creator.ageGroup || '');
   const [profileLanguages, setProfileLanguages] = useState((creator.languages || []).join(', '));
   const [profileCategory, setProfileCategory] = useState(creator.primaryCategory || '');
   const [profileSubCats, setProfileSubCats] = useState((creator.subCategories || []).join(', '));
@@ -207,18 +207,18 @@ export const CreatorDashboardView: React.FC = () => {
     if (creator) {
       setBio(creator.bio || '');
       setReelVideoUrl(creator.reelVideoUrl || '');
-      setStartingPrice(creator.startingPrice || 5000);
-      setReelPrice(creator.pricing?.reelPrice || 6000);
-      setStoryPrice(creator.pricing?.storyPrice || 2500);
-      setUgcPrice(creator.pricing?.ugcPrice || 5000);
-      setIsBarterAvailable(creator.pricing?.isBarterAvailable ?? true);
+      setStartingPrice(creator.startingPrice || 0);
+      setReelPrice(creator.pricing?.reelPrice || 0);
+      setStoryPrice(creator.pricing?.storyPrice || 0);
+      setUgcPrice(creator.pricing?.ugcPrice || 0);
+      setIsBarterAvailable(creator.pricing?.isBarterAvailable ?? false);
       // Sync profile edit states
       setProfileName(creator.name || '');
       setProfileBio(creator.bio || '');
       setProfileCity(creator.currentCity || '');
       setProfileState(creator.state || '');
-      setProfileGender(creator.gender || 'Female');
-      setProfileAgeGroup(creator.ageGroup || '22-29');
+      setProfileGender(creator.gender || '');
+      setProfileAgeGroup(creator.ageGroup || '');
       setProfileLanguages((creator.languages || []).join(', '));
       setProfileCategory(creator.primaryCategory || '');
       setProfileSubCats((creator.subCategories || []).join(', '));
@@ -552,6 +552,7 @@ export const CreatorDashboardView: React.FC = () => {
     });
     setProfileSaved(true);
     setTimeout(() => setProfileSaved(false), 2500);
+    navigateTo('creator-dashboard');
   };
 
   // === Profile Completion Calculation ===
@@ -598,7 +599,7 @@ export const CreatorDashboardView: React.FC = () => {
             {/* Interactive Avatar with Camera Upload Overlay */}
             <div className="relative group">
               <img
-                src={creator.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'}
+                src={creator.avatar || undefined}
                 alt={creator.name}
                 className="w-18 h-18 rounded-2xl object-cover border-2 border-slate-100 shadow-xs group-hover:opacity-85 transition"
               />
@@ -791,7 +792,7 @@ export const CreatorDashboardView: React.FC = () => {
                 >
                   <div className="relative shrink-0">
                     <img
-                      src={creator.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200'}
+                      src={creator.avatar || undefined}
                       alt="Avatar"
                       className="w-14 h-14 rounded-xl object-cover border border-slate-200"
                     />
@@ -828,7 +829,7 @@ export const CreatorDashboardView: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Card Reel Video URL & Upload - autoplays on homepage card */}
+                {/* Card Reel Video Upload - autoplays on homepage card */}
                 <div className="md:col-span-3 border-2 border-dashed border-violet-300 bg-violet-50/40 rounded-2xl p-5 space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-violet-200/60 pb-3">
                     <div className="flex items-center gap-2 text-violet-900 font-bold text-xs">
@@ -845,44 +846,18 @@ export const CreatorDashboardView: React.FC = () => {
 
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-center">
                     <div className="lg:col-span-2 space-y-3">
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                          Paste Video / Reel URL (Direct Link)
-                        </label>
-                        <div className="flex gap-2">
-                          <input
-                            type="url"
-                            placeholder="Paste a direct video link"
-                            value={reelVideoUrl}
-                            onChange={(e) => setReelVideoUrl(e.target.value)}
-                            className="flex-1 px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-violet-500 outline-none"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (!reelVideoUrl.trim()) return;
-                              updateCreatorProfile(creator.id, { reelVideoUrl: reelVideoUrl.trim() });
-                              setUploadNotice('🎬 Card reel video URL saved! It will now autoplay on your profile card.');
-                              setTimeout(() => setUploadNotice(null), 4000);
-                            }}
-                            className="px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer shrink-0"
-                          >
-                            Save Reel URL
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
-                        <span>Or upload a video file from your device:</span>
-                        <button
-                          type="button"
-                          onClick={() => cardReelInputRef.current?.click()}
-                          className="text-violet-700 font-bold hover:underline cursor-pointer flex items-center gap-1"
-                        >
-                          <UploadCloud className="w-3.5 h-3.5" />
-                          <span>{isUploadingCardReel ? 'Uploading MP4...' : 'Upload Video File'}</span>
-                        </button>
-                      </div>
+                      <p className="text-[11px] text-slate-600">
+                        Upload an MP4, MOV, or WebM file. Only uploaded video files are shown on your creator card.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => cardReelInputRef.current?.click()}
+                        disabled={isUploadingCardReel}
+                        className="w-full px-4 py-3 bg-violet-600 hover:bg-violet-700 disabled:opacity-60 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer flex items-center justify-center gap-2"
+                      >
+                        <UploadCloud className="w-4 h-4" />
+                        <span>{isUploadingCardReel ? 'Uploading video...' : 'Choose video file'}</span>
+                      </button>
                     </div>
 
                     {/* Live Card Preview Box */}
@@ -916,7 +891,7 @@ export const CreatorDashboardView: React.FC = () => {
                   {creator.reelVideoUrl && (
                     <div className="flex items-center justify-between pt-2 border-t border-violet-200/60 text-xs">
                       <span className="text-violet-700 text-[11px] font-semibold">
-                        URL: <code className="bg-white/80 px-2 py-0.5 rounded text-[10px] text-slate-700">{creator.reelVideoUrl}</code>
+                        Uploaded video: <code className="bg-white/80 px-2 py-0.5 rounded text-[10px] text-slate-700">{creator.reelVideoUrl.split('/').pop()}</code>
                       </span>
                       <button
                         type="button"
@@ -969,6 +944,7 @@ export const CreatorDashboardView: React.FC = () => {
                     onChange={e => setProfileCategory(e.target.value)}
                     className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-medium outline-none"
                   >
+                    <option value="" disabled>Select a category</option>
                     {['Fashion', 'Beauty', 'Food', 'Travel', 'Lifestyle', 'Fitness', 'Technology', 'Gaming', 'Finance', 'Education', 'Automotive', 'Comedy', 'Entertainment', 'Luxury', 'Photography', 'Business', 'Healthcare', 'Motivation', 'Jewellery', 'Home & Interiors', 'Wedding', 'Events', 'Parenting', 'Real Estate'].map(cat => (
                       <option key={cat} value={cat}>{cat}</option>
                     ))}
@@ -991,6 +967,7 @@ export const CreatorDashboardView: React.FC = () => {
                     onChange={e => setProfileCity(e.target.value)}
                     className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-medium outline-none"
                   >
+                    <option value="" disabled>Select a city</option>
                     {['Delhi NCR', 'Mumbai', 'Bangalore', 'Hyderabad', 'Pune', 'Noida', 'Gurgaon', 'Jaipur', 'Chandigarh', 'Lucknow', 'Ahmedabad', 'Chennai', 'Kolkata', 'Surat', 'Vadodara', 'Indore', 'Bhopal', 'Nagpur', 'Patna', 'Ranchi', 'Guwahati', 'Kochi', 'Coimbatore', 'Mysore'].map(c => (
                       <option key={c} value={c}>{c}</option>
                     ))}
@@ -1023,6 +1000,7 @@ export const CreatorDashboardView: React.FC = () => {
                     onChange={e => setProfileGender(e.target.value as 'Female' | 'Male' | 'Non-binary')}
                     className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-medium outline-none"
                   >
+                    <option value="">Select gender</option>
                     <option value="Female">Female</option>
                     <option value="Male">Male</option>
                     <option value="Non-binary">Non-binary</option>
@@ -1035,6 +1013,7 @@ export const CreatorDashboardView: React.FC = () => {
                     onChange={e => setProfileAgeGroup(e.target.value)}
                     className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-medium outline-none"
                   >
+                    <option value="">Select age group</option>
                     {['18-21', '22-29', '25-34', '30-39', '35-44', '40+'].map(ag => (
                       <option key={ag} value={ag}>{ag} yrs</option>
                     ))}
