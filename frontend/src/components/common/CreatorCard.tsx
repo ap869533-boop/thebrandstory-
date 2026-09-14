@@ -64,8 +64,8 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({ creator, variant = 'gr
       onClick={handleCardClick}
       className={`group relative rounded-[1.75rem] overflow-hidden cursor-pointer shadow-sm hover:shadow-2xl transition-all duration-300 border border-slate-300/70 flex flex-col justify-between bg-slate-950 ${
         variant === 'carousel'
-          ? 'w-[250px] sm:w-[292px] md:w-[320px] h-[440px] sm:h-[510px] md:h-[566px] shrink-0'
-          : 'w-full min-h-[440px] sm:min-h-[510px] md:min-h-[566px]'
+          ? 'w-[210px] sm:w-[235px] md:w-[250px] h-[350px] sm:h-[390px] md:h-[420px] shrink-0'
+          : 'w-full min-h-[350px] sm:min-h-[390px] md:min-h-[420px]'
       }`}
     >
       {/* Background: Video (direct URL) or Image */}
@@ -126,34 +126,34 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({ creator, variant = 'gr
       </div>
 
       {/* Bottom Info */}
-      <div className="relative z-10 p-4 sm:p-5 space-y-3">
+      <div className="relative z-10 p-3 sm:p-4 space-y-2.5">
           <div className="flex items-center gap-3">
             {creator.avatar ? (
-              <img src={creator.avatar} alt="" className="w-11 h-11 rounded-full object-cover border-2 border-white/70 shrink-0" />
+              <img src={creator.avatar} alt="" className="w-9 h-9 rounded-full object-cover border-2 border-white/70 shrink-0" />
             ) : (
-              <div className="w-11 h-11 rounded-full bg-[#D4A338] text-slate-950 flex items-center justify-center font-black text-sm border-2 border-white/70 shrink-0">
+              <div className="w-9 h-9 rounded-full bg-[#D4A338] text-slate-950 flex items-center justify-center font-black text-xs border-2 border-white/70 shrink-0">
                 {initials}
               </div>
             )}
             <div className="min-w-0">
               <div className="flex items-center gap-1">
-                <h3 className="font-bold text-white text-base sm:text-lg leading-tight group-hover:text-[#D4A338] transition truncate">
+                <h3 className="font-bold text-white text-sm sm:text-base leading-tight group-hover:text-[#D4A338] transition truncate">
                   {creator.name || 'Creator'}
                 </h3>
                 {creator.isVerified && <CheckCircle2 className="w-4 h-4 text-sky-400 fill-white shrink-0" />}
               </div>
-              <p className="text-xs sm:text-sm text-slate-300 font-medium truncate mt-0.5">
+              <p className="text-[10px] sm:text-xs text-slate-300 font-medium truncate mt-0.5">
                 @{creator.username || 'creator'} <span className="text-white/50">•</span> {cityLabel}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center justify-between border-t border-white/20 pt-3 text-xs sm:text-sm">
+          <div className="flex items-center justify-between border-t border-white/20 pt-2.5 text-[10px] sm:text-xs">
             <span className="font-bold text-white">{formatFollowers(creator.followers)} followers</span>
             <span className="font-bold text-white">From ₹{(creator.startingPrice || 0).toLocaleString('en-IN')}</span>
           </div>
 
-          <div className="w-full rounded-full bg-white text-slate-900 group-hover:bg-[#D4A338] px-4 py-3 flex items-center justify-center gap-2 text-sm font-bold transition">
+          <div className="w-full rounded-full bg-white text-slate-900 group-hover:bg-[#D4A338] px-3 py-2.5 flex items-center justify-center gap-2 text-xs sm:text-sm font-bold opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200">
             <span>View Profile</span>
             <ArrowRight className="w-4 h-4" />
           </div>
