@@ -175,7 +175,7 @@ export const HomeHero: React.FC = () => {
             Search Influencers & Promote Your Brand
           </h1>
           <p className="text-[9.5px] xs:text-[11px] sm:text-sm md:text-base text-zinc-400 font-medium max-w-2xl mx-auto leading-snug sm:leading-relaxed">
-            Direct Creator Rates <span className="text-[#D4A338] font-bold">•</span> Verified Analytics <span className="text-[#D4A338] font-bold">•</span> 0% Commission
+            Create Profile in Seconds <span className="text-[#D4A338] font-bold">•</span> 100% Free <span className="text-[#D4A338] font-bold">•</span> Trusted Profile
           </p>
         </div>
 

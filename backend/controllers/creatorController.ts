@@ -29,20 +29,20 @@ export function mapDbRowToCreator(row: any): Creator {
     reelVideoUrl: normalizeMediaUrl(row.reel_video_url),
     bio: row.bio || '',
     currentCity: row.current_city,
-    state: row.state || 'Delhi',
-    preferredCities: typeof row.preferred_cities === 'string' ? JSON.parse(row.preferred_cities) : (row.preferred_cities || [row.current_city]),
+    state: row.state || '',
+    preferredCities: typeof row.preferred_cities === 'string' ? JSON.parse(row.preferred_cities) : (row.preferred_cities || []),
     primaryCategory: row.primary_category,
     subCategories: typeof row.sub_categories === 'string' ? JSON.parse(row.sub_categories) : (row.sub_categories || []),
-    languages: typeof row.languages === 'string' ? JSON.parse(row.languages) : (row.languages || ['Hindi', 'English']),
-    gender: row.gender || 'Female',
-    ageGroup: row.age_group || '22-29',
+    languages: typeof row.languages === 'string' ? JSON.parse(row.languages) : (row.languages || []),
+    gender: row.gender || undefined,
+    ageGroup: row.age_group || '',
     followers: Number(row.followers) || 0,
     engagementRate: Number(row.engagement_rate) || 0,
     avgViews: Number(row.avg_views) || 0,
     avgLikes: Number(row.avg_likes) || 0,
     avgComments: Number(row.avg_comments) || 0,
     brandCollaborationsCount: Number(row.brand_collaborations_count) || 0,
-    trustScore: Number(row.trust_score) || 85,
+    trustScore: Number(row.trust_score) || 0,
     trustSignals: typeof row.trust_signals === 'string' ? JSON.parse(row.trust_signals) : (row.trust_signals || {}),
     isVerified: Boolean(row.is_verified),
     verificationRequested: Boolean(row.verification_requested),
@@ -51,18 +51,28 @@ export function mapDbRowToCreator(row: any): Creator {
     isFeatured: Boolean(row.is_featured),
     isTrending: Boolean(row.is_trending),
     status: row.status || 'active',
-    startingPrice: Number(row.starting_price) || 5000,
+    startingPrice: Number(row.starting_price) || 0,
     pricing: {
-      reelPrice: Number(row.reel_price) || 8000,
-      storyPrice: Number(row.story_price) || 3000,
-      postPrice: Number(row.post_price) || 6000,
-      ugcPrice: Number(row.ugc_price) || 7000,
+      reelPrice: Number(row.reel_price) || 0,
+      storyPrice: Number(row.story_price) || 0,
+      postPrice: Number(row.post_price) || 0,
+      ugcPrice: Number(row.ugc_price) || 0,
       isNegotiable: Boolean(row.is_negotiable),
       isBarterAvailable: Boolean(row.is_barter_available),
       pricingDisplayType: 'starting',
     },
     collaborationTypes: typeof row.collaboration_types === 'string' ? JSON.parse(row.collaboration_types) : (row.collaboration_types || ['Paid', 'UGC']),
-    socialPlatforms: typeof row.social_platforms === 'string' ? JSON.parse(row.social_platforms) : (row.social_platforms || []),
+    socialPlatforms: typeof row.social_platforms === 'string'
+      ? JSON.parse(row.social_platforms)
+      : (row.social_platforms || (row.username ? [{
+        platform: 'instagram',
+        username: row.username,
+        url: `https://instagram.com/${row.username}`,
+        followers: Number(row.followers) || 0,
+        avgViews: Number(row.avg_views) || 0,
+        engagementRate: Number(row.engagement_rate) || 0,
+        verified: false,
+      }] : [])),
     audience: typeof row.audience === 'string' ? JSON.parse(row.audience) : (row.audience || {}),
     portfolio: typeof row.portfolio === 'string' ? JSON.parse(row.portfolio) : (row.portfolio || []),
     phone: row.phone,
@@ -467,6 +477,29 @@ export async function updateCreator(req: Request, res: Response) {
   // Check if they are being verified for the first time
   const wasVerified = creatorsStore[index].isVerified;
   const isNowVerified = req.body.isVerified;
+  const candidate = { ...creatorsStore[index], ...req.body };
+  const completionFields = [
+    Boolean(candidate.avatar && !candidate.avatar.includes('unsplash')),
+    Boolean(candidate.coverImage && !candidate.coverImage.includes('unsplash')),
+    Boolean(candidate.bio && candidate.bio.trim().length > 30),
+    Boolean(candidate.currentCity && candidate.currentCity.trim()),
+    Boolean(candidate.primaryCategory && candidate.primaryCategory.trim()),
+    Number(candidate.followers) > 0,
+    Number(candidate.engagementRate) > 0,
+    Number(candidate.startingPrice) > 0,
+    Boolean((candidate.socialPlatforms || []).some((platform: any) => platform.platform === 'instagram' && platform.username)),
+    Array.isArray(candidate.languages) && candidate.languages.length > 0,
+  ];
+  const completionPct = Math.round((completionFields.filter(Boolean).length / completionFields.length) * 100);
+  if (isNowVerified && completionPct < 70) {
+    return res.status(400).json({
+      success: false,
+      error: `Profile must be at least 70% complete before approval. Current completion: ${completionPct}%.`,
+    });
+  }
+  if (!isNowVerified && completionPct >= 70 && candidate.status === 'pending') {
+    req.body.verificationRequested = true;
+  }
   const shouldSendApprovalEmail = !wasVerified && isNowVerified;
 
   creatorsStore[index] = {

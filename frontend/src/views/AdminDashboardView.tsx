@@ -172,6 +172,26 @@ export const AdminDashboardView: React.FC = () => {
 
   // Approval Handlers
   const handleApproveCreator = (creatorId: string, verify: boolean = true) => {
+    const creator = creators.find((item) => item.id === creatorId);
+    if (verify && creator) {
+      const completed = [
+        Boolean(creator.avatar && !creator.avatar.includes('unsplash')),
+        Boolean(creator.coverImage && !creator.coverImage.includes('unsplash')),
+        Boolean(creator.bio && creator.bio.trim().length > 30),
+        Boolean(creator.currentCity?.trim()),
+        Boolean(creator.primaryCategory?.trim()),
+        creator.followers > 0,
+        creator.engagementRate > 0,
+        creator.startingPrice > 0,
+        creator.socialPlatforms.some((platform) => platform.platform === 'instagram' && platform.username),
+        creator.languages.length > 0,
+      ];
+      const completion = Math.round((completed.filter(Boolean).length / completed.length) * 100);
+      if (completion < 70) {
+        window.alert(`This profile is ${completion}% complete. At least 70% is required before approval.`);
+        return;
+      }
+    }
     updateCreatorProfile(creatorId, {
       status: 'active',
       isVerified: verify,

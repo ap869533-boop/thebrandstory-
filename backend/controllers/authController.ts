@@ -81,7 +81,10 @@ export async function signup(req: Request, res: Response) {
     }
 
     const cleanEmail = email.toLowerCase().trim();
-    const cleanUsername = (username || name).toLowerCase().replace(/[^a-z0-9_]/g, '');
+    const cleanUsername = (username || '').toLowerCase().replace(/^@/, '').trim();
+    const instagramUrl = typeof (req.body as any).instagramUrl === 'string'
+      ? (req.body as any).instagramUrl.trim()
+      : (cleanUsername ? `https://instagram.com/${cleanUsername}` : '');
 
     // Check if user already exists (MySQL or Memory)
     const sqlCheck = 'SELECT id FROM users WHERE email = ? LIMIT 1';
@@ -97,9 +100,7 @@ export async function signup(req: Request, res: Response) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const userId = `usr_${Date.now()}`;
-    const userAvatar = role === 'CREATOR'
-      ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'
-      : '';
+    const userAvatar = '';
 
     // 1. Insert in MySQL users table
     await dbQuery(
@@ -155,7 +156,7 @@ export async function signup(req: Request, res: Response) {
         engagementRate: 5.2,
         avgViews: 24000,
         avgLikes: 1800,
-        avgComments: 110,
+        avgComments: 0,
         brandCollaborationsCount: 2,
         trustScore: 89,
         trustSignals: {
@@ -194,7 +195,7 @@ export async function signup(req: Request, res: Response) {
           {
             platform: 'instagram',
             username: cleanUsername,
-            url: `https://instagram.com/${cleanUsername}`,
+            url: instagramUrl,
             followers: 18500,
             avgViews: 24000,
             engagementRate: 5.2,
@@ -671,81 +672,81 @@ export async function verifyOtp(req: Request, res: Response) {
           name,
           username: cleanUsername,
           avatar: userAvatar,
-          coverImage: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1200&auto=format&fit=crop&q=80',
-          bio: `Verified creator in ${category || 'Lifestyle'} based in ${city || 'Delhi NCR'}.`,
-          currentCity: city || 'Delhi NCR',
-          state: 'Delhi',
-          preferredCities: [city || 'Delhi NCR'],
-          primaryCategory: category || 'Lifestyle',
-          subCategories: [category || 'Lifestyle', 'Fashion'],
-          languages: ['Hindi', 'English'],
-          gender: 'Female',
-          ageGroup: '22-29',
-          followers: 18500,
-          engagementRate: 5.2,
-          avgViews: 24000,
-          avgLikes: 1800,
+          coverImage: '',
+          bio: '',
+          currentCity: city || '',
+          state: '',
+          preferredCities: city ? [city] : [],
+          primaryCategory: category || '',
+          subCategories: [],
+          languages: [],
+          gender: undefined,
+          ageGroup: '',
+          followers: 0,
+          engagementRate: 0,
+          avgViews: 0,
+          avgLikes: 0,
           avgComments: 110,
           brandCollaborationsCount: 0,
-          trustScore: 89,
+          trustScore: 0,
           trustSignals: {
-            profileCompleteness: 90,
+            profileCompleteness: 0,
             phoneVerified: Boolean(phone),
             emailVerified: true,
             socialVerified: false,
-            engagementQuality: 88,
-            audienceQuality: 89,
-            collaborationHistoryScore: 85,
+            engagementQuality: 0,
+            audienceQuality: 0,
+            collaborationHistoryScore: 0,
             verifiedReviewsCount: 0,
-            responseRate: 98,
-            campaignReliability: 92,
-            accountActivityScore: 94,
+            responseRate: 0,
+            campaignReliability: 0,
+            accountActivityScore: 0,
           },
           isVerified: false,
-          verificationRequested: true,
+          verificationRequested: false,
           verificationStepsCompleted: ['Email'],
           isTop20: false,
-          isRising: true,
+          isRising: false,
           isFeatured: false,
-          isTrending: true,
+          isTrending: false,
           status: 'pending',
-          startingPrice: 5000,
+          startingPrice: 0,
           pricing: {
-            reelPrice: 7500,
-            storyPrice: 2500,
-            postPrice: 5000,
-            ugcPrice: 6000,
+            reelPrice: 0,
+            storyPrice: 0,
+            postPrice: 0,
+            ugcPrice: 0,
             isNegotiable: true,
             isBarterAvailable: true,
             pricingDisplayType: 'starting',
           },
-          collaborationTypes: ['Paid', 'Barter', 'UGC'],
+          collaborationTypes: [],
           socialPlatforms: [
             {
               platform: 'instagram',
               username: cleanUsername,
               url: `https://instagram.com/${cleanUsername}`,
-              followers: 18500,
-              avgViews: 24000,
-              engagementRate: 5.2,
+              followers: 0,
+              avgViews: 0,
+              engagementRate: 0,
               verified: false,
             }
           ],
           audience: {
-            topCities: [{ city: city || 'Delhi NCR', percentage: 52 }],
-            topCountries: [{ country: 'India', percentage: 96 }],
-            ageGroups: [{ bracket: '18-24', percentage: 54 }, { bracket: '25-34', percentage: 36 }],
-            genderSplit: [{ gender: 'Female', percentage: 68 }, { gender: 'Male', percentage: 32 }],
-            topInterests: [category || 'Lifestyle', 'Fashion & Style'],
-            avgReach: 32000,
-            avgImpressions: 54000,
+            topCities: [],
+            topCountries: [],
+            ageGroups: [],
+            genderSplit: [],
+            topInterests: [],
+            avgReach: 0,
+            avgImpressions: 0,
           },
           portfolio: [],
           previousCollaborations: [],
           reviews: [],
           phone: phone || '',
           email: cleanEmail,
-          profileViews: 1,
+          profileViews: 0,
           savedCount: 0,
           createdAt: new Date().toISOString(),
         };
