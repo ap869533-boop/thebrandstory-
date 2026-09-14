@@ -153,7 +153,7 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({ creator, variant = 'gr
             <span className="font-bold text-white">From ₹{(creator.startingPrice || 0).toLocaleString('en-IN')}</span>
           </div>
 
-          <div className="w-full rounded-full bg-white text-slate-900 group-hover:bg-[#D4A338] px-3 py-2.5 flex items-center justify-center gap-2 text-xs sm:text-sm font-bold opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200">
+          <div className="w-full rounded-full bg-white text-slate-900 group-hover:bg-[#D4A338] px-3 py-0 max-h-0 opacity-0 overflow-hidden flex items-center justify-center gap-2 text-xs sm:text-sm font-bold group-hover:py-2.5 group-hover:max-h-12 group-hover:opacity-100 transition-all duration-200">
             <span>View Profile</span>
             <ArrowRight className="w-4 h-4" />
           </div>
