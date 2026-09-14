@@ -28,6 +28,7 @@ export interface PricingService {
 }
 
 export interface CreatorPricing {
+  startingPrice?: number;
   reelPrice?: number;
   storyPrice?: number;
   postPrice?: number;
@@ -142,6 +143,7 @@ export interface Creator {
   avgViews: number;
   avgLikes: number;
   avgComments: number;
+  totalPosts?: number;
   brandCollaborationsCount: number;
   trustScore: number;
   trustSignals: TrustSignals;

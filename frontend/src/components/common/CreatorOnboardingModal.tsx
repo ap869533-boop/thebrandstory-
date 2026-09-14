@@ -3,6 +3,7 @@ import { X, Sparkles, CheckCircle2, User, AtSign, MapPin, Phone, Mail, Instagram
 import { usePlatform } from '../../context/PlatformContext';
 import { CATEGORIES_LIST, CITIES_LIST } from '../../data/initialData';
 import confetti from 'canvas-confetti';
+import { cleanInstagramHandle } from '../../utils/sanitize';
 
 export const CreatorOnboardingModal: React.FC = () => {
   const { onboardingModalOpen, closeOnboardingModal, registerCreator, navigateTo, categories, cities } = usePlatform();
@@ -34,7 +35,7 @@ export const CreatorOnboardingModal: React.FC = () => {
       // Complete Registration
       const newCreator = registerCreator({
         name: formData.name,
-        username: formData.username.replace(/^@/, '').trim(),
+        username: cleanInstagramHandle(formData.username),
         currentCity: formData.currentCity,
         primaryCategory: formData.primaryCategory,
         phone: formData.phone,

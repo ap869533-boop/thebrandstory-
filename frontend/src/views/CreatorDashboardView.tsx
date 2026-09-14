@@ -34,6 +34,7 @@ import { usePlatform } from '../context/PlatformContext';
 import { Creator } from '../types';
 import { TrustScoreBadge } from '../components/common/TrustScoreBadge';
 import { ChangePasswordForm } from '../components/common/ChangePasswordForm';
+import { cleanInstagramHandle } from '../utils/sanitize';
 
 export const CreatorDashboardView: React.FC = () => {
   const {
@@ -184,6 +185,7 @@ export const CreatorDashboardView: React.FC = () => {
 
   // === Profile Edit States ===
   const [profileName, setProfileName] = useState(creator.name || '');
+  const [profileUsername, setProfileUsername] = useState(cleanInstagramHandle(creator.username));
   const [profileBio, setProfileBio] = useState(creator.bio || '');
   const [profileCity, setProfileCity] = useState(creator.currentCity || '');
   const [profileState, setProfileState] = useState(creator.state || '');
@@ -193,6 +195,7 @@ export const CreatorDashboardView: React.FC = () => {
   const [profileCategory, setProfileCategory] = useState(creator.primaryCategory || '');
   const [profileSubCats, setProfileSubCats] = useState((creator.subCategories || []).join(', '));
   const [profileFollowers, setProfileFollowers] = useState(creator.followers || 0);
+  const [profileTotalPosts, setProfileTotalPosts] = useState(creator.totalPosts ?? (creator.portfolio?.length || 0));
   const [profileEngagement, setProfileEngagement] = useState(creator.engagementRate || 0);
   const [profileAvgViews, setProfileAvgViews] = useState(creator.avgViews || 0);
   const [profileAvgLikes, setProfileAvgLikes] = useState(creator.avgLikes || 0);
@@ -207,13 +210,14 @@ export const CreatorDashboardView: React.FC = () => {
     if (creator) {
       setBio(creator.bio || '');
       setReelVideoUrl(creator.reelVideoUrl || '');
-      setStartingPrice(creator.startingPrice || 0);
+      setStartingPrice(creator.startingPrice || creator.pricing?.startingPrice || 0);
       setReelPrice(creator.pricing?.reelPrice || 0);
       setStoryPrice(creator.pricing?.storyPrice || 0);
       setUgcPrice(creator.pricing?.ugcPrice || 0);
       setIsBarterAvailable(creator.pricing?.isBarterAvailable ?? false);
       // Sync profile edit states
       setProfileName(creator.name || '');
+      setProfileUsername(cleanInstagramHandle(creator.username));
       setProfileBio(creator.bio || '');
       setProfileCity(creator.currentCity || '');
       setProfileState(creator.state || '');
@@ -223,6 +227,7 @@ export const CreatorDashboardView: React.FC = () => {
       setProfileCategory(creator.primaryCategory || '');
       setProfileSubCats((creator.subCategories || []).join(', '));
       setProfileFollowers(creator.followers || 0);
+      setProfileTotalPosts(creator.totalPosts ?? (creator.portfolio?.length || 0));
       setProfileEngagement(creator.engagementRate || 0);
       setProfileAvgViews(creator.avgViews || 0);
       setProfileAvgLikes(creator.avgLikes || 0);
@@ -231,7 +236,7 @@ export const CreatorDashboardView: React.FC = () => {
       setProfileEventPrice(creator.pricing?.eventPrice || 0);
       setProfileNegotiable(creator.pricing?.isNegotiable ?? true);
     }
-  }, [creator?.id, creator?.startingPrice, creator?.bio, creator?.avatar, creator?.coverImage, creator?.reelVideoUrl]);
+  }, [creator?.id, creator?.startingPrice, creator?.bio, creator?.avatar, creator?.coverImage, creator?.reelVideoUrl, creator?.totalPosts, creator?.followers, creator?.pricing?.reelPrice, creator?.pricing?.storyPrice, creator?.pricing?.postPrice, creator?.pricing?.ugcPrice, creator?.pricing?.eventPrice]);
 
   // Handle Reel / Video Upload
   const handleReelUpload = async (file: File, type: 'video' | 'thumbnail') => {
@@ -510,14 +515,17 @@ export const CreatorDashboardView: React.FC = () => {
     updateCreatorProfile(creator.id, {
       bio,
       reelVideoUrl,
-      startingPrice: Number(startingPrice),
+      startingPrice: Number(startingPrice) || Number(reelPrice) || 0,
       pricing: {
         ...creator.pricing,
-        startingPrice: Number(startingPrice),
+        startingPrice: Number(startingPrice) || Number(reelPrice) || 0,
         reelPrice: Number(reelPrice),
         storyPrice: Number(storyPrice),
+        postPrice: Number(profilePostPrice),
         ugcPrice: Number(ugcPrice),
+        eventPrice: Number(profileEventPrice),
         isBarterAvailable,
+        isNegotiable: profileNegotiable,
       },
     });
     setSavedSuccess(true);
@@ -528,8 +536,11 @@ export const CreatorDashboardView: React.FC = () => {
     e.preventDefault();
     const parsedLanguages = profileLanguages.split(',').map(l => l.trim()).filter(Boolean);
     const parsedSubCats = profileSubCats.split(',').map(s => s.trim()).filter(Boolean);
+    const cleanUser = cleanInstagramHandle(profileUsername) || cleanInstagramHandle(creator.username);
+
     updateCreatorProfile(creator.id, {
       name: profileName.trim(),
+      username: cleanUser,
       bio: profileBio.trim(),
       currentCity: profileCity.trim(),
       state: profileState.trim(),
@@ -539,16 +550,34 @@ export const CreatorDashboardView: React.FC = () => {
       primaryCategory: profileCategory.trim(),
       subCategories: parsedSubCats,
       followers: Number(profileFollowers),
+      totalPosts: Number(profileTotalPosts),
       engagementRate: Number(profileEngagement),
       avgViews: Number(profileAvgViews),
       avgLikes: Number(profileAvgLikes),
       avgComments: Number(profileAvgComments),
+      startingPrice: Number(startingPrice) || Number(reelPrice) || 0,
       pricing: {
         ...creator.pricing,
+        startingPrice: Number(startingPrice) || Number(reelPrice) || 0,
+        reelPrice: Number(reelPrice),
+        storyPrice: Number(storyPrice),
         postPrice: Number(profilePostPrice),
+        ugcPrice: Number(ugcPrice),
         eventPrice: Number(profileEventPrice),
         isNegotiable: profileNegotiable,
+        isBarterAvailable: isBarterAvailable,
       },
+      socialPlatforms: [
+        {
+          platform: 'instagram',
+          username: cleanUser,
+          url: `https://instagram.com/${cleanUser}`,
+          followers: Number(profileFollowers),
+          avgViews: Number(profileAvgViews),
+          engagementRate: Number(profileEngagement),
+          verified: creator.isVerified || false,
+        }
+      ],
     });
     setProfileSaved(true);
     setTimeout(() => setProfileSaved(false), 2500);
@@ -938,6 +967,19 @@ export const CreatorDashboardView: React.FC = () => {
                   />
                 </div>
                 <div>
+                  <label className="block text-slate-600 font-bold mb-1">Instagram Username / Handle *</label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold">@</span>
+                    <input
+                      type="text"
+                      value={profileUsername}
+                      onChange={e => setProfileUsername(cleanInstagramHandle(e.target.value))}
+                      placeholder="e.g. your_instagram_handle"
+                      className="w-full pl-8 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-medium outline-none"
+                    />
+                  </div>
+                </div>
+                <div>
                   <label className="block text-slate-600 font-bold mb-1">Primary Category *</label>
                   <select
                     value={profileCategory}
@@ -1039,7 +1081,7 @@ export const CreatorDashboardView: React.FC = () => {
                 Performance Metrics
                 <span className="text-[10px] font-medium text-slate-400 ml-1">Shown on your public profile</span>
               </h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 text-xs">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-xs">
                 <div>
                   <label className="block text-slate-600 font-bold mb-1">Followers</label>
                   <input
@@ -1047,6 +1089,16 @@ export const CreatorDashboardView: React.FC = () => {
                     value={profileFollowers}
                     onChange={e => setProfileFollowers(Number(e.target.value))}
                     placeholder="165000"
+                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-bold mb-1">Total Posts</label>
+                  <input
+                    type="number"
+                    value={profileTotalPosts}
+                    onChange={e => setProfileTotalPosts(Number(e.target.value))}
+                    placeholder="120"
                     className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold outline-none"
                   />
                 </div>
@@ -1094,54 +1146,94 @@ export const CreatorDashboardView: React.FC = () => {
               </div>
             </div>
 
-            {/* Section 4: Extra Pricing */}
+            {/* Section 4: Commercial Deliverable Pricing */}
             <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-4">
               <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
                 <IndianRupee className="w-4 h-4 text-[#D4A338]" />
-                Additional Pricing
+                Commercial Deliverable Rates (Shown on Public Profile)
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-xs">
                 <div>
-                  <label className="block text-slate-600 font-bold mb-1">Feed Post Price (₹)</label>
+                  <label className="block text-slate-600 font-bold mb-1">Reel (1x) (₹)</label>
+                  <input
+                    type="number"
+                    value={reelPrice}
+                    onChange={e => setReelPrice(Number(e.target.value))}
+                    placeholder="15000"
+                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-bold mb-1">Story (3x) (₹)</label>
+                  <input
+                    type="number"
+                    value={storyPrice}
+                    onChange={e => setStoryPrice(Number(e.target.value))}
+                    placeholder="6000"
+                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-bold mb-1">Feed Post (₹)</label>
                   <input
                     type="number"
                     value={profilePostPrice}
                     onChange={e => setProfilePostPrice(Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold outline-none"
+                    placeholder="10000"
+                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-600 font-bold mb-1">Event / Visit Price (₹)</label>
+                  <label className="block text-slate-600 font-bold mb-1">UGC Video (₹)</label>
+                  <input
+                    type="number"
+                    value={ugcPrice}
+                    onChange={e => setUgcPrice(Number(e.target.value))}
+                    placeholder="12000"
+                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-bold mb-1">Event / Visit (₹)</label>
                   <input
                     type="number"
                     value={profileEventPrice}
                     onChange={e => setProfileEventPrice(Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold outline-none"
+                    placeholder="20000"
+                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold outline-none"
                   />
                 </div>
-                <div className="flex flex-col justify-center">
-                  <label className="block text-slate-600 font-bold mb-1">Pricing Mode</label>
-                  <div className="flex flex-col gap-2 pt-1">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={profileNegotiable}
-                        onChange={e => setProfileNegotiable(e.target.checked)}
-                        className="w-4 h-4 rounded accent-blue-600"
-                      />
-                      <span className="text-xs font-bold text-slate-700">Prices are Negotiable</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={isBarterAvailable}
-                        onChange={e => setIsBarterAvailable(e.target.checked)}
-                        className="w-4 h-4 rounded accent-blue-600"
-                      />
-                      <span className="text-xs font-bold text-slate-700">Barter / Product Collab Available</span>
-                    </label>
-                  </div>
+                <div>
+                  <label className="block text-slate-600 font-bold mb-1">Starting Price (₹)</label>
+                  <input
+                    type="number"
+                    value={startingPrice}
+                    onChange={e => setStartingPrice(Number(e.target.value))}
+                    placeholder="5000"
+                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold outline-none"
+                  />
                 </div>
+              </div>
+
+              <div className="pt-2 flex flex-wrap items-center gap-6 text-xs">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={profileNegotiable}
+                    onChange={e => setProfileNegotiable(e.target.checked)}
+                    className="w-4 h-4 rounded accent-blue-600"
+                  />
+                  <span className="font-bold text-slate-700">Prices are Negotiable</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isBarterAvailable}
+                    onChange={e => setIsBarterAvailable(e.target.checked)}
+                    className="w-4 h-4 rounded accent-blue-600"
+                  />
+                  <span className="font-bold text-slate-700">Available for Barter / Product Collab</span>
+                </label>
               </div>
             </div>
 
@@ -1163,7 +1255,7 @@ export const CreatorDashboardView: React.FC = () => {
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div>
                 <h3 className="text-base font-black text-slate-900">Manage Commercial Rate Card</h3>
-                <p className="text-xs text-slate-500">Update your pricing. Changes are directly saved to the MySQL database.</p>
+                <p className="text-xs text-slate-500">Update your deliverable pricing. Changes are directly saved to the MySQL database.</p>
               </div>
               <button
                 type="submit"
@@ -1181,19 +1273,9 @@ export const CreatorDashboardView: React.FC = () => {
               </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-xs">
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Starting Price (₹)</label>
-                <input
-                  type="number"
-                  value={startingPrice}
-                  onChange={(e) => setStartingPrice(Number(e.target.value))}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-bold mb-1">Instagram Reel (₹)</label>
+                <label className="block text-slate-700 font-bold mb-1">Reel (1x) (₹)</label>
                 <input
                   type="number"
                   value={reelPrice}
@@ -1213,11 +1295,41 @@ export const CreatorDashboardView: React.FC = () => {
               </div>
 
               <div>
+                <label className="block text-slate-700 font-bold mb-1">Feed Post (₹)</label>
+                <input
+                  type="number"
+                  value={profilePostPrice}
+                  onChange={(e) => setProfilePostPrice(Number(e.target.value))}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold"
+                />
+              </div>
+
+              <div>
                 <label className="block text-slate-700 font-bold mb-1">UGC Video Ad (₹)</label>
                 <input
                   type="number"
                   value={ugcPrice}
                   onChange={(e) => setUgcPrice(Number(e.target.value))}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">Event / Visit (₹)</label>
+                <input
+                  type="number"
+                  value={profileEventPrice}
+                  onChange={(e) => setProfileEventPrice(Number(e.target.value))}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">Starting Price (₹)</label>
+                <input
+                  type="number"
+                  value={startingPrice}
+                  onChange={(e) => setStartingPrice(Number(e.target.value))}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold"
                 />
               </div>

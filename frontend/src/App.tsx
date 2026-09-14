@@ -1,5 +1,4 @@
 import React from 'react';
-import '@designcodeio/threeui/style.css';
 import { PlatformProvider, usePlatform } from './context/PlatformContext';
 import { Header } from './components/common/Header';
 import { Footer } from './components/common/Footer';

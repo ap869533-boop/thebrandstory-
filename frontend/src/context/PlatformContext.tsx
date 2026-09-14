@@ -16,6 +16,7 @@ import {
   CityInfo,
   IndustryCardInfo
 } from '../types';
+import { cleanInstagramHandle } from '../utils/sanitize';
 
 const normalizeCreatorMedia = (creator: Creator): Creator => ({
   ...creator,
@@ -1026,11 +1027,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Creator Registration & Updates
   const registerCreator = (newCreatorData: Partial<Creator>): Creator => {
     const newId = `c_${Date.now()}`;
-    const submittedUsername = (newCreatorData.username || '').trim();
-    const cleanUsername = (submittedUsername.match(/instagram\.com\/([^/?#]+)/i)?.[1] || submittedUsername || newCreatorData.name || '')
-      .toLowerCase()
-      .replace(/^@/, '')
-      .replace(/[^a-z0-9_]/g, '');
+    const cleanUsername = cleanInstagramHandle(newCreatorData.username || newCreatorData.name || '');
 
     const completeCreator: Creator = {
       id: newId,
@@ -1048,6 +1045,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       gender: newCreatorData.gender,
       ageGroup: newCreatorData.ageGroup || '',
       followers: newCreatorData.followers || 0,
+      totalPosts: newCreatorData.totalPosts || 0,
       engagementRate: newCreatorData.engagementRate || 0,
       avgViews: newCreatorData.avgViews || 0,
       avgLikes: newCreatorData.avgLikes || 0,
@@ -1088,7 +1086,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       },
       collaborationTypes: newCreatorData.collaborationTypes || [],
       socialPlatforms: newCreatorData.socialPlatforms || (cleanUsername ? [
-        { platform: 'instagram', username: cleanUsername, url: submittedUsername.match(/^https?:\/\//i) ? submittedUsername : `https://instagram.com/${cleanUsername}`, followers: newCreatorData.followers || 0, avgViews: 0, engagementRate: 0, verified: false }
+        { platform: 'instagram', username: cleanUsername, url: `https://instagram.com/${cleanUsername}`, followers: newCreatorData.followers || 0, avgViews: 0, engagementRate: 0, verified: false }
       ] : []),
       audience: newCreatorData.audience || {
         topCities: [],
@@ -1130,7 +1128,16 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const updateCreatorProfile = (creatorId: string, updates: Partial<Creator>) => {
-    setCreators(prev => prev.map(c => c.id === creatorId ? { ...c, ...updates } : c));
+    setCreators(prev => prev.map(c => {
+      if (c.id === creatorId) {
+        return {
+          ...c,
+          ...updates,
+          pricing: updates.pricing ? { ...c.pricing, ...updates.pricing } : c.pricing,
+        };
+      }
+      return c;
+    }));
 
     // Also keep authUser and authUser.creatorProfile in sync with all updates
     setAuthUser(prev => {
@@ -1141,6 +1148,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         updatedUser.creatorProfile = {
           ...prev.creatorProfile,
           ...updates,
+          pricing: updates.pricing ? { ...prev.creatorProfile.pricing, ...updates.pricing } : prev.creatorProfile.pricing,
         };
       }
       localStorage.setItem('sc_auth_user', JSON.stringify(updatedUser));

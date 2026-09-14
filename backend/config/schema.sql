@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS `creators` (
   
   -- Metrics
   `followers` INT UNSIGNED DEFAULT 0,
+  `total_posts` INT UNSIGNED DEFAULT 0,
   `engagement_rate` DECIMAL(4, 2) DEFAULT 0.00,
   `avg_views` INT UNSIGNED DEFAULT 0,
   `avg_likes` INT UNSIGNED DEFAULT 0,
@@ -67,6 +68,7 @@ CREATE TABLE IF NOT EXISTS `creators` (
   `story_price` INT UNSIGNED DEFAULT 3000,
   `post_price` INT UNSIGNED DEFAULT 6000,
   `ugc_price` INT UNSIGNED DEFAULT 7000,
+  `event_price` INT UNSIGNED DEFAULT 10000,
   `is_negotiable` BOOLEAN DEFAULT TRUE,
   `is_barter_available` BOOLEAN DEFAULT FALSE,
   `collaboration_types` JSON DEFAULT NULL,

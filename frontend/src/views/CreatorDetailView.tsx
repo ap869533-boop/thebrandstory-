@@ -33,6 +33,7 @@ import {
 import { usePlatform } from '../context/PlatformContext';
 import { TrustScoreBadge } from '../components/common/TrustScoreBadge';
 import { Creator } from '../types';
+import { cleanInstagramHandle } from '../utils/sanitize';
 
 export const CreatorDetailView: React.FC = () => {
   const {
@@ -155,16 +156,21 @@ export const CreatorDetailView: React.FC = () => {
     ? creator.previousCollaborations
     : [];
 
+  const cleanHandle = cleanInstagramHandle(creator.username);
+  const instagramUrl = (creator.socialPlatforms?.find((platform) => platform.platform === 'instagram')?.url && !creator.socialPlatforms.find((platform) => platform.platform === 'instagram')?.url.includes('?stkn-'))
+    ? creator.socialPlatforms.find((platform) => platform.platform === 'instagram')!.url
+    : `https://instagram.com/${cleanHandle}`;
+
   return (
     <div className="min-h-screen bg-slate-50/60 pb-16 font-sans">
-      {/* 1. Sub-Header Navigation Bar */}
-      <div className="sticky top-16 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-6 lg:px-8 py-3 shadow-2xs">
+      {/* 1. Sub-Header Navigation Bar - Clean & Top-Aligned */}
+      <div className="sticky top-16 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-6 lg:px-8 py-2 sm:py-2.5 shadow-2xs">
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
           <button
             onClick={() => navigateTo('explore')}
-            className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-900 transition cursor-pointer py-1"
+            className="inline-flex items-center gap-2 text-xs font-bold text-slate-700 hover:text-black hover:bg-slate-100/80 px-3 py-1.5 rounded-xl border border-slate-200/70 bg-white shadow-2xs transition cursor-pointer"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-3.5 h-3.5 text-slate-600" />
             <span>Back to Discovery</span>
           </button>
 
@@ -201,7 +207,7 @@ export const CreatorDetailView: React.FC = () => {
       </div>
 
       {/* Main Content Container */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 sm:pt-4 pb-8 space-y-6">
         {/* 2. Realistic Profile Hero Card */}
         <div className="bg-white rounded-2xl p-6 sm:p-7 border border-slate-200/80 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           {/* Creator Details */}
@@ -228,12 +234,12 @@ export const CreatorDetailView: React.FC = () => {
                   {creator.name}
                 </h1>
                 <a
-                  href={creator.socialPlatforms?.find((platform) => platform.platform === 'instagram')?.url || `https://instagram.com/${creator.username}`}
+                  href={instagramUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-[#D4A338] transition bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-200"
+                  className="inline-flex items-center gap-1 text-xs font-bold text-slate-600 hover:text-[#D4A338] transition bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-200"
                 >
-                  <span>@{creator.username}</span>
+                  <span>@{cleanHandle || 'creator'}</span>
                   <ExternalLink className="w-3 h-3 text-slate-400" />
                 </a>
               </div>
@@ -292,7 +298,9 @@ export const CreatorDetailView: React.FC = () => {
 
             <div className="text-center">
               <span className="text-2xl sm:text-3xl font-black text-slate-900 block tracking-tight">
-                {creator.brandCollaborationsCount ? `${creator.brandCollaborationsCount * 45}` : '855'}
+                {creator.totalPosts !== undefined && creator.totalPosts > 0
+                  ? creator.totalPosts.toLocaleString('en-IN')
+                  : (creator.portfolio && creator.portfolio.length > 0 ? creator.portfolio.length.toString() : '0')}
               </span>
               <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mt-0.5">
                 Posts

@@ -147,6 +147,7 @@ export interface Creator {
   avgViews: number;
   avgLikes: number;
   avgComments: number;
+  totalPosts?: number;
   brandCollaborationsCount: number;
   
   // Trust

@@ -3,6 +3,7 @@ import { dbQuery } from '../config/db';
 import { INITIAL_CREATORS } from '../data/initialData';
 import { Creator } from '../types';
 import { sendApprovalEmail } from '../utils/mailer';
+import { cleanInstagramHandle } from '../utils/sanitize';
 
 // In-Memory store initialized with seed data as resilient fallback
 export let creatorsStore: Creator[] = [...INITIAL_CREATORS];
@@ -37,6 +38,7 @@ export function mapDbRowToCreator(row: any): Creator {
     gender: row.gender || undefined,
     ageGroup: row.age_group || '',
     followers: Number(row.followers) || 0,
+    totalPosts: Number(row.total_posts) || 0,
     engagementRate: Number(row.engagement_rate) || 0,
     avgViews: Number(row.avg_views) || 0,
     avgLikes: Number(row.avg_likes) || 0,
@@ -53,10 +55,12 @@ export function mapDbRowToCreator(row: any): Creator {
     status: row.status || 'active',
     startingPrice: Number(row.starting_price) || 0,
     pricing: {
+      startingPrice: Number(row.starting_price) || 0,
       reelPrice: Number(row.reel_price) || 0,
       storyPrice: Number(row.story_price) || 0,
       postPrice: Number(row.post_price) || 0,
       ugcPrice: Number(row.ugc_price) || 0,
+      eventPrice: Number(row.event_price) || 0,
       isNegotiable: Boolean(row.is_negotiable),
       isBarterAvailable: Boolean(row.is_barter_available),
       pricingDisplayType: 'starting',
@@ -504,17 +508,24 @@ export async function updateCreator(req: Request, res: Response) {
   }
   const shouldSendApprovalEmail = !wasVerified && isNowVerified;
 
+  const body = req.body;
+  const sanitizedUsername = body.username ? cleanInstagramHandle(body.username) : undefined;
+  if (sanitizedUsername) body.username = sanitizedUsername;
+
   creatorsStore[index] = {
     ...creatorsStore[index],
-    ...req.body,
+    ...body,
+    pricing: {
+      ...creatorsStore[index].pricing,
+      ...(body.pricing || {}),
+    },
   };
-
-  const body = req.body;
 
   // Comprehensive MySQL Update
   dbQuery(
     `UPDATE creators SET
       name = COALESCE(?, name),
+      username = COALESCE(?, username),
       bio = COALESCE(?, bio),
       avatar = COALESCE(?, avatar),
       cover_image = COALESCE(?, cover_image),
@@ -528,6 +539,7 @@ export async function updateCreator(req: Request, res: Response) {
       gender = COALESCE(?, gender),
       age_group = COALESCE(?, age_group),
       followers = COALESCE(?, followers),
+      total_posts = COALESCE(?, total_posts),
       engagement_rate = COALESCE(?, engagement_rate),
       avg_views = COALESCE(?, avg_views),
       avg_likes = COALESCE(?, avg_likes),
@@ -535,7 +547,11 @@ export async function updateCreator(req: Request, res: Response) {
       starting_price = COALESCE(?, starting_price),
       reel_price = COALESCE(?, reel_price),
       story_price = COALESCE(?, story_price),
+      post_price = COALESCE(?, post_price),
       ugc_price = COALESCE(?, ugc_price),
+      event_price = COALESCE(?, event_price),
+      is_negotiable = COALESCE(?, is_negotiable),
+      is_barter_available = COALESCE(?, is_barter_available),
       is_verified = COALESCE(?, is_verified),
       is_top20 = COALESCE(?, is_top20),
       is_featured = COALESCE(?, is_featured),
@@ -545,6 +561,7 @@ export async function updateCreator(req: Request, res: Response) {
      WHERE id = ?`,
     [
       body.name !== undefined ? body.name : null,
+      body.username !== undefined ? body.username : null,
       body.bio !== undefined ? body.bio : null,
       body.avatar !== undefined ? body.avatar : null,
       body.coverImage !== undefined ? body.coverImage : null,
@@ -558,14 +575,19 @@ export async function updateCreator(req: Request, res: Response) {
       body.gender !== undefined ? body.gender : null,
       body.ageGroup !== undefined ? body.ageGroup : null,
       body.followers !== undefined ? body.followers : null,
+      body.totalPosts !== undefined ? body.totalPosts : null,
       body.engagementRate !== undefined ? body.engagementRate : null,
       body.avgViews !== undefined ? body.avgViews : null,
       body.avgLikes !== undefined ? body.avgLikes : null,
       body.avgComments !== undefined ? body.avgComments : null,
-      body.startingPrice !== undefined ? body.startingPrice : null,
+      body.startingPrice !== undefined ? body.startingPrice : (body.pricing?.startingPrice !== undefined ? body.pricing.startingPrice : null),
       body.pricing?.reelPrice !== undefined ? body.pricing.reelPrice : null,
       body.pricing?.storyPrice !== undefined ? body.pricing.storyPrice : null,
+      body.pricing?.postPrice !== undefined ? body.pricing.postPrice : null,
       body.pricing?.ugcPrice !== undefined ? body.pricing.ugcPrice : null,
+      body.pricing?.eventPrice !== undefined ? body.pricing.eventPrice : null,
+      body.pricing?.isNegotiable !== undefined ? (body.pricing.isNegotiable ? 1 : 0) : null,
+      body.pricing?.isBarterAvailable !== undefined ? (body.pricing.isBarterAvailable ? 1 : 0) : null,
       body.isVerified !== undefined ? (body.isVerified ? 1 : 0) : null,
       body.isTop20 !== undefined ? (body.isTop20 ? 1 : 0) : null,
       body.isFeatured !== undefined ? (body.isFeatured ? 1 : 0) : null,

@@ -6,6 +6,7 @@ import { AuthenticatedRequest } from '../middleware/authMiddleware';
 import { creatorsStore, mapDbRowToCreator } from './creatorController';
 import { Creator } from '../types';
 import { sendOtpEmail, sendWelcomeEmail } from '../utils/mailer';
+import { cleanInstagramHandle } from '../utils/sanitize';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'social_cults_super_secret_jwt_key_2026';
 
@@ -81,10 +82,8 @@ export async function signup(req: Request, res: Response) {
     }
 
     const cleanEmail = email.toLowerCase().trim();
-    const cleanUsername = (username || '').toLowerCase().replace(/^@/, '').trim();
-    const instagramUrl = typeof (req.body as any).instagramUrl === 'string'
-      ? (req.body as any).instagramUrl.trim()
-      : (cleanUsername ? `https://instagram.com/${cleanUsername}` : '');
+    const cleanUsername = cleanInstagramHandle(username || (req.body as any).instagramUrl || '');
+    const instagramUrl = cleanUsername ? `https://instagram.com/${cleanUsername}` : '';
 
     // Check if user already exists (MySQL or Memory)
     const sqlCheck = 'SELECT id FROM users WHERE email = ? LIMIT 1';
@@ -621,16 +620,8 @@ export async function verifyOtp(req: Request, res: Response) {
       }
 
       isNewUser = true;
-      const instagramUrl = typeof req.body.instagramUrl === 'string'
-        ? req.body.instagramUrl.trim()
-        : '';
-      const usernameFromUrl = instagramUrl
-        ? instagramUrl.replace(/\/+$/, '').split('/').pop() || ''
-        : '';
-      const cleanUsername = (usernameFromUrl || username || '')
-        .replace(/^@/, '')
-        .toLowerCase()
-        .trim();
+      const cleanUsername = cleanInstagramHandle(req.body.instagramUrl || username || '');
+      const instagramUrl = cleanUsername ? `https://instagram.com/${cleanUsername}` : '';
       const userId = `usr_${Date.now()}`;
       const userAvatar = '';
 
