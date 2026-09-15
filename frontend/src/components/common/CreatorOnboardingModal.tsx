@@ -16,10 +16,9 @@ export const CreatorOnboardingModal: React.FC = () => {
     primaryCategory: '',
     phone: '',
     email: '',
-    followers: 0,
-    engagementRate: 0,
-    avgViews: 0,
-    startingPrice: 0,
+    followers: '' as string | number,
+    avgViews: '' as string | number,
+    startingPrice: '' as string | number,
     isBarterAvailable: false,
     bio: '',
     avatar: '',
@@ -41,7 +40,7 @@ export const CreatorOnboardingModal: React.FC = () => {
         phone: formData.phone,
         email: formData.email,
         followers: Number(formData.followers),
-        engagementRate: Number(formData.engagementRate),
+        engagementRate: 0,
         avgViews: Number(formData.avgViews),
         startingPrice: Number(formData.startingPrice),
         bio: formData.bio,
@@ -75,13 +74,6 @@ export const CreatorOnboardingModal: React.FC = () => {
     }
   };
 
-  const sampleAvatars = [
-    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&auto=format&fit=crop&q=80',
-  ];
 
   return (
     <div
@@ -234,22 +226,12 @@ export const CreatorOnboardingModal: React.FC = () => {
                     required
                     placeholder="25000"
                     value={formData.followers}
-                    onChange={(e) => setFormData({ ...formData, followers: Number(e.target.value) })}
+                    onChange={(e) => setFormData({ ...formData, followers: e.target.value === '' ? '' : Number(e.target.value) })}
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 font-medium"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-slate-800 text-xs font-bold mb-1.5">Engagement Rate (%)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    placeholder="4.8"
-                    value={formData.engagementRate}
-                    onChange={(e) => setFormData({ ...formData, engagementRate: Number(e.target.value) })}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 font-medium"
-                  />
-                </div>
+
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -259,7 +241,7 @@ export const CreatorOnboardingModal: React.FC = () => {
                     type="number"
                     placeholder="18000"
                     value={formData.avgViews}
-                    onChange={(e) => setFormData({ ...formData, avgViews: Number(e.target.value) })}
+                    onChange={(e) => setFormData({ ...formData, avgViews: e.target.value === '' ? '' : Number(e.target.value) })}
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 font-medium"
                   />
                 </div>
@@ -270,7 +252,7 @@ export const CreatorOnboardingModal: React.FC = () => {
                     type="number"
                     placeholder="5000"
                     value={formData.startingPrice}
-                    onChange={(e) => setFormData({ ...formData, startingPrice: Number(e.target.value) })}
+                    onChange={(e) => setFormData({ ...formData, startingPrice: e.target.value === '' ? '' : Number(e.target.value) })}
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 font-medium"
                   />
                 </div>
@@ -305,22 +287,7 @@ export const CreatorOnboardingModal: React.FC = () => {
                 />
               </div>
 
-              <div>
-                <label className="block text-slate-800 text-xs font-bold mb-1.5">Select Profile Avatar</label>
-                <div className="flex items-center gap-3 py-2 overflow-x-auto">
-                  {sampleAvatars.map((url, idx) => (
-                    <img
-                      key={idx}
-                      src={url}
-                      alt="Sample avatar"
-                      onClick={() => setFormData({ ...formData, avatar: url })}
-                      className={`w-12 h-12 rounded-full object-cover cursor-pointer border-2 transition ${
-                        formData.avatar === url ? 'border-blue-600 scale-105 ring-2 ring-blue-200' : 'border-transparent opacity-70 hover:opacity-100'
-                      }`}
-                    />
-                  ))}
-                </div>
-              </div>
+
 
               <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-xl text-blue-900 text-[11px] space-y-1">
                 <span className="font-bold block">✓ Instant Live Directory Inclusion</span>

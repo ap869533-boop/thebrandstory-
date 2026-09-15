@@ -870,3 +870,88 @@ export async function changePassword(req: AuthenticatedRequest, res: Response) {
     res.status(500).json({ success: false, error: 'Failed to change password' });
   }
 }
+
+export async function forgotPasswordOtp(req: Request, res: Response) {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, error: 'Email is required' });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+
+    // Check if user exists
+    const sqlUser = 'SELECT * FROM users WHERE email = ? LIMIT 1';
+    const dbUsers = await dbQuery(sqlUser, [cleanEmail]);
+
+    let user: any = null;
+    if (dbUsers && dbUsers.length > 0) {
+      user = dbUsers[0];
+    } else {
+      user = memoryUsers.find((u) => u.email === cleanEmail);
+    }
+
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'No account found with this email' });
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expires = Date.now() + 5 * 60 * 1000;
+
+    otpCache.set(cleanEmail, { otp, expires });
+
+    // Reusing the sendOtpEmail utility for simplicity.
+    await sendOtpEmail(cleanEmail, otp);
+
+    res.json({ success: true, message: 'OTP sent to your email for password reset.' });
+  } catch (error: any) {
+    console.error('Forgot password OTP error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Failed to send OTP' });
+  }
+}
+
+export async function resetPassword(req: Request, res: Response) {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ success: false, error: 'Email, OTP, and new password are required' });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+    const cachedData = otpCache.get(cleanEmail);
+
+    if (!cachedData) {
+      return res.status(400).json({ success: false, error: 'OTP expired or not requested' });
+    }
+
+    if (Date.now() > cachedData.expires) {
+      otpCache.delete(cleanEmail);
+      return res.status(400).json({ success: false, error: 'OTP has expired' });
+    }
+
+    if (cachedData.otp !== otp.toString()) {
+      return res.status(400).json({ success: false, error: 'Invalid OTP' });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update in MySQL
+    await dbQuery('UPDATE users SET password_hash = ? WHERE email = ?', [hashedPassword, cleanEmail])
+      .catch(err => console.warn('MySQL password reset notice:', err));
+
+    // Update in memory if fallback is used
+    const memUser = memoryUsers.find(u => u.email === cleanEmail);
+    if (memUser) memUser.password_hash = hashedPassword;
+
+    // Clear OTP
+    otpCache.delete(cleanEmail);
+
+    res.json({ success: true, message: 'Password has been successfully reset. You can now login.' });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ success: false, error: 'Failed to reset password' });
+  }
+}

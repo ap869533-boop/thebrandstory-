@@ -419,7 +419,7 @@ export async function createCreator(req: Request, res: Response) {
         followers, engagement_rate, starting_price, reel_price, story_price, post_price,
         ugc_price, is_barter_available, collaboration_types, preferred_cities, sub_categories,
         languages, trust_score, is_verified, verification_requested, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
       [
         newCreator.id,
         newCreator.name,

@@ -72,6 +72,8 @@ export const AuthModal: React.FC = () => {
   // OTP Fields
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState('');
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [resetOtpSent, setResetOtpSent] = useState(false);
 
   // Reset fields cleanly when modal opens to prevent stale browser autofills
   useEffect(() => {
@@ -88,6 +90,8 @@ export const AuthModal: React.FC = () => {
       setCity('');
       setOtp('');
       setOtpSent(false);
+      setIsForgotPassword(false);
+      setResetOtpSent(false);
       setErrorMsg(null);
       setSuccessMsg(null);
       setFieldErrors({});
@@ -194,7 +198,42 @@ export const AuthModal: React.FC = () => {
     setRegistrationSuccess(false);
 
     try {
-      if (mode === 'login') {
+      if (isForgotPassword) {
+        if (!resetOtpSent) {
+          // Request OTP for password reset
+          const res = await fetch(apiUrl('/api/auth/forgot-password-otp'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email.trim() }),
+          });
+          const data = await readApiResponse(res);
+          if (!res.ok || !data.success) {
+            throw new Error(data.error || 'Failed to send OTP for reset');
+          }
+          setResetOtpSent(true);
+          setSuccessMsg(`OTP sent to ${email.trim()} for password reset.`);
+        } else {
+          // Verify OTP and reset password
+          const res = await fetch(apiUrl('/api/auth/reset-password'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email.trim(), otp: otp.trim(), newPassword: password }),
+          });
+          const data = await readApiResponse(res);
+          if (!res.ok || !data.success) {
+            throw new Error(data.error || 'Password reset failed');
+          }
+          setSuccessMsg('Password successfully reset! You can now login.');
+          setTimeout(() => {
+            setIsForgotPassword(false);
+            setResetOtpSent(false);
+            setMode('login');
+            setPassword('');
+            setOtp('');
+            setSuccessMsg(null);
+          }, 2000);
+        }
+      } else if (mode === 'login') {
         const res = await fetch(apiUrl('/api/auth/login'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -371,7 +410,7 @@ export const AuthModal: React.FC = () => {
             />
           </div>
           <h2 className="text-2xl font-black tracking-tight text-slate-900">
-            {mode === 'login' ? 'Sign In to thebrandsstory.' : 'Create Your Account'}
+            {isForgotPassword ? 'Reset Password' : mode === 'login' ? 'Sign In to thebrandsstory.' : 'Create Your Account'}
           </h2>
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
             {mode === 'login'
@@ -381,7 +420,7 @@ export const AuthModal: React.FC = () => {
         </div>
 
         {/* Mode Switcher Tabs */}
-        {!otpSent && (
+        {!otpSent && !isForgotPassword && (
           <div className="flex p-1 bg-slate-100 rounded-xl">
             <button
               type="button"
@@ -446,9 +485,9 @@ export const AuthModal: React.FC = () => {
 
         {/* Form */}
         <form onSubmit={handleSubmit} noValidate className="space-y-3.5 text-xs">
-          {!otpSent ? (
+          {(!otpSent && !resetOtpSent) ? (
             <>
-              {mode === 'signup' && (
+              {mode === 'signup' && !isForgotPassword && (
                 <>
                   {/* Role Selection */}
                   <div>
@@ -687,8 +726,9 @@ export const AuthModal: React.FC = () => {
               </div>
 
               {/* Password */}
-              <div>
-                <label className="block text-slate-800 text-xs font-bold mb-1.5">Password *</label>
+              {!isForgotPassword && (
+                <div>
+                  <label className="block text-slate-800 text-xs font-bold mb-1.5">Password *</label>
                 <div className="relative">
                   <KeyRound className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5 pointer-events-none" />
                   <input
@@ -724,6 +764,23 @@ export const AuthModal: React.FC = () => {
                   </span>
                 )}
               </div>
+              )}
+
+              {mode === 'login' && !isForgotPassword && (
+                <div className="flex justify-end mt-1">
+                  <button type="button" onClick={() => { setIsForgotPassword(true); setFieldErrors({}); }} className="text-[11px] font-bold text-[#b88628] hover:text-[#916a1f] cursor-pointer">
+                    Forgot Password?
+                  </button>
+                </div>
+              )}
+
+              {isForgotPassword && (
+                <div className="flex justify-center mt-2">
+                  <button type="button" onClick={() => { setIsForgotPassword(false); setFieldErrors({}); }} className="text-[11px] font-bold text-slate-500 hover:text-slate-800 cursor-pointer">
+                    Back to Sign In
+                  </button>
+                </div>
+              )}
             </>
           ) : (
             // OTP Phase
@@ -731,7 +788,11 @@ export const AuthModal: React.FC = () => {
               <button 
                 type="button"
                 onClick={() => {
-                  setOtpSent(false);
+                  if (isForgotPassword) {
+                    setResetOtpSent(false);
+                  } else {
+                    setOtpSent(false);
+                  }
                   setSuccessMsg(null);
                   setErrorMsg(null);
                   setOtp('');
@@ -772,6 +833,44 @@ export const AuthModal: React.FC = () => {
               <p className="text-center text-slate-500 text-[11px]">
                 Please check your email. We sent a code to <span className="font-bold text-slate-800">{email}</span>. 
               </p>
+
+              {isForgotPassword && (
+                <div>
+                  <label className="block text-slate-800 text-xs font-bold mb-1.5">New Password *</label>
+                  <div className="relative">
+                    <KeyRound className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5 pointer-events-none" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Create a strong password"
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        if (fieldErrors.password) validate();
+                      }}
+                      onBlur={() => handleBlur('password')}
+                      className={`w-full pl-10 pr-11 py-3 bg-slate-50 border rounded-xl focus:bg-white focus:outline-none transition font-medium ${
+                        touched.password && fieldErrors.password
+                          ? 'border-rose-400 focus:border-rose-500 bg-rose-50/30'
+                          : touched.password && !fieldErrors.password && password
+                          ? 'border-emerald-400'
+                          : 'border-slate-200 focus:border-blue-500'
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-3 text-slate-400 hover:text-slate-700 transition cursor-pointer p-0.5"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  {touched.password && fieldErrors.password && (
+                    <span className="text-[11px] text-rose-600 font-semibold mt-1 block">
+                      {fieldErrors.password}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -789,7 +888,9 @@ export const AuthModal: React.FC = () => {
             ) : (
               <>
                 <span>
-                  {mode === 'login'
+                  {isForgotPassword
+                    ? resetOtpSent ? 'Reset Password' : 'Get OTP'
+                    : mode === 'login'
                     ? 'Login'
                     : !otpSent
                     ? 'Get OTP'

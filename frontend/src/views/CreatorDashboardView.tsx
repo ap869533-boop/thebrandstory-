@@ -176,10 +176,10 @@ export const CreatorDashboardView: React.FC = () => {
   // Form states synced with creator's database fields
   const [bio, setBio] = useState(creator.bio || '');
   const [reelVideoUrl, setReelVideoUrl] = useState(creator.reelVideoUrl || '');
-  const [startingPrice, setStartingPrice] = useState(creator.startingPrice || 0);
-  const [reelPrice, setReelPrice] = useState(creator.pricing?.reelPrice || 0);
-  const [storyPrice, setStoryPrice] = useState(creator.pricing?.storyPrice || 0);
-  const [ugcPrice, setUgcPrice] = useState(creator.pricing?.ugcPrice || 0);
+  const [startingPrice, setStartingPrice] = useState<number | string>(creator.startingPrice || '');
+  const [reelPrice, setReelPrice] = useState<number | string>(creator.pricing?.reelPrice || '');
+  const [storyPrice, setStoryPrice] = useState<number | string>(creator.pricing?.storyPrice || '');
+  const [ugcPrice, setUgcPrice] = useState<number | string>(creator.pricing?.ugcPrice || '');
   const [isBarterAvailable, setIsBarterAvailable] = useState(creator.pricing?.isBarterAvailable ?? false);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
@@ -194,14 +194,13 @@ export const CreatorDashboardView: React.FC = () => {
   const [profileLanguages, setProfileLanguages] = useState((creator.languages || []).join(', '));
   const [profileCategory, setProfileCategory] = useState(creator.primaryCategory || '');
   const [profileSubCats, setProfileSubCats] = useState((creator.subCategories || []).join(', '));
-  const [profileFollowers, setProfileFollowers] = useState(creator.followers || 0);
-  const [profileTotalPosts, setProfileTotalPosts] = useState(creator.totalPosts ?? (creator.portfolio?.length || 0));
-  const [profileEngagement, setProfileEngagement] = useState(creator.engagementRate || 0);
-  const [profileAvgViews, setProfileAvgViews] = useState(creator.avgViews || 0);
-  const [profileAvgLikes, setProfileAvgLikes] = useState(creator.avgLikes || 0);
-  const [profileAvgComments, setProfileAvgComments] = useState(creator.avgComments || 0);
-  const [profilePostPrice, setProfilePostPrice] = useState(creator.pricing?.postPrice || 0);
-  const [profileEventPrice, setProfileEventPrice] = useState(creator.pricing?.eventPrice || 0);
+  const [profileFollowers, setProfileFollowers] = useState<number | string>(creator.followers || '');
+  const [profileTotalPosts, setProfileTotalPosts] = useState<number | string>(creator.totalPosts || (creator.portfolio?.length || ''));
+  const [profileAvgViews, setProfileAvgViews] = useState<number | string>(creator.avgViews || '');
+  const [profileAvgLikes, setProfileAvgLikes] = useState<number | string>(creator.avgLikes || '');
+  const [profileAvgComments, setProfileAvgComments] = useState<number | string>(creator.avgComments || '');
+  const [profilePostPrice, setProfilePostPrice] = useState<number | string>(creator.pricing?.postPrice || '');
+  const [profileEventPrice, setProfileEventPrice] = useState<number | string>(creator.pricing?.eventPrice || '');
   const [profileNegotiable, setProfileNegotiable] = useState(creator.pricing?.isNegotiable ?? true);
   const [profileSaved, setProfileSaved] = useState(false);
 
@@ -210,10 +209,10 @@ export const CreatorDashboardView: React.FC = () => {
     if (creator) {
       setBio(creator.bio || '');
       setReelVideoUrl(creator.reelVideoUrl || '');
-      setStartingPrice(creator.startingPrice || creator.pricing?.startingPrice || 0);
-      setReelPrice(creator.pricing?.reelPrice || 0);
-      setStoryPrice(creator.pricing?.storyPrice || 0);
-      setUgcPrice(creator.pricing?.ugcPrice || 0);
+      setStartingPrice(creator.startingPrice || '');
+      setReelPrice(creator.pricing?.reelPrice || '');
+      setStoryPrice(creator.pricing?.storyPrice || '');
+      setUgcPrice(creator.pricing?.ugcPrice || '');
       setIsBarterAvailable(creator.pricing?.isBarterAvailable ?? false);
       // Sync profile edit states
       setProfileName(creator.name || '');
@@ -226,14 +225,13 @@ export const CreatorDashboardView: React.FC = () => {
       setProfileLanguages((creator.languages || []).join(', '));
       setProfileCategory(creator.primaryCategory || '');
       setProfileSubCats((creator.subCategories || []).join(', '));
-      setProfileFollowers(creator.followers || 0);
-      setProfileTotalPosts(creator.totalPosts ?? (creator.portfolio?.length || 0));
-      setProfileEngagement(creator.engagementRate || 0);
-      setProfileAvgViews(creator.avgViews || 0);
-      setProfileAvgLikes(creator.avgLikes || 0);
-      setProfileAvgComments(creator.avgComments || 0);
-      setProfilePostPrice(creator.pricing?.postPrice || 0);
-      setProfileEventPrice(creator.pricing?.eventPrice || 0);
+      setProfileFollowers(creator.followers || '');
+      setProfileTotalPosts(creator.totalPosts || (creator.portfolio?.length || ''));
+      setProfileAvgViews(creator.avgViews || '');
+      setProfileAvgLikes(creator.avgLikes || '');
+      setProfileAvgComments(creator.avgComments || '');
+      setProfilePostPrice(creator.pricing?.postPrice || '');
+      setProfileEventPrice(creator.pricing?.eventPrice || '');
       setProfileNegotiable(creator.pricing?.isNegotiable ?? true);
     }
   }, [creator?.id, creator?.startingPrice, creator?.bio, creator?.avatar, creator?.coverImage, creator?.reelVideoUrl, creator?.totalPosts, creator?.followers, creator?.pricing?.reelPrice, creator?.pricing?.storyPrice, creator?.pricing?.postPrice, creator?.pricing?.ugcPrice, creator?.pricing?.eventPrice]);
@@ -551,7 +549,6 @@ export const CreatorDashboardView: React.FC = () => {
       subCategories: parsedSubCats,
       followers: Number(profileFollowers),
       totalPosts: Number(profileTotalPosts),
-      engagementRate: Number(profileEngagement),
       avgViews: Number(profileAvgViews),
       avgLikes: Number(profileAvgLikes),
       avgComments: Number(profileAvgComments),
@@ -574,7 +571,7 @@ export const CreatorDashboardView: React.FC = () => {
           url: `https://instagram.com/${cleanUser}`,
           followers: Number(profileFollowers),
           avgViews: Number(profileAvgViews),
-          engagementRate: Number(profileEngagement),
+          engagementRate: 0,
           verified: creator.isVerified || false,
         }
       ],
@@ -592,7 +589,6 @@ export const CreatorDashboardView: React.FC = () => {
     { label: 'City', done: !!creator.currentCity && creator.currentCity.trim().length > 0 },
     { label: 'Category', done: !!creator.primaryCategory && creator.primaryCategory.trim().length > 0 },
     { label: 'Followers', done: (creator.followers || 0) > 0 },
-    { label: 'Engagement Rate', done: (creator.engagementRate || 0) > 0 },
     { label: 'Starting Rate', done: (creator.startingPrice || 0) > 0 },
     { label: 'Instagram Handle', done: (creator.socialPlatforms || []).some(p => p.platform === 'instagram' && !!p.username) },
     { label: 'Languages', done: (creator.languages || []).length > 0 },
@@ -799,11 +795,18 @@ export const CreatorDashboardView: React.FC = () => {
         {/* === Edit Profile Tab === */}
         {activeTab === 'profile' && (
           <form onSubmit={handleSaveProfile} className="space-y-5 animate-fadeIn">
-            {/* Success Banner */}
             {profileSaved && (
-              <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl font-bold flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>Profile updated successfully in database!</span>
+              <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fadeIn">
+                <div className="bg-white rounded-3xl p-8 max-w-sm w-full mx-4 shadow-2xl flex flex-col items-center text-center animate-scaleUp">
+                  <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4 border-4 border-emerald-50">
+                    <CheckCircle2 className="w-8 h-8" />
+                  </div>
+                  <h3 className="text-xl font-black text-slate-900 mb-2">Profile Saved!</h3>
+                  <p className="text-sm text-slate-500 mb-6">Your changes have been successfully updated in the database.</p>
+                  <button type="button" onClick={() => setProfileSaved(false)} className="w-full py-3 bg-slate-900 hover:bg-black text-white font-bold rounded-xl transition">
+                    Continue
+                  </button>
+                </div>
               </div>
             )}
 
@@ -1087,7 +1090,7 @@ export const CreatorDashboardView: React.FC = () => {
                   <input
                     type="number"
                     value={profileFollowers}
-                    onChange={e => setProfileFollowers(Number(e.target.value))}
+                    onChange={e => setProfileFollowers(e.target.value === '' ? '' : Number(e.target.value))}
                     placeholder="165000"
                     className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold outline-none"
                   />
@@ -1097,28 +1100,18 @@ export const CreatorDashboardView: React.FC = () => {
                   <input
                     type="number"
                     value={profileTotalPosts}
-                    onChange={e => setProfileTotalPosts(Number(e.target.value))}
+                    onChange={e => setProfileTotalPosts(e.target.value === '' ? '' : Number(e.target.value))}
                     placeholder="120"
                     className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold outline-none"
                   />
                 </div>
-                <div>
-                  <label className="block text-slate-600 font-bold mb-1">Engagement % </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={profileEngagement}
-                    onChange={e => setProfileEngagement(Number(e.target.value))}
-                    placeholder="4.8"
-                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold outline-none"
-                  />
-                </div>
+
                 <div>
                   <label className="block text-slate-600 font-bold mb-1">Avg Video Views</label>
                   <input
                     type="number"
                     value={profileAvgViews}
-                    onChange={e => setProfileAvgViews(Number(e.target.value))}
+                    onChange={e => setProfileAvgViews(e.target.value === '' ? '' : Number(e.target.value))}
                     placeholder="120000"
                     className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold outline-none"
                   />
@@ -1128,7 +1121,7 @@ export const CreatorDashboardView: React.FC = () => {
                   <input
                     type="number"
                     value={profileAvgLikes}
-                    onChange={e => setProfileAvgLikes(Number(e.target.value))}
+                    onChange={e => setProfileAvgLikes(e.target.value === '' ? '' : Number(e.target.value))}
                     placeholder="7400"
                     className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold outline-none"
                   />
@@ -1138,7 +1131,7 @@ export const CreatorDashboardView: React.FC = () => {
                   <input
                     type="number"
                     value={profileAvgComments}
-                    onChange={e => setProfileAvgComments(Number(e.target.value))}
+                    onChange={e => setProfileAvgComments(e.target.value === '' ? '' : Number(e.target.value))}
                     placeholder="910"
                     className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold outline-none"
                   />
@@ -1158,7 +1151,7 @@ export const CreatorDashboardView: React.FC = () => {
                   <input
                     type="number"
                     value={reelPrice}
-                    onChange={e => setReelPrice(Number(e.target.value))}
+                    onChange={e => setReelPrice(e.target.value === '' ? '' : Number(e.target.value))}
                     placeholder="15000"
                     className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold outline-none"
                   />
@@ -1168,7 +1161,7 @@ export const CreatorDashboardView: React.FC = () => {
                   <input
                     type="number"
                     value={storyPrice}
-                    onChange={e => setStoryPrice(Number(e.target.value))}
+                    onChange={e => setStoryPrice(e.target.value === '' ? '' : Number(e.target.value))}
                     placeholder="6000"
                     className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold outline-none"
                   />
@@ -1178,7 +1171,7 @@ export const CreatorDashboardView: React.FC = () => {
                   <input
                     type="number"
                     value={profilePostPrice}
-                    onChange={e => setProfilePostPrice(Number(e.target.value))}
+                    onChange={e => setProfilePostPrice(e.target.value === '' ? '' : Number(e.target.value))}
                     placeholder="10000"
                     className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold outline-none"
                   />
@@ -1188,7 +1181,7 @@ export const CreatorDashboardView: React.FC = () => {
                   <input
                     type="number"
                     value={ugcPrice}
-                    onChange={e => setUgcPrice(Number(e.target.value))}
+                    onChange={e => setUgcPrice(e.target.value === '' ? '' : Number(e.target.value))}
                     placeholder="12000"
                     className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold outline-none"
                   />
@@ -1198,7 +1191,7 @@ export const CreatorDashboardView: React.FC = () => {
                   <input
                     type="number"
                     value={profileEventPrice}
-                    onChange={e => setProfileEventPrice(Number(e.target.value))}
+                    onChange={e => setProfileEventPrice(e.target.value === '' ? '' : Number(e.target.value))}
                     placeholder="20000"
                     className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold outline-none"
                   />
@@ -1208,7 +1201,7 @@ export const CreatorDashboardView: React.FC = () => {
                   <input
                     type="number"
                     value={startingPrice}
-                    onChange={e => setStartingPrice(Number(e.target.value))}
+                    onChange={e => setStartingPrice(e.target.value === '' ? '' : Number(e.target.value))}
                     placeholder="5000"
                     className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold outline-none"
                   />
@@ -1279,7 +1272,7 @@ export const CreatorDashboardView: React.FC = () => {
                 <input
                   type="number"
                   value={reelPrice}
-                  onChange={(e) => setReelPrice(Number(e.target.value))}
+                  onChange={(e) => setReelPrice(e.target.value === '' ? '' : Number(e.target.value))}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold"
                 />
               </div>
@@ -1289,7 +1282,7 @@ export const CreatorDashboardView: React.FC = () => {
                 <input
                   type="number"
                   value={storyPrice}
-                  onChange={(e) => setStoryPrice(Number(e.target.value))}
+                  onChange={(e) => setStoryPrice(e.target.value === '' ? '' : Number(e.target.value))}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold"
                 />
               </div>
@@ -1299,7 +1292,7 @@ export const CreatorDashboardView: React.FC = () => {
                 <input
                   type="number"
                   value={profilePostPrice}
-                  onChange={(e) => setProfilePostPrice(Number(e.target.value))}
+                  onChange={(e) => setProfilePostPrice(e.target.value === '' ? '' : Number(e.target.value))}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold"
                 />
               </div>
@@ -1309,7 +1302,7 @@ export const CreatorDashboardView: React.FC = () => {
                 <input
                   type="number"
                   value={ugcPrice}
-                  onChange={(e) => setUgcPrice(Number(e.target.value))}
+                  onChange={(e) => setUgcPrice(e.target.value === '' ? '' : Number(e.target.value))}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold"
                 />
               </div>
@@ -1319,7 +1312,7 @@ export const CreatorDashboardView: React.FC = () => {
                 <input
                   type="number"
                   value={profileEventPrice}
-                  onChange={(e) => setProfileEventPrice(Number(e.target.value))}
+                  onChange={(e) => setProfileEventPrice(e.target.value === '' ? '' : Number(e.target.value))}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold"
                 />
               </div>
@@ -1329,7 +1322,7 @@ export const CreatorDashboardView: React.FC = () => {
                 <input
                   type="number"
                   value={startingPrice}
-                  onChange={(e) => setStartingPrice(Number(e.target.value))}
+                  onChange={(e) => setStartingPrice(e.target.value === '' ? '' : Number(e.target.value))}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold"
                 />
               </div>
