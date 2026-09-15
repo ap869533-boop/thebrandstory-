@@ -1168,7 +1168,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         addNotification({
           title: 'Profile Save Failed',
           message: errData?.error || `Server returned error ${res.status}. Please try again.`,
-          type: 'error',
+          type: 'system',
         });
         return;
       }
@@ -1192,7 +1192,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       addNotification({
         title: 'Profile Save Failed',
         message: 'Network error — check your connection and try again.',
-        type: 'error',
+        type: 'system',
       });
     }
   };
