@@ -104,7 +104,6 @@ export const CreatorDashboardView: React.FC = () => {
         gender: undefined,
         ageGroup: '',
         followers: 0,
-        engagementRate: 0,
         avgViews: 0,
         avgLikes: 0,
         avgComments: 0,
@@ -289,7 +288,7 @@ export const CreatorDashboardView: React.FC = () => {
       plays: 0,
       likes: 0,
       comments: 0,
-      engagement: `${creator.engagementRate || 0}%`,
+      engagement: '0%',
       brandName: reelBrandName.trim() || '',
     };
     const updatedPortfolio = [newPortfolioItem, ...(creator.portfolio || [])];
@@ -571,7 +570,6 @@ export const CreatorDashboardView: React.FC = () => {
           url: `https://instagram.com/${cleanUser}`,
           followers: Number(profileFollowers),
           avgViews: Number(profileAvgViews),
-          engagementRate: 0,
           verified: creator.isVerified || false,
         }
       ],

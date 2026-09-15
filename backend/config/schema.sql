@@ -45,7 +45,6 @@ CREATE TABLE IF NOT EXISTS `creators` (
   -- Metrics
   `followers` INT UNSIGNED DEFAULT 0,
   `total_posts` INT UNSIGNED DEFAULT 0,
-  `engagement_rate` DECIMAL(4, 2) DEFAULT 0.00,
   `avg_views` INT UNSIGNED DEFAULT 0,
   `avg_likes` INT UNSIGNED DEFAULT 0,
   `avg_comments` INT UNSIGNED DEFAULT 0,
@@ -91,7 +90,6 @@ CREATE TABLE IF NOT EXISTS `creators` (
   INDEX `idx_creators_followers` (`followers`),
   INDEX `idx_creators_trust` (`trust_score`),
   INDEX `idx_creators_price` (`starting_price`),
-  INDEX `idx_creators_engagement` (`engagement_rate`),
   INDEX `idx_creators_verified` (`is_verified`),
   INDEX `idx_creators_top20` (`is_top20`),
   INDEX `idx_creators_rising` (`is_rising`),

@@ -143,12 +143,12 @@ export const CompareDrawer: React.FC = () => {
                 ))}
               </tr>
 
-              {/* Engagement Rate */}
+              {/* Avg Views */}
               <tr className="hover:bg-slate-50/50 transition">
-                <td className="py-3 font-semibold text-slate-600">Engagement Rate</td>
+                <td className="py-3 font-semibold text-slate-600">Avg Views</td>
                 {compareList.map((c) => (
                   <td key={c.id} className="py-3 px-3 text-center font-bold text-emerald-600 text-sm">
-                    {c.engagementRate}%
+                    {(c.avgViews || 0).toLocaleString('en-IN')}
                   </td>
                 ))}
               </tr>

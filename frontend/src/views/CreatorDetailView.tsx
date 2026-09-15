@@ -140,7 +140,7 @@ export const CreatorDetailView: React.FC = () => {
         saves: '',
         retention: '',
         sentiment: '',
-        engagement: item.engagement || `${creator.engagementRate || 0}%`,
+        engagement: item.engagement || `${creator.avgViews ? Math.round((creator.avgLikes || 0) / creator.avgViews * 100) : 0}%`,
         type: item.type === 'reel' ? 'Instagram Reel' : item.type === 'youtube' ? 'YouTube' : 'Post',
         brandPartner: item.brandName || '',
       }))
@@ -336,18 +336,18 @@ export const CreatorDetailView: React.FC = () => {
               <div className="flex items-center justify-between text-xs font-bold text-slate-500">
                 <span className="flex items-center gap-1.5">
                   <TrendingUp className="w-4 h-4 text-[#D4A338]" />
-                  <span>Engagement Rate</span>
+                  <span>Avg Views</span>
                 </span>
                 <span className="px-2 py-0.5 rounded-md bg-blue-50 text-[#b88628] text-[10px] font-bold">
-                  Above Avg
+                  30-Day Avg
                 </span>
               </div>
               <div>
                 <span className="text-3xl font-black text-slate-900 tracking-tight block">
-                  {creator.engagementRate}%
+                  {(creator.avgViews || 0).toLocaleString('en-IN')}
                 </span>
                 <span className="text-xs text-slate-400 font-medium block mt-0.5">
-                  Industry benchmark: 2.8%
+                  Per post / reel average
                 </span>
               </div>
             </div>

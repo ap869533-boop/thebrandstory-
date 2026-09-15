@@ -48,6 +48,8 @@ export const LoginView: React.FC = () => {
   // OTP Fields
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState('');
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [resetOtpSent, setResetOtpSent] = useState(false);
 
   // Status & Feedback
   const [isLoading, setIsLoading] = useState(false);
@@ -138,7 +140,42 @@ export const LoginView: React.FC = () => {
     setSuccessMsg(null);
 
     try {
-      if (mode === 'login') {
+      if (isForgotPassword) {
+        if (!resetOtpSent) {
+          // Request OTP for password reset
+          const res = await fetch(apiUrl('/api/auth/forgot-password-otp'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email.trim() }),
+          });
+          const data = await readApiResponse(res);
+          if (!res.ok || !data.success) {
+            throw new Error(data.error || 'Failed to send OTP for reset');
+          }
+          setResetOtpSent(true);
+          setSuccessMsg(`OTP sent to ${email.trim()} for password reset.`);
+        } else {
+          // Verify OTP and reset password
+          const res = await fetch(apiUrl('/api/auth/reset-password'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email.trim(), otp: otp.trim(), newPassword: password }),
+          });
+          const data = await readApiResponse(res);
+          if (!res.ok || !data.success) {
+            throw new Error(data.error || 'Password reset failed');
+          }
+          setSuccessMsg('Password successfully reset! You can now login.');
+          setTimeout(() => {
+            setIsForgotPassword(false);
+            setResetOtpSent(false);
+            setMode('login');
+            setPassword('');
+            setOtp('');
+            setSuccessMsg(null);
+          }, 2000);
+        }
+      } else if (mode === 'login') {
         const res = await fetch(apiUrl('/api/auth/login'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -260,7 +297,7 @@ export const LoginView: React.FC = () => {
             </div>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            {mode === 'login' ? 'Sign In to Your Workspace' : 'Create Your Account'}
+            {isForgotPassword ? 'Reset Password' : mode === 'login' ? 'Sign In to Your Workspace' : 'Create Your Account'}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 max-w-sm mx-auto">
             {mode === 'login'
@@ -283,6 +320,7 @@ export const LoginView: React.FC = () => {
         {/* Main Card */}
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xl shadow-slate-200/50 space-y-5">
           {/* Mode Switcher: Login / Signup */}
+          {!isForgotPassword && (
           <div className="flex p-1 bg-slate-100 rounded-xl">
             <button
               type="button"
@@ -317,11 +355,13 @@ export const LoginView: React.FC = () => {
               Sign Up
             </button>
           </div>
+          )}
 
           {/* Role Selector Buttons */}
+          {!isForgotPassword && mode === 'signup' && (
           <div>
             <label className="block text-slate-700 font-bold mb-1.5 text-xs">
-              {mode === 'login' ? 'Select Account Type:' : 'I am registering as:'}
+                I am registering as:
             </label>
             <div className="grid grid-cols-2 gap-2.5">
               <button
@@ -357,7 +397,7 @@ export const LoginView: React.FC = () => {
               </button>
             </div>
           </div>
-
+          )}
 
           {/* Error Alert */}
           {errorMsg && (
@@ -454,7 +494,7 @@ export const LoginView: React.FC = () => {
             </div>
 
             {/* Password Field */}
-            {(!otpSent || mode === 'login') && (
+            {(!isForgotPassword && (!otpSent || mode === 'login')) && (
               <div>
                 <label className="block text-slate-700 font-bold mb-1">Password *</label>
                 <div className="relative">
@@ -482,8 +522,38 @@ export const LoginView: React.FC = () => {
               </div>
             )}
 
+            {mode === 'login' && !isForgotPassword && (
+              <div className="flex justify-end mt-1">
+                <button type="button" onClick={() => { setIsForgotPassword(true); setFieldErrors({}); }} className="text-[11px] font-bold text-[#b88628] hover:text-[#916a1f] cursor-pointer">
+                  Forgot Password?
+                </button>
+              </div>
+            )}
+            
+            {isForgotPassword && !resetOtpSent && (
+              <div className="flex justify-center mt-2">
+                <button type="button" onClick={() => { setIsForgotPassword(false); setFieldErrors({}); }} className="text-[11px] font-bold text-slate-500 hover:text-slate-800 cursor-pointer">
+                  Back to Sign In
+                </button>
+              </div>
+            )}
+
             {/* OTP Field (Signup Step 2) */}
-            {mode === 'signup' && otpSent && (
+            {( (mode === 'signup' && otpSent) || (isForgotPassword && resetOtpSent) ) && (
+              <>
+              <button 
+                type="button"
+                onClick={() => {
+                  if (isForgotPassword) setResetOtpSent(false);
+                  else setOtpSent(false);
+                  setSuccessMsg(null);
+                  setErrorMsg(null);
+                  setOtp('');
+                }}
+                className="flex items-center text-[11px] font-semibold text-slate-500 hover:text-slate-800 transition cursor-pointer mb-2"
+              >
+                 ← Back to Edit Email
+              </button>
               <div>
                 <label className="block text-slate-700 font-bold mb-1">Enter 6-Digit OTP *</label>
                 <input
@@ -498,6 +568,29 @@ export const LoginView: React.FC = () => {
                   <span className="text-[11px] text-rose-600 font-semibold mt-1 block">{fieldErrors.otp}</span>
                 )}
               </div>
+
+              {isForgotPassword && (
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1 mt-3">New Password *</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Create a strong password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full pl-4 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] transition"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-700 transition cursor-pointer p-0.5"
+                    >
+                      {showPassword ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                </div>
+              )}
+              </>
             )}
 
             {/* Submit Button */}
@@ -508,6 +601,8 @@ export const LoginView: React.FC = () => {
             >
               {isLoading ? (
                 <span>Processing...</span>
+              ) : isForgotPassword ? (
+                <span>{resetOtpSent ? 'Verify & Reset Password' : 'Send Reset Link'}</span>
               ) : mode === 'login' ? (
                 <>
                   <span>Sign In as {role === 'CREATOR' ? 'Influencer' : 'Brand'}</span>

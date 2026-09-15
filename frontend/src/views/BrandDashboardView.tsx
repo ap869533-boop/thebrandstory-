@@ -429,7 +429,7 @@ export const BrandDashboardView: React.FC = () => {
                                 <span className="font-black text-slate-900 text-sm">{applicant.creatorName}</span>
                                 {creator && (
                                   <span className="text-[10px] text-slate-500">
-                                    {creator.followers?.toLocaleString('en-IN')} followers • {creator.engagementRate}% eng
+                                    {creator.followers?.toLocaleString('en-IN')} followers • {(creator.avgViews || 0).toLocaleString('en-IN')} avg views
                                   </span>
                                 )}
                                 <span className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full flex items-center gap-1 ${

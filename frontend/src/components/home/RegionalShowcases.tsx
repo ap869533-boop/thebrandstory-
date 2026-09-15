@@ -34,7 +34,7 @@ export const RegionalShowcases: React.FC = () => {
 
   // Rising Creators — also filtered by city
   const risingCreators = creators
-    .filter((c) => c.status === 'active' && (c.isRising || c.engagementRate >= 5.0) && matchesCity(c))
+    .filter((c) => c.status === 'active' && (c.isRising) && matchesCity(c))
     .slice(0, 4);
 
   const cityLabel = cityActive ? filters.city : 'Delhi NCR';

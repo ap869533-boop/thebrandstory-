@@ -16,7 +16,6 @@ export interface SocialPlatformInfo {
   url: string;
   followers: number;
   avgViews: number;
-  engagementRate: number;
   verified: boolean;
 }
 
@@ -139,7 +138,6 @@ export interface Creator {
   gender?: 'Female' | 'Male' | 'Non-binary';
   ageGroup?: string;
   followers: number;
-  engagementRate: number;
   avgViews: number;
   avgLikes: number;
   avgComments: number;

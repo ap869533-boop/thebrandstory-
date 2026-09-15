@@ -240,9 +240,9 @@ export const CreatorDetailModal: React.FC = () => {
               </div>
 
               <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200/60">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Engagement</span>
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">Avg Views</span>
                 <span className="text-base font-black text-emerald-600">
-                  {creator.engagementRate}%
+                  {(creator.avgViews || 0).toLocaleString('en-IN')}
                 </span>
               </div>
 
@@ -296,7 +296,7 @@ export const CreatorDetailModal: React.FC = () => {
                             {plat.platform === 'linkedin' && <Linkedin className="w-4 h-4 text-[#b88628]" />}
                             <div>
                               <span className="font-bold text-slate-800 block">@{plat.username}</span>
-                              <span className="text-[11px] text-slate-500">{(plat.followers / 1000).toFixed(0)}K Followers • {plat.engagementRate}% Eng</span>
+                              <span className="text-[11px] text-slate-500">{(plat.followers / 1000).toFixed(0)}K Followers • {(plat.avgViews / 1000).toFixed(0)}K Avg Views</span>
                             </div>
                           </div>
                           <a

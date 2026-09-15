@@ -54,7 +54,6 @@ ${JSON.stringify(
     subCategories: c.subCategories,
     currentCity: c.currentCity,
     followers: c.followers,
-    engagementRate: c.engagementRate,
     trustScore: c.trustScore,
     startingPrice: c.startingPrice,
     reelPrice: c.pricing?.reelPrice,
@@ -119,9 +118,7 @@ Return a valid JSON array of objects with the best matches (maximum 6 creators) 
           reasons.push(`✓ Elite thebrandsstory. Trust Score (${c.trustScore}/100)`);
         }
 
-        if (c.engagementRate >= 5.0) {
-          reasons.push(`✓ High engagement rate (${c.engagementRate}%) above industry benchmark`);
-        }
+
 
         score = Math.min(98, Math.max(72, score));
 
