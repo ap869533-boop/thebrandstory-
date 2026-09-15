@@ -137,7 +137,7 @@ interface PlatformContextType {
 
   // Creator Actions
   registerCreator: (newCreator: Partial<Creator>) => Creator;
-  updateCreatorProfile: (creatorId: string, updates: Partial<Creator>) => void;
+  updateCreatorProfile: (creatorId: string, updates: Partial<Creator>) => Promise<void>;
   requestVerification: (creatorId: string) => void;
   addCreatorReview: (creatorId: string, review: Omit<Creator['reviews'][0], 'id' | 'date'>) => void;
 
@@ -1125,7 +1125,8 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return completeCreator;
   };
 
-  const updateCreatorProfile = (creatorId: string, updates: Partial<Creator>) => {
+  const updateCreatorProfile = async (creatorId: string, updates: Partial<Creator>) => {
+    // Optimistic local update — keeps UI instant
     setCreators(prev => prev.map(c => {
       if (c.id === creatorId) {
         return {
@@ -1137,7 +1138,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return c;
     }));
 
-    // Also keep authUser and authUser.creatorProfile in sync with all updates
+    // Keep authUser / authUser.creatorProfile in sync
     setAuthUser(prev => {
       if (!prev) return prev;
       const updatedUser = { ...prev };
@@ -1153,11 +1154,47 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return updatedUser;
     });
 
-    fetch(apiUrl(`/api/creators/${creatorId}`), {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updates),
-    }).catch(e => console.warn('Failed to sync creator update to MySQL DB:', e));
+    // Persist to backend database
+    try {
+      const res = await fetch(apiUrl(`/api/creators/${creatorId}`), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        console.error('Creator profile update failed:', res.status, errData);
+        addNotification({
+          title: 'Profile Save Failed',
+          message: errData?.error || `Server returned error ${res.status}. Please try again.`,
+          type: 'error',
+        });
+        return;
+      }
+
+      const data = await res.json();
+      if (data?.creator) {
+        // Replace local state with server-confirmed object
+        setCreators(prev => prev.map(c => c.id === creatorId ? data.creator : c));
+        setAuthUser(prev => {
+          if (!prev) return prev;
+          if (prev.creatorProfile && (prev.creatorProfile.id === creatorId || prev.id === creatorId)) {
+            const updated = { ...prev, creatorProfile: data.creator };
+            localStorage.setItem('sc_auth_user', JSON.stringify(updated));
+            return updated;
+          }
+          return prev;
+        });
+      }
+    } catch (err) {
+      console.error('Failed to sync creator update to MySQL DB:', err);
+      addNotification({
+        title: 'Profile Save Failed',
+        message: 'Network error — check your connection and try again.',
+        type: 'error',
+      });
+    }
   };
 
   const requestVerification = (creatorId: string) => {
