@@ -17,7 +17,6 @@ export interface SocialPlatformInfo {
   url: string;
   followers: number;
   avgViews: number;
-  engagementRate: number;
   verified: boolean;
 }
 
@@ -143,7 +142,6 @@ export interface Creator {
   
   // Metrics
   followers: number;
-  engagementRate: number; // e.g. 5.8
   avgViews: number;
   avgLikes: number;
   avgComments: number;

@@ -40,7 +40,6 @@ export const CreatorOnboardingModal: React.FC = () => {
         phone: formData.phone,
         email: formData.email,
         followers: Number(formData.followers),
-        engagementRate: 0,
         avgViews: Number(formData.avgViews),
         startingPrice: Number(formData.startingPrice),
         bio: formData.bio,

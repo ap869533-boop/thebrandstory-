@@ -181,7 +181,6 @@ export const AdminDashboardView: React.FC = () => {
         Boolean(creator.currentCity?.trim()),
         Boolean(creator.primaryCategory?.trim()),
         creator.followers > 0,
-        creator.engagementRate > 0,
         creator.startingPrice > 0,
         creator.socialPlatforms.some((platform) => platform.platform === 'instagram' && platform.username),
         creator.languages.length > 0,
@@ -581,7 +580,7 @@ export const AdminDashboardView: React.FC = () => {
                                   {c.followers.toLocaleString('en-IN')} followers
                                 </span>
                                 <span className="text-[11px] text-emerald-600 font-semibold block">
-                                  {c.engagementRate}% Engagement
+                                  {c.followers.toLocaleString('en-IN')} followers
                                 </span>
                               </div>
                             </td>
@@ -1209,8 +1208,8 @@ export const AdminDashboardView: React.FC = () => {
                   <span className="font-bold text-slate-800">{reviewModalCreator.followers.toLocaleString('en-IN')}</span>
                 </div>
                 <div className="p-3 bg-slate-50 rounded-xl">
-                  <span className="text-[10px] text-slate-400 uppercase font-bold block">Engagement</span>
-                  <span className="font-bold text-emerald-600">{reviewModalCreator.engagementRate}%</span>
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block">Avg Views</span>
+                  <span className="font-bold text-emerald-600">{(reviewModalCreator.avgViews || 0).toLocaleString('en-IN')}</span>
                 </div>
               </div>
 

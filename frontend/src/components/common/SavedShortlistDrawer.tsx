@@ -172,8 +172,8 @@ export const SavedShortlistDrawer: React.FC = () => {
                       <span className="font-black text-slate-900">{formatFollowers(creator.followers)}</span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Engagement</span>
-                      <span className="font-black text-emerald-600">{creator.engagementRate}%</span>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Avg Views</span>
+                      <span className="font-black text-emerald-600">{(creator.avgViews || 0).toLocaleString('en-IN')}</span>
                     </div>
                     <div>
                       <span className="text-[10px] text-slate-400 font-bold uppercase block">Starts At</span>

@@ -137,7 +137,7 @@ interface PlatformContextType {
 
   // Creator Actions
   registerCreator: (newCreator: Partial<Creator>) => Creator;
-  updateCreatorProfile: (creatorId: string, updates: Partial<Creator>) => void;
+  updateCreatorProfile: (creatorId: string, updates: Partial<Creator>) => Promise<void>;
   requestVerification: (creatorId: string) => void;
   addCreatorReview: (creatorId: string, review: Omit<Creator['reviews'][0], 'id' | 'date'>) => void;
 
@@ -921,7 +921,6 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         primaryCategory: 'Influencer',
         trustScore: 92,
         followers: 25000,
-        engagementRate: 5.2,
       } as any;
     }
     if (!creator) {
@@ -1046,7 +1045,6 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ageGroup: newCreatorData.ageGroup || '',
       followers: newCreatorData.followers || 0,
       totalPosts: newCreatorData.totalPosts || 0,
-      engagementRate: newCreatorData.engagementRate || 0,
       avgViews: newCreatorData.avgViews || 0,
       avgLikes: newCreatorData.avgLikes || 0,
       avgComments: newCreatorData.avgComments || 0,
@@ -1086,7 +1084,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       },
       collaborationTypes: newCreatorData.collaborationTypes || [],
       socialPlatforms: newCreatorData.socialPlatforms || (cleanUsername ? [
-        { platform: 'instagram', username: cleanUsername, url: `https://instagram.com/${cleanUsername}`, followers: newCreatorData.followers || 0, avgViews: 0, engagementRate: 0, verified: false }
+        { platform: 'instagram', username: cleanUsername, url: `https://instagram.com/${cleanUsername}`, followers: newCreatorData.followers || 0, avgViews: 0, verified: false }
       ] : []),
       audience: newCreatorData.audience || {
         topCities: [],
@@ -1127,7 +1125,8 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return completeCreator;
   };
 
-  const updateCreatorProfile = (creatorId: string, updates: Partial<Creator>) => {
+  const updateCreatorProfile = async (creatorId: string, updates: Partial<Creator>) => {
+    // Optimistic local update — keeps UI instant
     setCreators(prev => prev.map(c => {
       if (c.id === creatorId) {
         return {
@@ -1139,7 +1138,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return c;
     }));
 
-    // Also keep authUser and authUser.creatorProfile in sync with all updates
+    // Keep authUser / authUser.creatorProfile in sync
     setAuthUser(prev => {
       if (!prev) return prev;
       const updatedUser = { ...prev };
@@ -1155,11 +1154,47 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return updatedUser;
     });
 
-    fetch(apiUrl(`/api/creators/${creatorId}`), {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updates),
-    }).catch(e => console.warn('Failed to sync creator update to MySQL DB:', e));
+    // Persist to backend database
+    try {
+      const res = await fetch(apiUrl(`/api/creators/${creatorId}`), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        console.error('Creator profile update failed:', res.status, errData);
+        addNotification({
+          title: 'Profile Save Failed',
+          message: errData?.error || `Server returned error ${res.status}. Please try again.`,
+          type: 'system',
+        });
+        return;
+      }
+
+      const data = await res.json();
+      if (data?.creator) {
+        // Replace local state with server-confirmed object
+        setCreators(prev => prev.map(c => c.id === creatorId ? data.creator : c));
+        setAuthUser(prev => {
+          if (!prev) return prev;
+          if (prev.creatorProfile && (prev.creatorProfile.id === creatorId || prev.id === creatorId)) {
+            const updated = { ...prev, creatorProfile: data.creator };
+            localStorage.setItem('sc_auth_user', JSON.stringify(updated));
+            return updated;
+          }
+          return prev;
+        });
+      }
+    } catch (err) {
+      console.error('Failed to sync creator update to MySQL DB:', err);
+      addNotification({
+        title: 'Profile Save Failed',
+        message: 'Network error — check your connection and try again.',
+        type: 'system',
+      });
+    }
   };
 
   const requestVerification = (creatorId: string) => {
@@ -1475,10 +1510,10 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (filters.risingOnly && !creator.isRising && creator.followers >= 25000) return false;
 
     // High Engagement only (>= 4.5%)
-    if (filters.highEngagementOnly && creator.engagementRate < 4.5) return false;
+
 
     // Engagement filter
-    if (filters.minEngagement > 0 && creator.engagementRate < filters.minEngagement) return false;
+
 
     // Followers range
     if (filters.followerRange !== 'all') {
@@ -1520,7 +1555,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }).sort((a, b) => {
     if (filters.sortBy === 'trust_score') return b.trustScore - a.trustScore;
     if (filters.sortBy === 'followers') return b.followers - a.followers;
-    if (filters.sortBy === 'engagement') return b.engagementRate - a.engagementRate;
+    if (filters.sortBy === 'engagement') return b.followers - a.followers;
     if (filters.sortBy === 'lowest_price') return a.startingPrice - b.startingPrice;
     if (filters.sortBy === 'collaborations') return b.brandCollaborationsCount - a.brandCollaborationsCount;
     if (filters.sortBy === 'recently_joined') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();

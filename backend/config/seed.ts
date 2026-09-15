@@ -78,7 +78,6 @@ async function runSeed() {
         age_group VARCHAR(20) DEFAULT '22-29',
         followers INT UNSIGNED DEFAULT 0,
         total_posts INT UNSIGNED DEFAULT 0,
-        engagement_rate DECIMAL(4, 2) DEFAULT 0.00,
         avg_views INT UNSIGNED DEFAULT 0,
         avg_likes INT UNSIGNED DEFAULT 0,
         avg_comments INT UNSIGNED DEFAULT 0,
@@ -115,7 +114,6 @@ async function runSeed() {
         INDEX idx_creators_followers (followers),
         INDEX idx_creators_trust (trust_score),
         INDEX idx_creators_price (starting_price),
-        INDEX idx_creators_engagement (engagement_rate),
         INDEX idx_creators_verified (is_verified),
         INDEX idx_creators_top20 (is_top20),
         INDEX idx_creators_rising (is_rising),
@@ -382,20 +380,20 @@ async function runSeed() {
       await connection.query(
         `INSERT INTO creators (
           id, name, username, avatar, cover_image, reel_video_url, bio, current_city, state, preferred_cities,
-          primary_category, sub_categories, languages, gender, age_group, followers, engagement_rate,
+          primary_category, sub_categories, languages, gender, age_group, followers,
           avg_views, avg_likes, avg_comments, brand_collaborations_count, trust_score, trust_signals,
           is_verified, is_top20, is_rising, is_featured, is_trending, status, starting_price,
           reel_price, story_price, post_price, ugc_price, is_negotiable, is_barter_available,
           collaboration_types, social_platforms, audience, portfolio, phone, email, profile_views, saved_count
         ) VALUES (
           ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-          ?, ?, ?, ?, ?, ?, ?,
+          ?, ?, ?, ?, ?, ?,
           ?, ?, ?, ?, ?, ?,
           ?, ?, ?, ?, ?, ?, ?,
           ?, ?, ?, ?, ?, ?,
           ?, ?, ?, ?, ?, ?, ?, ?
         ) ON DUPLICATE KEY UPDATE
-          name=VALUES(name), followers=VALUES(followers), engagement_rate=VALUES(engagement_rate),
+          name=VALUES(name), followers=VALUES(followers),
           trust_score=VALUES(trust_score), starting_price=VALUES(starting_price), reel_price=VALUES(reel_price),
           reel_video_url=VALUES(reel_video_url);`,
         [
@@ -415,7 +413,6 @@ async function runSeed() {
           c.gender || 'Female',
           c.ageGroup || '22-29',
           c.followers,
-          c.engagementRate,
           c.avgViews || 15000,
           c.avgLikes || 1500,
           c.avgComments || 90,

@@ -75,33 +75,6 @@ cd /var/www
 git clone YOUR_GIT_REPO_URL thebrandsstory
 cd /var/www/thebrandsstory
 ```
-
-2. Environment file configure karein:
-```bash
-cp backend/.env.example backend/.env
-nano backend/.env
-```
-Apni details enter karein:
-```env
-PORT=8000
-NODE_ENV=production
-DB_HOST=localhost
-DB_USER=brandsuser
-DB_PASSWORD=StrongPassword123!
-DB_NAME=social_cults_db
-DB_PORT=3306
-JWT_SECRET=social_cults_super_secret_jwt_key_2026
-
-# Production SMTP Email (Real OTP Ke Liye)
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=ap869533@gmail.com
-SMTP_PASS=lyma glwj pfxq iwwg
-```
-*(Ctrl + O dabakar Enter, fir Ctrl + X dabakar exit karein)*
-
----
-
 ## ⚙️ Step 4: Backend Setup & PM2 Start
 
 1. Backend dependencies install & build karein:

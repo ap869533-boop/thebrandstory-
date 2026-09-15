@@ -152,7 +152,6 @@ export async function signup(req: Request, res: Response) {
         gender: undefined,
         ageGroup: '',
         followers: 0,
-        engagementRate: 0,
         avgViews: 0,
         avgLikes: 0,
         avgComments: 0,
@@ -197,7 +196,6 @@ export async function signup(req: Request, res: Response) {
             url: instagramUrl,
             followers: 0,
             avgViews: 0,
-            engagementRate: 0,
             verified: false,
           }
         ],
@@ -226,7 +224,7 @@ export async function signup(req: Request, res: Response) {
       await dbQuery(
         `INSERT INTO creators (
           id, user_id, name, username, avatar, cover_image, bio, current_city, primary_category,
-          followers, engagement_rate, starting_price, reel_price, story_price, post_price,
+          followers, avg_views, starting_price, reel_price, story_price, post_price,
           ugc_price, is_barter_available, collaboration_types, preferred_cities, sub_categories,
           languages, trust_score, phone, email
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -241,7 +239,7 @@ export async function signup(req: Request, res: Response) {
           createdCreatorProfile.currentCity,
           createdCreatorProfile.primaryCategory,
           createdCreatorProfile.followers,
-          createdCreatorProfile.engagementRate,
+          createdCreatorProfile.avgViews,
           createdCreatorProfile.startingPrice,
           createdCreatorProfile.pricing.reelPrice,
           createdCreatorProfile.pricing.storyPrice,
@@ -336,7 +334,6 @@ export async function fetchOrCreateCreatorProfile(user: any): Promise<Creator | 
     gender: undefined,
     ageGroup: '',
     followers: 0,
-    engagementRate: 0,
     avgViews: 0,
     avgLikes: 0,
     avgComments: 0,
@@ -381,7 +378,6 @@ export async function fetchOrCreateCreatorProfile(user: any): Promise<Creator | 
         url: `https://instagram.com/${cleanUsername}`,
         followers: 0,
         avgViews: 0,
-        engagementRate: 0,
         verified: false,
       }
     ],
@@ -410,7 +406,7 @@ export async function fetchOrCreateCreatorProfile(user: any): Promise<Creator | 
     await dbQuery(
       `INSERT INTO creators (
         id, user_id, name, username, avatar, cover_image, reel_video_url, bio, current_city, primary_category,
-        followers, engagement_rate, starting_price, reel_price, story_price, post_price,
+        followers, avg_views, starting_price, reel_price, story_price, post_price,
         ugc_price, is_barter_available, collaboration_types, preferred_cities, sub_categories,
         languages, trust_score, phone, email, is_verified, verification_requested, status
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
@@ -426,7 +422,7 @@ export async function fetchOrCreateCreatorProfile(user: any): Promise<Creator | 
         newCreator.currentCity,
         newCreator.primaryCategory,
         newCreator.followers,
-        newCreator.engagementRate,
+        newCreator.avgViews,
         newCreator.startingPrice,
         newCreator.pricing.reelPrice,
         newCreator.pricing.storyPrice,
@@ -669,7 +665,6 @@ export async function verifyOtp(req: Request, res: Response) {
           gender: undefined,
           ageGroup: '',
           followers: 0,
-          engagementRate: 0,
           avgViews: 0,
           avgLikes: 0,
           avgComments: 0,
@@ -714,7 +709,6 @@ export async function verifyOtp(req: Request, res: Response) {
               url: instagramUrl,
               followers: 0,
               avgViews: 0,
-              engagementRate: 0,
               verified: false,
             }
           ],
@@ -744,7 +738,7 @@ export async function verifyOtp(req: Request, res: Response) {
         const creatorInsertResult = await dbQuery(
           `INSERT INTO creators (
             id, user_id, name, username, avatar, cover_image, reel_video_url, bio, current_city, primary_category,
-            followers, engagement_rate, starting_price, reel_price, story_price, post_price,
+            followers, avg_views, starting_price, reel_price, story_price, post_price,
             ugc_price, is_barter_available, collaboration_types, preferred_cities, sub_categories,
             languages, trust_score, phone, email, is_verified, verification_requested, status
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
@@ -760,7 +754,7 @@ export async function verifyOtp(req: Request, res: Response) {
             createdCreatorProfile.currentCity,
             createdCreatorProfile.primaryCategory,
             createdCreatorProfile.followers,
-            createdCreatorProfile.engagementRate,
+            createdCreatorProfile.avgViews,
             createdCreatorProfile.startingPrice,
             createdCreatorProfile.pricing.reelPrice,
             createdCreatorProfile.pricing.storyPrice,
