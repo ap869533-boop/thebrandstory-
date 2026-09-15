@@ -647,10 +647,7 @@ export const CreatorDashboardView: React.FC = () => {
             <div className="space-y-0.5">
               <div className="flex items-center gap-2">
                 <h1 className="text-xl font-black text-slate-900 tracking-tight">{creator.name}</h1>
-                <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-md flex items-center gap-1 border border-emerald-200/60">
-                  <CheckCircle2 className="w-3 h-3" />
-                  Live in Database
-                </span>
+
               </div>
               <p className="text-xs text-slate-500 font-semibold">@{creator.username} • {creator.primaryCategory}</p>
               <p className="text-[11px] text-slate-400 flex items-center gap-1">
@@ -663,16 +660,7 @@ export const CreatorDashboardView: React.FC = () => {
           <div className="flex flex-wrap items-center gap-2.5">
 
 
-            <div
-              className="flex items-center gap-2 p-1.5 px-2.5 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer"
-              onClick={openTrustScoreModal}
-            >
-              <TrustScoreBadge score={creator.trustScore || 89} size="sm" />
-              <div className="text-left">
-                <span className="text-[9px] uppercase font-bold text-slate-500 block leading-tight">TrustScore</span>
-                <span className="text-xs font-black text-slate-900">Verified</span>
-              </div>
-            </div>
+
 
             <button
               onClick={() => navigateTo('creator-detail', { username: creator.username, id: creator.id })}
