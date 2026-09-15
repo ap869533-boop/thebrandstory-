@@ -89,7 +89,6 @@ export const INITIAL_CREATORS: Creator[] = [
     gender: 'Female',
     ageGroup: '22-29',
     followers: 125000,
-    engagementRate: 5.8,
     avgViews: 84000,
     avgLikes: 7250,
     avgComments: 410,
@@ -129,9 +128,9 @@ export const INITIAL_CREATORS: Creator[] = [
     },
     collaborationTypes: ['Paid', 'UGC', 'Event', 'Brand Ambassador', 'Product Review'],
     socialPlatforms: [
-      { platform: 'instagram', username: 'priyasharma.official', url: 'https://instagram.com/priyasharma', followers: 125000, avgViews: 84000, engagementRate: 5.8, verified: true },
-      { platform: 'youtube', username: 'PriyaSharmaStyle', url: 'https://youtube.com', followers: 45000, avgViews: 32000, engagementRate: 4.2, verified: true },
-      { platform: 'linkedin', username: 'priya-sharma-creator', url: 'https://linkedin.com', followers: 8200, avgViews: 5000, engagementRate: 3.1, verified: false }
+      { platform: 'instagram', username: 'priyasharma.official', url: 'https://instagram.com/priyasharma', followers: 125000, avgViews: 84000, verified: true },
+      { platform: 'youtube', username: 'PriyaSharmaStyle', url: 'https://youtube.com', followers: 45000, avgViews: 32000, verified: true },
+      { platform: 'linkedin', username: 'priya-sharma-creator', url: 'https://linkedin.com', followers: 8200, avgViews: 5000, verified: false }
     ],
     audience: {
       topCities: [
@@ -215,7 +214,6 @@ export const INITIAL_CREATORS: Creator[] = [
     gender: 'Male',
     ageGroup: '25-34',
     followers: 82000,
-    engagementRate: 6.4,
     avgViews: 92000,
     avgLikes: 5800,
     avgComments: 520,
@@ -255,8 +253,8 @@ export const INITIAL_CREATORS: Creator[] = [
     },
     collaborationTypes: ['Paid', 'Barter', 'Event', 'UGC', 'Product Review'],
     socialPlatforms: [
-      { platform: 'instagram', username: 'rahul.foodtravels', url: 'https://instagram.com', followers: 82000, avgViews: 92000, engagementRate: 6.4, verified: true },
-      { platform: 'youtube', username: 'RahulVermaEats', url: 'https://youtube.com', followers: 28000, avgViews: 24000, engagementRate: 5.1, verified: false }
+      { platform: 'instagram', username: 'rahul.foodtravels', url: 'https://instagram.com', followers: 82000, avgViews: 92000, verified: true },
+      { platform: 'youtube', username: 'RahulVermaEats', url: 'https://youtube.com', followers: 28000, avgViews: 24000, verified: false }
     ],
     audience: {
       topCities: [
@@ -321,7 +319,6 @@ export const INITIAL_CREATORS: Creator[] = [
     gender: 'Female',
     ageGroup: '22-29',
     followers: 210000,
-    engagementRate: 4.9,
     avgViews: 145000,
     avgLikes: 10400,
     avgComments: 630,
@@ -361,8 +358,8 @@ export const INITIAL_CREATORS: Creator[] = [
     },
     collaborationTypes: ['Paid', 'UGC', 'Brand Ambassador', 'Event', 'Product Review'],
     socialPlatforms: [
-      { platform: 'instagram', username: 'ananyakapoor.beauty', url: 'https://instagram.com', followers: 210000, avgViews: 145000, engagementRate: 4.9, verified: true },
-      { platform: 'youtube', username: 'AnanyaBeautyIndia', url: 'https://youtube.com', followers: 98000, avgViews: 65000, engagementRate: 4.1, verified: true }
+      { platform: 'instagram', username: 'ananyakapoor.beauty', url: 'https://instagram.com', followers: 210000, avgViews: 145000, verified: true },
+      { platform: 'youtube', username: 'AnanyaBeautyIndia', url: 'https://youtube.com', followers: 98000, avgViews: 65000, verified: true }
     ],
     audience: {
       topCities: [
@@ -425,7 +422,6 @@ export const INITIAL_CREATORS: Creator[] = [
     gender: 'Male',
     ageGroup: '25-34',
     followers: 180000,
-    engagementRate: 5.1,
     avgViews: 130000,
     avgLikes: 8900,
     avgComments: 820,
@@ -465,9 +461,6 @@ export const INITIAL_CREATORS: Creator[] = [
     },
     collaborationTypes: ['Paid', 'UGC', 'Product Review', 'Event', 'Affiliate'],
     socialPlatforms: [
-      { platform: 'instagram', username: 'karanmehra.tech', url: 'https://instagram.com', followers: 180000, avgViews: 130000, engagementRate: 5.1, verified: true },
-      { platform: 'youtube', username: 'KaranMehraTechReviews', url: 'https://youtube.com', followers: 240000, avgViews: 180000, engagementRate: 6.2, verified: true },
-      { platform: 'linkedin', username: 'karan-mehra-tech', url: 'https://linkedin.com', followers: 22000, avgViews: 15000, engagementRate: 4.8, verified: true }
     ],
     audience: {
       topCities: [
@@ -529,7 +522,6 @@ export const INITIAL_CREATORS: Creator[] = [
     gender: 'Female',
     ageGroup: '25-34',
     followers: 95000,
-    engagementRate: 7.2,
     avgViews: 110000,
     avgLikes: 7900,
     avgComments: 690,
@@ -569,7 +561,7 @@ export const INITIAL_CREATORS: Creator[] = [
     },
     collaborationTypes: ['Paid', 'UGC', 'Brand Ambassador', 'Product Review'],
     socialPlatforms: [
-      { platform: 'instagram', username: 'drtanvi.physiofit', url: 'https://instagram.com', followers: 95000, avgViews: 110000, engagementRate: 7.2, verified: true }
+      { platform: 'instagram', username: 'drtanvi.physiofit', url: 'https://instagram.com', followers: 95000, avgViews: 110000,verified: true }
     ],
     audience: {
       topCities: [
@@ -630,7 +622,6 @@ export const INITIAL_CREATORS: Creator[] = [
     gender: 'Male',
     ageGroup: '25-34',
     followers: 140000,
-    engagementRate: 6.1,
     avgViews: 160000,
     avgLikes: 11200,
     avgComments: 740,
@@ -670,8 +661,6 @@ export const INITIAL_CREATORS: Creator[] = [
     },
     collaborationTypes: ['Paid', 'Barter', 'UGC', 'Event', 'Brand Ambassador'],
     socialPlatforms: [
-      { platform: 'instagram', username: 'aarav.wanderlust', url: 'https://instagram.com', followers: 140000, avgViews: 160000, engagementRate: 6.1, verified: true },
-      { platform: 'youtube', username: 'AaravSinghaniaFilms', url: 'https://youtube.com', followers: 75000, avgViews: 88000, engagementRate: 5.5, verified: true }
     ],
     audience: {
       topCities: [
@@ -732,7 +721,6 @@ export const INITIAL_CREATORS: Creator[] = [
     gender: 'Female',
     ageGroup: '25-34',
     followers: 165000,
-    engagementRate: 4.8,
     avgViews: 120000,
     avgLikes: 7400,
     avgComments: 910,
@@ -772,9 +760,6 @@ export const INITIAL_CREATORS: Creator[] = [
     },
     collaborationTypes: ['Paid', 'UGC', 'Brand Ambassador', 'Event', 'Product Review'],
     socialPlatforms: [
-      { platform: 'instagram', username: 'sneha.financeguide', url: 'https://instagram.com', followers: 165000, avgViews: 120000, engagementRate: 4.8, verified: true },
-      { platform: 'youtube', username: 'SnehaFinTalks', url: 'https://youtube.com', followers: 110000, avgViews: 85000, engagementRate: 5.2, verified: true },
-      { platform: 'linkedin', username: 'sneha-deshmukh-cfp', url: 'https://linkedin.com', followers: 34000, avgViews: 22000, engagementRate: 5.8, verified: true }
     ],
     audience: {
       topCities: [
@@ -835,7 +820,6 @@ export const INITIAL_CREATORS: Creator[] = [
     gender: 'Male',
     ageGroup: '25-34',
     followers: 290000,
-    engagementRate: 8.5,
     avgViews: 380000,
     avgLikes: 26000,
     avgComments: 1800,
@@ -875,8 +859,6 @@ export const INITIAL_CREATORS: Creator[] = [
     },
     collaborationTypes: ['Paid', 'UGC', 'Brand Ambassador', 'Event', 'Product Review'],
     socialPlatforms: [
-      { platform: 'instagram', username: 'rohancomedy.live', url: 'https://instagram.com', followers: 290000, avgViews: 380000, engagementRate: 8.5, verified: true },
-      { platform: 'youtube', username: 'RohanJoshiSketches', url: 'https://youtube.com', followers: 180000, avgViews: 220000, engagementRate: 7.1, verified: true }
     ],
     audience: {
       topCities: [
@@ -937,7 +919,6 @@ export const INITIAL_CREATORS: Creator[] = [
     gender: 'Male',
     ageGroup: '25-34',
     followers: 115000,
-    engagementRate: 6.8,
     avgViews: 140000,
     avgLikes: 9800,
     avgComments: 890,
@@ -977,8 +958,6 @@ export const INITIAL_CREATORS: Creator[] = [
     },
     collaborationTypes: ['Paid', 'UGC', 'Product Review', 'Event', 'Brand Ambassador'],
     socialPlatforms: [
-      { platform: 'instagram', username: 'ishaan.autodrives', url: 'https://instagram.com', followers: 115000, avgViews: 140000, engagementRate: 6.8, verified: true },
-      { platform: 'youtube', username: 'IshaanAutoChandigarh', url: 'https://youtube.com', followers: 89000, avgViews: 110000, engagementRate: 5.9, verified: true }
     ],
     audience: {
       topCities: [
@@ -1039,7 +1018,6 @@ export const INITIAL_CREATORS: Creator[] = [
     gender: 'Female',
     ageGroup: '25-34',
     followers: 88000,
-    engagementRate: 6.2,
     avgViews: 95000,
     avgLikes: 6100,
     avgComments: 490,
@@ -1079,7 +1057,6 @@ export const INITIAL_CREATORS: Creator[] = [
     },
     collaborationTypes: ['Paid', 'Barter', 'UGC', 'Product Review', 'Brand Ambassador'],
     socialPlatforms: [
-      { platform: 'instagram', username: 'kavita.homestories', url: 'https://instagram.com', followers: 88000, avgViews: 95000, engagementRate: 6.2, verified: true }
     ],
     audience: {
       topCities: [
@@ -1140,7 +1117,6 @@ export const INITIAL_CREATORS: Creator[] = [
     gender: 'Female',
     ageGroup: '22-29',
     followers: 68000,
-    engagementRate: 7.6,
     avgViews: 88000,
     avgLikes: 5400,
     avgComments: 460,
@@ -1180,7 +1156,6 @@ export const INITIAL_CREATORS: Creator[] = [
     },
     collaborationTypes: ['Paid', 'Barter', 'UGC', 'Event', 'Product Review'],
     socialPlatforms: [
-      { platform: 'instagram', username: 'zoya.lucknowdiaries', url: 'https://instagram.com', followers: 68000, avgViews: 88000, engagementRate: 7.6, verified: true }
     ],
     audience: {
       topCities: [
@@ -1240,7 +1215,6 @@ export const INITIAL_CREATORS: Creator[] = [
     gender: 'Male',
     ageGroup: '25-34',
     followers: 74000,
-    engagementRate: 5.9,
     avgViews: 85000,
     avgLikes: 4900,
     avgComments: 580,
@@ -1280,8 +1254,6 @@ export const INITIAL_CREATORS: Creator[] = [
     },
     collaborationTypes: ['Paid', 'UGC', 'Brand Ambassador', 'Event', 'Product Review'],
     socialPlatforms: [
-      { platform: 'instagram', username: 'devansh.businessinsights', url: 'https://instagram.com', followers: 74000, avgViews: 85000, engagementRate: 5.9, verified: true },
-      { platform: 'linkedin', username: 'devansh-parekh-d2c', url: 'https://linkedin.com', followers: 28000, avgViews: 19000, engagementRate: 6.4, verified: true }
     ],
     audience: {
       topCities: [
@@ -1354,7 +1326,6 @@ export const INITIAL_CREATORS: Creator[] = [
     "gender": "Male",
     "ageGroup": "25-34",
     "followers": 165000,
-    "engagementRate": 5.4,
     "avgViews": 112000,
     "avgLikes": 8900,
     "avgComments": 520,
@@ -1412,7 +1383,6 @@ export const INITIAL_CREATORS: Creator[] = [
         "url": "https://instagram.com",
         "followers": 165000,
         "avgViews": 112000,
-        "engagementRate": 5.4,
         "verified": true
       }
     ],
@@ -1531,7 +1501,6 @@ export const INITIAL_CREATORS: Creator[] = [
     "gender": "Female",
     "ageGroup": "22-29",
     "followers": 98000,
-    "engagementRate": 6.8,
     "avgViews": 125000,
     "avgLikes": 9400,
     "avgComments": 710,
@@ -1587,7 +1556,6 @@ export const INITIAL_CREATORS: Creator[] = [
         "url": "https://instagram.com",
         "followers": 98000,
         "avgViews": 125000,
-        "engagementRate": 6.8,
         "verified": true
       }
     ],
@@ -1696,7 +1664,6 @@ export const INITIAL_CREATORS: Creator[] = [
     "gender": "Male",
     "ageGroup": "25-34",
     "followers": 142000,
-    "engagementRate": 5.6,
     "avgViews": 110000,
     "avgLikes": 7800,
     "avgComments": 460,
@@ -1751,7 +1718,6 @@ export const INITIAL_CREATORS: Creator[] = [
         "url": "https://instagram.com",
         "followers": 142000,
         "avgViews": 110000,
-        "engagementRate": 5.6,
         "verified": true
       }
     ],
@@ -1848,7 +1814,6 @@ export const INITIAL_CREATORS: Creator[] = [
     "gender": "Female",
     "ageGroup": "22-29",
     "followers": 110000,
-    "engagementRate": 6.1,
     "avgViews": 135000,
     "avgLikes": 11200,
     "avgComments": 640,
@@ -1903,7 +1868,6 @@ export const INITIAL_CREATORS: Creator[] = [
         "url": "https://instagram.com",
         "followers": 110000,
         "avgViews": 135000,
-        "engagementRate": 6.1,
         "verified": true
       }
     ],
@@ -1998,7 +1962,6 @@ export const INITIAL_CREATORS: Creator[] = [
     "gender": "Male",
     "ageGroup": "22-29",
     "followers": 88000,
-    "engagementRate": 6.5,
     "avgViews": 95000,
     "avgLikes": 7400,
     "avgComments": 510,
@@ -2053,7 +2016,6 @@ export const INITIAL_CREATORS: Creator[] = [
         "url": "https://instagram.com",
         "followers": 88000,
         "avgViews": 95000,
-        "engagementRate": 6.5,
         "verified": true
       }
     ],
@@ -2148,7 +2110,6 @@ export const INITIAL_CREATORS: Creator[] = [
     "gender": "Female",
     "ageGroup": "22-29",
     "followers": 120000,
-    "engagementRate": 5.7,
     "avgViews": 105000,
     "avgLikes": 8200,
     "avgComments": 490,
@@ -2203,7 +2164,6 @@ export const INITIAL_CREATORS: Creator[] = [
         "url": "https://instagram.com",
         "followers": 120000,
         "avgViews": 105000,
-        "engagementRate": 5.7,
         "verified": true
       }
     ],
@@ -2298,7 +2258,6 @@ export const INITIAL_CREATORS: Creator[] = [
     "gender": "Male",
     "ageGroup": "25-34",
     "followers": 76000,
-    "engagementRate": 6.2,
     "avgViews": 82000,
     "avgLikes": 5300,
     "avgComments": 410,
@@ -2353,7 +2312,6 @@ export const INITIAL_CREATORS: Creator[] = [
         "url": "https://instagram.com",
         "followers": 76000,
         "avgViews": 82000,
-        "engagementRate": 6.2,
         "verified": true
       }
     ],
@@ -2449,7 +2407,6 @@ export const INITIAL_CREATORS: Creator[] = [
     "gender": "Female",
     "ageGroup": "22-29",
     "followers": 195000,
-    "engagementRate": 5.2,
     "avgViews": 140000,
     "avgLikes": 9800,
     "avgComments": 580,
@@ -2505,7 +2462,6 @@ export const INITIAL_CREATORS: Creator[] = [
         "url": "https://instagram.com",
         "followers": 195000,
         "avgViews": 140000,
-        "engagementRate": 5.2,
         "verified": true
       }
     ],
@@ -2600,7 +2556,6 @@ export const INITIAL_CREATORS: Creator[] = [
     "gender": "Male",
     "ageGroup": "25-34",
     "followers": 140000,
-    "engagementRate": 5.8,
     "avgViews": 118000,
     "avgLikes": 8100,
     "avgComments": 630,
@@ -2655,7 +2610,6 @@ export const INITIAL_CREATORS: Creator[] = [
         "url": "https://instagram.com",
         "followers": 140000,
         "avgViews": 118000,
-        "engagementRate": 5.8,
         "verified": true
       }
     ],
@@ -2755,7 +2709,6 @@ export const INITIAL_CREATORS: Creator[] = [
     "gender": "Female",
     "ageGroup": "22-29",
     "followers": 115000,
-    "engagementRate": 6.3,
     "avgViews": 130000,
     "avgLikes": 9100,
     "avgComments": 640,
@@ -2811,7 +2764,6 @@ export const INITIAL_CREATORS: Creator[] = [
         "url": "https://instagram.com",
         "followers": 115000,
         "avgViews": 130000,
-        "engagementRate": 6.3,
         "verified": true
       }
     ],
