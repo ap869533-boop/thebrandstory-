@@ -8,7 +8,7 @@ export const EnquiryModal: React.FC = () => {
   const { enquiryModalCreator, closeEnquiryModal, submitEnquiry, activeBrandName, cities, authUser, openAuthModal } = usePlatform();
 
   const [formData, setFormData] = useState({
-    brandName: authUser?.company_name || activeBrandName || '',
+    brandName: authUser?.companyName || authUser?.company_name || activeBrandName || '',
     contactPerson: authUser?.name || '',
     email: authUser?.email || '',
     phone: authUser?.phone || '',

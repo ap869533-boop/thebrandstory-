@@ -6,6 +6,8 @@ export interface AuthUser {
   email: string;
   role: UserRole;
   companyName?: string;
+  company_name?: string;
+  phone?: string;
   gstNumber?: string;
   approvalStatus?: 'pending' | 'approved' | 'rejected';
   avatar?: string;

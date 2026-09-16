@@ -80,8 +80,8 @@ export interface AppNotification {
 interface PlatformContextType {
   // Navigation / Route View
   currentView: string; // 'home' | 'login' | 'influencer-detail' | 'city-page' | 'category-page' | 'city-category-page' | 'explore' | 'post-requirement' | 'opportunities' | 'brand-dashboard' | 'creator-dashboard' | 'admin-dashboard' | 'blog' | 'blog-post'
-  viewParams: { id?: string; slug?: string; username?: string; citySlug?: string; categorySlug?: string; blogSlug?: string; redirectAfter?: string; role?: UserRole; message?: string; mode?: 'login' | 'signup' };
-  navigateTo: (view: string, params?: { id?: string; slug?: string; username?: string; citySlug?: string; categorySlug?: string; blogSlug?: string; redirectAfter?: string; role?: UserRole; message?: string; mode?: 'login' | 'signup' }) => void;
+  viewParams: { id?: string; slug?: string; username?: string; citySlug?: string; categorySlug?: string; blogSlug?: string; redirectAfter?: string; role?: UserRole; message?: string; mode?: 'login' | 'signup'; brandName?: string; companyName?: string; logoUrl?: string; description?: string; industry?: string; city?: string; website?: string; [key: string]: any };
+  navigateTo: (view: string, params?: { id?: string; slug?: string; username?: string; citySlug?: string; categorySlug?: string; blogSlug?: string; redirectAfter?: string; role?: UserRole; message?: string; mode?: 'login' | 'signup'; brandName?: string; companyName?: string; logoUrl?: string; description?: string; industry?: string; city?: string; website?: string; [key: string]: any }) => void;
 
   // Role & Auth
   currentRole: UserRole;
@@ -235,6 +235,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     else if (view === 'explore') path = '/explore';
     else if (view === 'creator-detail' && params.username) path = `/creator/${params.username}`;
     else if (view === 'creator-detail' && params.id) path = `/creator/${params.id}`; // fallback
+    else if (view === 'brand-detail' && (params.id || params.brandName)) path = `/brand/${encodeURIComponent(params.id || params.brandName)}`;
     else if (view === 'city-page' && params.citySlug) path = `/city/${params.citySlug}`;
     else if (view === 'category-page' && params.categorySlug) path = `/category/${params.categorySlug}`;
     else if (view === 'post-requirement') path = '/post-requirement';
