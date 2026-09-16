@@ -355,20 +355,38 @@ export async function adminDeleteBrand(req: AuthenticatedRequest, res: Response)
   }
 }
 
-// =============================================
-// GET /api/brands/featured  (public: approved featured brands)
-// =============================================
 export async function getFeaturedBrands(req: Request, res: Response) {
   try {
     const rows = await dbQuery(
-      `SELECT * FROM brand_profiles WHERE approval_status = 'approved' ORDER BY is_featured DESC, created_at DESC LIMIT 12`
+      `SELECT 
+        COALESCE(bp.id, CONCAT('usr_', u.id)) as id,
+        u.id as user_id,
+        COALESCE(bp.brand_name, u.company_name, u.name) as brand_name,
+        bp.gst_number,
+        COALESCE(bp.logo_url, u.avatar, '') as logo_url,
+        bp.cover_url,
+        COALESCE(bp.description, CONCAT('Verified partner brand hiring creators on thebrandsstory.')) as description,
+        bp.website,
+        COALESCE(bp.industry, 'Brand Partner') as industry,
+        COALESCE(bp.city, 'Pan India') as city,
+        bp.contact_person,
+        bp.phone,
+        u.email,
+        COALESCE(bp.approval_status, u.approval_status) as approval_status,
+        COALESCE(bp.is_featured, 1) as is_featured,
+        u.created_at
+      FROM users u
+      LEFT JOIN brand_profiles bp ON u.id = bp.user_id
+      WHERE u.role = 'BRAND' AND (u.approval_status = 'approved' OR bp.approval_status = 'approved')
+      ORDER BY is_featured DESC, u.created_at DESC
+      LIMIT 16`
     );
 
     if (rows && rows.length > 0) {
       return res.json({ success: true, brands: rows.map(mapDbRowToBrandProfile) });
     }
 
-    // Fallback: memory
+    // Fallback: memory store approved brands
     const approved = brandProfilesStore.filter(p => p.approvalStatus === 'approved');
     res.json({ success: true, brands: approved });
   } catch (error) {
