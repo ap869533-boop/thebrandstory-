@@ -42,9 +42,9 @@ export const BrandDashboardView: React.FC = () => {
     deleteFolder,
     navigateTo,
     authUser,
-    openAuthModal,
     submitEnquiry,
     updateApplicantStatus,
+    setAuthUser,
   } = usePlatform();
 
   const [activeTab, setActiveTab] = useState<'briefs' | 'pitches' | 'enquiries' | 'shortlists' | 'profile' | 'settings'>('briefs');
@@ -86,6 +86,20 @@ export const BrandDashboardView: React.FC = () => {
         setBpLoaded(true);
       })
       .catch(() => setBpLoaded(true));
+
+    // Refresh authUser status from backend
+    fetch(apiUrl('/api/auth/me'), {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && data.user) {
+          if (data.user.approvalStatus !== authUser.approvalStatus || data.user.status !== authUser.status) {
+            setAuthUser({ ...authUser, ...data.user });
+          }
+        }
+      })
+      .catch(e => console.error('Failed to sync authUser:', e));
   }, [authUser]);
 
   const handleSaveBrandProfile = async (e: React.FormEvent) => {
@@ -175,9 +189,30 @@ export const BrandDashboardView: React.FC = () => {
     );
   }
 
-  const brandDisplayName = authUser?.companyName || authUser?.name || activeBrandName;
+  const brandDisplayName = bpBrandName || authUser?.companyName || authUser?.name || activeBrandName;
   const [pitchScope, setPitchScope] = useState<'my' | 'all'>('my');
-  const approvalStatus = authUser?.approvalStatus || 'approved';
+  const approvalStatus = authUser?.approvalStatus || (authUser as any)?.status || 'pending';
+
+  const [showApprovedBanner, setShowApprovedBanner] = useState(false);
+
+  useEffect(() => {
+    if (approvalStatus === 'approved') {
+      const bannerKey = `approval_banner_shown_${authUser?.id || 'default'}`;
+      if (!localStorage.getItem(bannerKey)) {
+        setShowApprovedBanner(true);
+        localStorage.setItem(bannerKey, 'true');
+        const timer = setTimeout(() => setShowApprovedBanner(false), 10000);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [approvalStatus, authUser?.id]);
+
+  // Force active tab to profile if pending
+  useEffect(() => {
+    if (approvalStatus === 'pending' && !['profile', 'settings'].includes(activeTab)) {
+      setActiveTab('profile');
+    }
+  }, [approvalStatus, activeTab]);
 
   // Match briefs belonging to the brand
   const myBrandBriefs = campaigns.filter(
@@ -259,9 +294,21 @@ export const BrandDashboardView: React.FC = () => {
       campaignId: applicant.campaignId,
     });
     setMsgText(`Hi ${applicant.creatorName}! We loved your pitch for "${applicant.campaignTitle}". We'd love to discuss further collaboration.`);
-    setMsgBudget('');
     setMsgSent(false);
   };
+
+  // Calculate profile completion
+  let completedFields = 0;
+  const totalFields = 6;
+  if (bpBrandName) completedFields++;
+  if (bpContactPerson) completedFields++;
+  if (bpCity) completedFields++;
+  if (bpPhone) completedFields++;
+  if (bpWebsite) completedFields++;
+  if (bpIndustry) completedFields++;
+  const completionPercentage = Math.round((completedFields / totalFields) * 100);
+  const circumference = 2 * Math.PI * 40;
+  const strokeDashoffset = circumference - (completionPercentage / 100) * circumference;
 
   return (
     <div className="min-h-screen bg-slate-50/60 py-8 font-sans">
@@ -286,74 +333,215 @@ export const BrandDashboardView: React.FC = () => {
             </div>
           </div>
         )}
-        {approvalStatus === 'approved' && (
-          <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 w-fit">
-            <CheckCircle className="w-4 h-4 text-emerald-500" />
-            <span className="text-xs font-bold">Brand Account Approved & Active</span>
+        {showApprovedBanner && (
+          <div className="fixed top-8 sm:top-12 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-3 px-6 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-[0_20px_60px_rgba(16,185,129,0.4)] w-11/12 max-w-md animate-[bounce_1s_ease-in-out_infinite] transition-all duration-500 border border-emerald-400/50">
+            <span className="text-3xl animate-pulse">🎉</span>
+            <div className="flex-1 pr-4">
+              <span className="text-sm font-black tracking-wide block">Congratulations!</span>
+              <span className="text-[11px] sm:text-xs font-medium opacity-90 block mt-0.5">Your brand account is approved and fully active.</span>
+            </div>
+            <span className="text-2xl animate-[spin_4s_linear_infinite] ml-1">🎊</span>
+            <button 
+              onClick={() => setShowApprovedBanner(false)}
+              className="absolute top-2 right-2 p-1.5 bg-white/20 hover:bg-white/40 rounded-full transition-colors cursor-pointer"
+              title="Dismiss"
+            >
+              <X className="w-3.5 h-3.5 text-white" />
+            </button>
           </div>
         )}
 
-        {/* Header */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-blue-50 text-[#D4A338] flex items-center justify-center font-bold text-xl border border-blue-100">
-              <Building2 className="w-7 h-7" />
+        {/* Header - Modern UI Revamp */}
+        <div className="flex flex-col lg:flex-row gap-6 items-stretch">
+          
+          {/* Left Card: Brand Profile Details */}
+          <div className="bg-gradient-to-br from-white via-[#fcfaf5] to-[#f1e6cc] rounded-[2.5rem] p-5 sm:p-6 md:p-8 flex-1 text-slate-900 shadow-[0_12px_40px_rgba(212,163,56,0.12)] hover:shadow-[0_20px_50px_rgba(212,163,56,0.2)] hover:-translate-y-1.5 transition-all duration-500 ease-out border border-[#D4A338]/30 relative group overflow-hidden">
+            
+            {/* Elegant Background Accent */}
+            <div className="absolute top-0 right-0 w-72 h-72 bg-gradient-to-br from-[#D4A338]/10 via-transparent to-transparent rounded-full mix-blend-multiply filter blur-3xl opacity-40 pointer-events-none group-hover:scale-125 group-hover:opacity-70 transition-all duration-700"></div>
+
+            <div className="absolute top-5 sm:top-6 right-5 sm:right-8 z-20 flex flex-col sm:flex-row items-end sm:items-center gap-3">
+              <button onClick={() => setActiveTab('profile')} className="hidden sm:inline-block text-[10px] sm:text-[11px] font-bold text-slate-400 hover:text-[#D4A338] transition cursor-pointer">Edit Profile</button>
+              <button
+                onClick={() => navigateTo('post-requirement')}
+                disabled={approvalStatus === 'pending'}
+                className={`hidden sm:flex px-4 py-2 rounded-xl font-bold text-[10px] shadow-sm transition-all duration-300 items-center justify-center gap-1.5 ${
+                  approvalStatus === 'pending'
+                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+                    : 'bg-gradient-to-r from-[#D4A338] to-[#b88628] hover:from-[#c2912a] hover:to-[#a37521] text-white hover:shadow-md hover:shadow-[#D4A338]/30 hover:-translate-y-0.5 cursor-pointer'
+                }`}
+                title={approvalStatus === 'pending' ? 'Wait for admin approval to post briefs' : ''}
+              >
+                <PlusCircle className="w-3.5 h-3.5" />
+                <span>{approvalStatus === 'pending' ? 'Approval Required' : 'Post New Brief'}</span>
+              </button>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-black text-slate-900 tracking-tight">{brandDisplayName}</h1>
-                <span className="px-2 py-0.5 bg-blue-50 text-[#b88628] text-[10px] font-bold rounded-md">Verified Brand</span>
+            
+            <div className="flex flex-col relative z-10 h-full justify-center">
+              
+              <div className="flex flex-row items-center gap-4 sm:gap-5 md:gap-6">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full bg-gradient-to-br from-[#D4A338] to-[#996c14] p-[2px] sm:p-[3px] shrink-0 relative shadow-lg shadow-[#D4A338]/20 group-hover:shadow-[#D4A338]/40 transition-shadow duration-500">
+                  <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden border-2 sm:border-[3px] border-white">
+                    {bpLogoUrl ? (
+                      <img src={bpLogoUrl} alt={brandDisplayName} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-xl sm:text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-[#D4A338] to-[#996c14] tracking-wider">
+                        {brandDisplayName.substring(0, 2).toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  {approvalStatus === 'approved' && (
+                    <div className="absolute -bottom-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 bg-emerald-500 rounded-full border-2 sm:border-[3px] border-white flex items-center justify-center shadow-sm">
+                      <CheckCircle2 className="w-3 h-3 sm:w-3 sm:h-3 md:w-4 md:h-4 text-white" />
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-1 sm:space-y-1.5 flex-1 min-w-0 pr-2 sm:pr-32">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2.5">
+                    <h1 className="text-[17px] sm:text-2xl md:text-3xl font-bold sm:font-black text-slate-900 tracking-tight leading-tight">
+                      {brandDisplayName}
+                    </h1>
+                    <div>
+                      {approvalStatus === 'approved' ? (
+                         <span className="inline-block px-2 py-0.5 sm:px-2.5 sm:py-1 bg-emerald-50 text-emerald-600 text-[9px] sm:text-[10px] font-bold rounded-lg uppercase tracking-wider border border-emerald-100">Verified Brand</span>
+                      ) : (
+                         <span className="inline-block px-2 py-0.5 sm:px-2.5 sm:py-1 bg-amber-50 text-amber-600 text-[9px] sm:text-[10px] font-bold rounded-lg uppercase tracking-wider border border-amber-200">Pending Approval</span>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-[10px] sm:text-xs md:text-sm text-slate-500 font-medium flex items-center gap-1.5">
+                    <span className="truncate">{bpContactPerson || 'Profile not setup'}</span> {authUser?.role ? `• ${authUser.role}` : ''}
+                  </p>
+                  <p className="text-[9px] sm:text-[11px] md:text-xs text-slate-400 flex items-center gap-1.5 font-medium">
+                    {bpCity || 'Location not added'} • Joined {new Date().getFullYear()}
+                  </p>
+                </div>
               </div>
-              <p className="text-xs text-slate-500">Manage campaign briefs, creator pitches, shortlists, and bookings</p>
+            </div>
+            
+            {/* Mobile Post Button (visible only on small screens below avatar) */}
+            <div className="mt-5 sm:hidden relative z-10">
+              <button
+                onClick={() => navigateTo('post-requirement')}
+                disabled={approvalStatus === 'pending'}
+                className={`w-full px-4 py-2.5 rounded-xl font-bold text-[11px] shadow-sm transition-all duration-300 flex items-center justify-center gap-2 ${
+                  approvalStatus === 'pending'
+                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+                    : 'bg-gradient-to-r from-[#D4A338] to-[#b88628] text-white cursor-pointer'
+                }`}
+              >
+                <PlusCircle className="w-4 h-4" />
+                <span>{approvalStatus === 'pending' ? 'Approval Required' : 'Post New Brief'}</span>
+              </button>
             </div>
           </div>
-          <button
-            onClick={() => navigateTo('post-requirement')}
-            className="px-4 py-2 bg-black hover:bg-zinc-900 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
-          >
-            <PlusCircle className="w-3.5 h-3.5" />
-            <span>Post New Brief</span>
-          </button>
+
+          {/* Right Card: Profile Completion Indicator */}
+          <div className="bg-gradient-to-br from-amber-50 via-orange-50/50 to-rose-50/50 rounded-[2.5rem] p-4 sm:p-6 shadow-[0_12px_40px_rgba(212,163,56,0.15)] hover:shadow-[0_20px_50px_rgba(212,163,56,0.25)] hover:-translate-y-1.5 transition-all duration-500 ease-out border border-amber-200/50 flex flex-col items-center justify-center relative shrink-0 lg:w-72 overflow-hidden group">
+            
+            {/* Animated Particles / Bubbles */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+              {/* Soft glows */}
+              <div className="absolute top-4 left-4 w-16 h-16 bg-[#D4A338]/10 rounded-full mix-blend-multiply blur-xl animate-[pulse_4s_ease-in-out_infinite]"></div>
+              <div className="absolute bottom-4 right-4 w-20 h-20 bg-rose-400/10 rounded-full mix-blend-multiply blur-xl animate-[pulse_5s_ease-in-out_infinite_1s]"></div>
+              
+              {/* Floating little circles - Moved closer to center */}
+              <div className="absolute top-16 right-16 w-2 h-2 bg-orange-400/30 rounded-full animate-[ping_3s_cubic-bezier(0,0,0.2,1)_infinite]"></div>
+              <div className="absolute bottom-20 left-16 w-2.5 h-2.5 bg-rose-400/30 rounded-full animate-[bounce_4s_infinite]"></div>
+              <div className="absolute top-1/2 left-12 w-1.5 h-1.5 bg-[#D4A338]/40 rounded-full animate-[ping_4s_cubic-bezier(0,0,0.2,1)_infinite_1s]"></div>
+              
+              {/* Orbiting circle - Tighter orbit */}
+              <div className="absolute top-1/2 left-1/2 w-[100%] h-[100%] -translate-x-1/2 -translate-y-1/2 animate-[spin_15s_linear_infinite]">
+                 <div className="absolute top-2 left-1/2 w-2.5 h-2.5 bg-gradient-to-r from-[#D4A338] to-orange-400 rounded-full opacity-40 blur-[1px]"></div>
+                 <div className="absolute bottom-6 right-1/4 w-3 h-3 bg-gradient-to-r from-pink-400 to-rose-400 rounded-full opacity-30 blur-[1px]"></div>
+              </div>
+            </div>
+
+            <button onClick={() => setActiveTab('profile')} className="absolute top-4 sm:top-6 right-5 sm:right-6 text-[10px] font-bold text-[#D4A338] hover:text-[#b88628] cursor-pointer z-10">Edit</button>
+            <div className="relative w-24 h-24 sm:w-32 sm:h-32 flex items-center justify-center mb-1 sm:mb-2 z-10">
+              <svg className="w-full h-full transform -rotate-90 drop-shadow-sm" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="40" stroke="#ffffff80" strokeWidth="10" fill="none" />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="40"
+                  stroke="url(#goldGradient)"
+                  strokeWidth="10"
+                  fill="none"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={strokeDashoffset}
+                  className="transition-all duration-1000 ease-out"
+                  strokeLinecap="round"
+                />
+                <defs>
+                  <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#D4A338" />
+                    <stop offset="100%" stopColor="#f3c86b" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div className="absolute flex flex-col items-center justify-center text-center">
+                {completionPercentage === 100 ? (
+                  <CheckCircle2 className="w-6 h-6 sm:w-8 sm:h-8 text-[#D4A338]" />
+                ) : (
+                  <span className="text-xl sm:text-2xl font-black text-slate-800">{completionPercentage}%</span>
+                )}
+                <span className="text-[7px] sm:text-[8px] text-slate-500 font-bold uppercase tracking-wider mt-0.5 sm:mt-1">Completed</span>
+              </div>
+            </div>
+            <div className={`mt-2 sm:mt-4 px-4 py-2 rounded-xl backdrop-blur-sm border text-[10px] font-bold w-full text-center truncate z-10 shadow-sm transition-colors duration-300 ${
+              completionPercentage === 100 
+                ? 'bg-emerald-100/80 border-emerald-200 text-emerald-700' 
+                : 'bg-white/60 border-white/80 text-slate-700'
+            }`}>
+              {completionPercentage === 100 ? '🎉 All Set & Ready!' : 'Complete profile to boost trust'}
+            </div>
+          </div>
+          
         </div>
 
         {/* Tab Navigation */}
         <div className="flex flex-wrap border-b border-slate-200 gap-4 sm:gap-6 text-xs font-bold text-slate-500 overflow-x-auto">
-          <button
-            onClick={() => setActiveTab('briefs')}
-            className={`pb-3 flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap ${activeTab === 'briefs' ? 'text-[#D4A338] border-b-2 border-blue-600' : 'hover:text-slate-800'}`}
-          >
-            <Flame className="w-3.5 h-3.5" />
-            <span>My Posted Briefs ({myBriefs.length})</span>
-          </button>
+          {approvalStatus === 'approved' && (
+            <>
+              <button
+                onClick={() => setActiveTab('briefs')}
+                className={`pb-3 flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap ${activeTab === 'briefs' ? 'text-[#D4A338] border-b-2 border-blue-600' : 'hover:text-slate-800'}`}
+              >
+                <Flame className="w-3.5 h-3.5" />
+                <span>My Posted Briefs ({myBriefs.length})</span>
+              </button>
 
-          <button
-            onClick={() => setActiveTab('pitches')}
-            className={`pb-3 flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap ${activeTab === 'pitches' ? 'text-[#D4A338] border-b-2 border-blue-600' : 'hover:text-slate-800'}`}
-          >
-            <Inbox className="w-3.5 h-3.5" />
-            <span>Creator Pitches ({allPitches.length})</span>
-            {allPitches.filter(p => p.status === 'Pending').length > 0 && (
-              <span className="px-1.5 py-0.5 bg-amber-400 text-white text-[9px] font-black rounded-full">
-                {allPitches.filter(p => p.status === 'Pending').length} New
-              </span>
-            )}
-          </button>
+              <button
+                onClick={() => setActiveTab('pitches')}
+                className={`pb-3 flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap ${activeTab === 'pitches' ? 'text-[#D4A338] border-b-2 border-blue-600' : 'hover:text-slate-800'}`}
+              >
+                <Inbox className="w-3.5 h-3.5" />
+                <span>Creator Pitches ({allPitches.length})</span>
+                {allPitches.filter(p => p.status === 'Pending').length > 0 && (
+                  <span className="px-1.5 py-0.5 bg-amber-400 text-white text-[9px] font-black rounded-full">
+                    {allPitches.filter(p => p.status === 'Pending').length} New
+                  </span>
+                )}
+              </button>
 
-          <button
-            onClick={() => setActiveTab('enquiries')}
-            className={`pb-3 flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap ${activeTab === 'enquiries' ? 'text-[#D4A338] border-b-2 border-blue-600' : 'hover:text-slate-800'}`}
-          >
-            <MessageSquare className="w-3.5 h-3.5" />
-            <span>Direct Bookings ({myEnquiries.length})</span>
-          </button>
+              <button
+                onClick={() => setActiveTab('enquiries')}
+                className={`pb-3 flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap ${activeTab === 'enquiries' ? 'text-[#D4A338] border-b-2 border-blue-600' : 'hover:text-slate-800'}`}
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span>Direct Bookings ({myEnquiries.length})</span>
+              </button>
 
-          <button
-            onClick={() => setActiveTab('shortlists')}
-            className={`pb-3 flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap ${activeTab === 'shortlists' ? 'text-[#D4A338] border-b-2 border-blue-600' : 'hover:text-slate-800'}`}
-          >
-            <Folder className="w-3.5 h-3.5" />
-            <span>Saved Shortlists ({savedFolders.length})</span>
-          </button>
+              <button
+                onClick={() => setActiveTab('shortlists')}
+                className={`pb-3 flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap ${activeTab === 'shortlists' ? 'text-[#D4A338] border-b-2 border-blue-600' : 'hover:text-slate-800'}`}
+              >
+                <Folder className="w-3.5 h-3.5" />
+                <span>Saved Shortlists ({savedFolders.length})</span>
+              </button>
+            </>
+          )}
 
           <button
             onClick={() => setActiveTab('profile')}
@@ -392,7 +580,7 @@ export const BrandDashboardView: React.FC = () => {
                 const campPitches = camp.applicants || [];
                 const isExpanded = expandedBrief === camp.id;
                 return (
-                  <div key={camp.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                  <div key={camp.id} className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-[0_4px_20px_rgb(0,0,0,0.04)] hover:shadow-[0_12px_30px_rgb(0,0,0,0.08)] hover:-translate-y-1.5 transition-all duration-500 ease-out group">
                     <div className="p-6 space-y-3">
                       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
                         <div>

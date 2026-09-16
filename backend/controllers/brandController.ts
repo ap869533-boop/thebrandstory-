@@ -84,6 +84,10 @@ export async function createBrandProfile(req: AuthenticatedRequest, res: Respons
       return res.status(409).json({ success: false, error: 'Brand profile already exists. Use PUT to update.' });
     }
 
+    // Fetch the user's existing approval status from the users table
+    const userRow = await dbQuery('SELECT approval_status FROM users WHERE id = ?', [userId]);
+    const currentApprovalStatus = userRow && userRow.length > 0 ? userRow[0].approval_status || 'pending' : 'pending';
+
     const id = `bp_${Date.now()}`;
     const profile = {
       id,
@@ -99,18 +103,18 @@ export async function createBrandProfile(req: AuthenticatedRequest, res: Respons
       contactPerson: contactPerson || '',
       phone: phone || '',
       email: email || req.user.email || '',
-      approvalStatus: 'pending' as const,
+      approvalStatus: currentApprovalStatus as any,
       rejectionReason: '',
       isFeatured: false,
       createdAt: new Date().toISOString(),
     };
 
-    brandProfilesStore.unshift(profile);
+    brandProfilesStore.unshift(profile as any);
 
     await dbQuery(
       `INSERT INTO brand_profiles (id, user_id, brand_name, gst_number, logo_url, cover_url, description, website, industry, city, contact_person, phone, email, approval_status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
-      [id, userId, brandName, gstNumber || null, logoUrl || null, coverUrl || null, description || null, website || null, industry || null, city || null, contactPerson || null, phone || null, email || null]
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, userId, brandName, gstNumber || null, logoUrl || null, coverUrl || null, description || null, website || null, industry || null, city || null, contactPerson || null, phone || null, email || null, currentApprovalStatus]
     ).catch(err => console.warn('MySQL brand profile insert notice:', err));
 
     res.status(201).json({ success: true, profile });
@@ -274,16 +278,37 @@ export async function adminApproveBrand(req: AuthenticatedRequest, res: Response
 
     const newStatus = action === 'approve' ? 'approved' : 'rejected';
 
-    await dbQuery(
-      `UPDATE brand_profiles SET approval_status = ?, rejection_reason = ? WHERE id = ?`,
-      [newStatus, rejectionReason || null, id]
-    ).catch(err => console.warn('MySQL brand approval update notice:', err));
+    // 1. Update brand_profiles table if it exists
+    if (!id.startsWith('temp_')) {
+      await dbQuery(
+        `UPDATE brand_profiles SET approval_status = ?, rejection_reason = ? WHERE id = ?`,
+        [newStatus, rejectionReason || null, id]
+      ).catch(err => console.warn('MySQL brand approval update notice:', err));
+    }
+
+    // 2. Crucial Fix: Update the users table so the login session (authUser) knows the brand is approved
+    let updateUserId = id.startsWith('temp_') ? id.replace('temp_', '') : null;
+    
+    if (!updateUserId) {
+      const bp = await dbQuery('SELECT user_id FROM brand_profiles WHERE id = ?', [id]);
+      if (bp && bp.length > 0) updateUserId = bp[0].user_id;
+    }
+
+    if (updateUserId) {
+       await dbQuery('UPDATE users SET approval_status = ? WHERE id = ?', [newStatus, updateUserId]);
+    }
 
     // Update memory
     const memIdx = brandProfilesStore.findIndex(p => p.id === id);
     if (memIdx >= 0) {
       brandProfilesStore[memIdx].approvalStatus = newStatus;
       brandProfilesStore[memIdx].rejectionReason = rejectionReason || '';
+    } else if (updateUserId) {
+      const memUserIdx = brandProfilesStore.findIndex(p => p.userId === updateUserId);
+      if (memUserIdx >= 0) {
+        brandProfilesStore[memUserIdx].approvalStatus = newStatus;
+        brandProfilesStore[memUserIdx].rejectionReason = rejectionReason || '';
+      }
     }
 
     res.json({ success: true, id, approvalStatus: newStatus });

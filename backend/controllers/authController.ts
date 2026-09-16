@@ -520,7 +520,7 @@ export async function getMe(req: AuthenticatedRequest, res: Response) {
     return res.status(401).json({ success: false, error: 'Unauthorized' });
   }
 
-  const sqlUser = 'SELECT id, name, email, role, phone, company_name, avatar, created_at FROM users WHERE id = ? LIMIT 1';
+  const sqlUser = 'SELECT id, name, email, role, phone, company_name, avatar, approval_status, created_at FROM users WHERE id = ? LIMIT 1';
   const dbUsers = await dbQuery(sqlUser, [req.user.id]);
 
   let user = dbUsers?.[0];
@@ -538,6 +538,7 @@ export async function getMe(req: AuthenticatedRequest, res: Response) {
     success: true,
     user: {
       ...effectiveUser,
+      approvalStatus: effectiveUser.approval_status || effectiveUser.approvalStatus || 'pending',
       creatorProfile: creatorProfile || undefined,
     },
   });
