@@ -1311,34 +1311,68 @@ export const CreatorDashboardView: React.FC = () => {
           </div>
         )}
 
-        {/* Tab 3: Live Opportunities */}
-        {activeTab === 'pitches' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fadeIn">
-            {campaigns.map((camp) => (
-              <div key={camp.id} className="bg-white p-5 rounded-2xl border border-slate-200 space-y-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <span className="text-[10px] font-bold text-[#D4A338] uppercase">{camp.companyName}</span>
-                    <h4 className="font-black text-slate-900 text-sm">{camp.campaignTitle}</h4>
-                  </div>
-                  <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-black">
-                    {camp.budget}
-                  </span>
-                </div>
-                <p className="text-xs text-slate-600 line-clamp-2">{camp.campaignDescription}</p>
-                <div className="flex justify-between items-center text-xs pt-2 border-t border-slate-100">
-                  <span className="text-slate-400 font-medium">{camp.city} • {camp.category}</span>
+        {/* Tab 3: My Pitches */}
+        {activeTab === 'pitches' && (() => {
+          const myPitchedCampaigns = campaigns.filter(camp => 
+            (camp.applicants || []).some(a => a.creatorId === creator.id || a.creatorName === creator.name)
+          );
+
+          return (
+            <div className="space-y-4 animate-fadeIn">
+              {myPitchedCampaigns.length === 0 ? (
+                <div className="bg-white p-12 text-center rounded-3xl border border-slate-200 space-y-2">
+                  <Flame className="w-10 h-10 text-slate-300 mx-auto" />
+                  <h3 className="font-bold text-slate-800 text-sm">No Pitches Yet</h3>
+                  <p className="text-xs text-slate-500">When you pitch for a campaign, you can track its status here.</p>
                   <button
                     onClick={() => navigateTo('opportunities')}
-                    className="px-3 py-1.5 bg-black text-white rounded-lg font-bold hover:bg-zinc-900 transition cursor-pointer"
+                    className="mt-2 px-4 py-2 bg-black text-white font-bold text-xs rounded-xl hover:bg-zinc-900 transition cursor-pointer"
                   >
-                    Submit Pitch
+                    Find Live Campaigns
                   </button>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {myPitchedCampaigns.map((camp) => {
+                    const myPitch = (camp.applicants || []).find(a => a.creatorId === creator.id || a.creatorName === creator.name);
+                    const isConfirmed = myPitch?.status === 'Accepted';
+                    const isDeclined = myPitch?.status === 'Declined';
+                    const isPending = myPitch?.status === 'Pending';
+                    
+                    return (
+                      <div key={camp.id} className="bg-white p-5 rounded-2xl border border-slate-200 space-y-3">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <span className="text-[10px] font-bold text-[#D4A338] uppercase">{camp.companyName}</span>
+                            <h4 className="font-black text-slate-900 text-sm">{camp.campaignTitle}</h4>
+                          </div>
+                          <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-black">
+                            {camp.budget}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-600 line-clamp-2">{camp.campaignDescription}</p>
+                        <div className="flex justify-between items-center text-xs pt-2 border-t border-slate-100">
+                          <span className="text-slate-400 font-medium">{camp.city} • {camp.category}</span>
+                          <span className={`px-3 py-1.5 rounded-lg font-bold text-[11px] flex items-center gap-1 ${
+                            isConfirmed ? 'bg-emerald-100 text-emerald-800' : 
+                            isDeclined ? 'bg-red-100 text-red-700' : 
+                            isPending ? 'bg-amber-100 text-amber-800' :
+                            'bg-blue-100 text-blue-800'
+                          }`}>
+                            {isConfirmed ? '✅ Confirmed by Brand' :
+                             isDeclined ? '❌ Pitch Declined' :
+                             isPending ? '⏳ Pitch Pending Review' :
+                             '🔄 Shortlisted (Check Messages)'}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Tab 4: Account Settings */}
         {activeTab === 'settings' && (
