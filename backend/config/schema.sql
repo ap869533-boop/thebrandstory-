@@ -15,12 +15,40 @@ CREATE TABLE IF NOT EXISTS `users` (
   `role` ENUM('GUEST', 'BRAND', 'CREATOR', 'ADMIN', 'SALES') DEFAULT 'BRAND',
   `phone` VARCHAR(20) DEFAULT NULL,
   `company_name` VARCHAR(150) DEFAULT NULL,
+  `gst_number` VARCHAR(20) DEFAULT NULL,
   `avatar` VARCHAR(500) DEFAULT NULL,
   `is_verified` BOOLEAN DEFAULT FALSE,
+  `approval_status` ENUM('pending', 'approved', 'rejected') DEFAULT 'approved',
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX `idx_users_email` (`email`),
-  INDEX `idx_users_role` (`role`)
+  INDEX `idx_users_role` (`role`),
+  INDEX `idx_users_approval` (`approval_status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 1b. Brand Profiles Table (extended profile for BRAND users)
+CREATE TABLE IF NOT EXISTS `brand_profiles` (
+  `id` VARCHAR(64) PRIMARY KEY,
+  `user_id` VARCHAR(64) NOT NULL UNIQUE,
+  `brand_name` VARCHAR(150) NOT NULL,
+  `gst_number` VARCHAR(20) DEFAULT NULL,
+  `logo_url` VARCHAR(500) DEFAULT NULL,
+  `cover_url` VARCHAR(500) DEFAULT NULL,
+  `description` TEXT DEFAULT NULL,
+  `website` VARCHAR(255) DEFAULT NULL,
+  `industry` VARCHAR(100) DEFAULT NULL,
+  `city` VARCHAR(80) DEFAULT NULL,
+  `contact_person` VARCHAR(120) DEFAULT NULL,
+  `phone` VARCHAR(20) DEFAULT NULL,
+  `email` VARCHAR(150) DEFAULT NULL,
+  `approval_status` ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+  `rejection_reason` TEXT DEFAULT NULL,
+  `is_featured` BOOLEAN DEFAULT FALSE,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX `idx_brand_profiles_user` (`user_id`),
+  INDEX `idx_brand_profiles_status` (`approval_status`),
+  INDEX `idx_brand_profiles_featured` (`is_featured`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 2. Creators Profile Table
@@ -122,6 +150,7 @@ CREATE TABLE IF NOT EXISTS `campaign_requirements` (
   `platforms` JSON DEFAULT NULL,
   `requirements` TEXT DEFAULT NULL,
   `status` ENUM('Open', 'In Review', 'Filled', 'Completed') DEFAULT 'Open',
+  `approval_status` ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
   `applicants_count` INT UNSIGNED DEFAULT 0,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

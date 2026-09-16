@@ -10,6 +10,7 @@ import { HowItWorksSection } from '../components/home/HowItWorksSection';
 import { LiveOpportunitiesBoard } from '../components/home/LiveOpportunitiesBoard';
 import { CTABanners } from '../components/home/CTABanners';
 import { TestimonialsAndFAQ } from '../components/home/TestimonialsAndFAQ';
+import { FeaturedBrandsSection } from '../components/home/FeaturedBrandsSection';
 
 export const HomeView: React.FC = () => {
   const { setFilters } = usePlatform();
@@ -57,6 +58,9 @@ export const HomeView: React.FC = () => {
 
         {/* 4. Top Influencers in India */}
         <TopCreatorsSection />
+
+        {/* 4.5 Featured Brands Showcase */}
+        <FeaturedBrandsSection />
 
         {/* 5. Regional & Tier Highlights */}
         <RegionalShowcases />

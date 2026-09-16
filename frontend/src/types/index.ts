@@ -6,6 +6,8 @@ export interface AuthUser {
   email: string;
   role: UserRole;
   companyName?: string;
+  gstNumber?: string;
+  approvalStatus?: 'pending' | 'approved' | 'rejected';
   avatar?: string;
   creatorProfile?: any; // Full creator profile object, populated after signup/login
 }
@@ -341,4 +343,24 @@ export interface BrandPartner {
   website?: string;
   sortOrder?: number;
   isActive?: boolean;
+}
+
+export interface BrandProfile {
+  id: string;
+  userId: string;
+  brandName: string;
+  gstNumber?: string;
+  logoUrl?: string;
+  coverUrl?: string;
+  description?: string;
+  website?: string;
+  industry?: string;
+  city?: string;
+  contactPerson?: string;
+  phone?: string;
+  email?: string;
+  approvalStatus: 'pending' | 'approved' | 'rejected';
+  rejectionReason?: string;
+  isFeatured: boolean;
+  createdAt: string;
 }

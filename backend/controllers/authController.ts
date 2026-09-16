@@ -72,6 +72,7 @@ export async function signup(req: Request, res: Response) {
       role = 'BRAND',
       phone,
       companyName,
+      gstNumber,
       username,
       category = '',
       city = '',
@@ -103,8 +104,8 @@ export async function signup(req: Request, res: Response) {
 
     // 1. Insert in MySQL users table
     await dbQuery(
-      `INSERT INTO users (id, name, email, password_hash, role, phone, company_name, avatar, is_verified)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO users (id, name, email, password_hash, role, phone, company_name, gst_number, avatar, is_verified, approval_status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         userId,
         name,
@@ -113,8 +114,10 @@ export async function signup(req: Request, res: Response) {
         role,
         phone || null,
         companyName || null,
+        gstNumber || null,
         userAvatar,
-        1
+        1,
+        role === 'BRAND' ? 'pending' : 'approved'
       ]
     ).catch(err => console.warn('MySQL insert notice:', err));
 
@@ -500,6 +503,8 @@ export async function login(req: Request, res: Response) {
         email: user.email,
         role: user.role,
         companyName: user.company_name,
+        gstNumber: user.gst_number || '',
+        approvalStatus: user.approval_status || (user.role === 'BRAND' ? 'pending' : 'approved'),
         avatar: user.avatar,
         creatorProfile: creatorProfile || undefined,
       },
@@ -571,7 +576,7 @@ export async function requestOtp(req: Request, res: Response) {
 
 export async function verifyOtp(req: Request, res: Response) {
   try {
-    const { email, otp, name, role, phone, companyName, username, category, city, password } = req.body;
+    const { email, otp, name, role, phone, companyName, gstNumber, username, category, city, password } = req.body;
 
     if (!email || !otp) {
       return res.status(400).json({ success: false, error: 'Email and OTP are required' });
@@ -627,9 +632,9 @@ export async function verifyOtp(req: Request, res: Response) {
       const hashedPassword = await bcrypt.hash(password, 10);
 
       await dbQuery(
-        `INSERT INTO users (id, name, email, password_hash, role, phone, company_name, avatar)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [userId, name, cleanEmail, hashedPassword, role, phone || null, companyName || null, userAvatar || null]
+        `INSERT INTO users (id, name, email, password_hash, role, phone, company_name, gst_number, avatar, approval_status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [userId, name, cleanEmail, hashedPassword, role, phone || null, companyName || null, gstNumber || null, userAvatar || null, role === 'BRAND' ? 'pending' : 'approved']
       ).catch(err => console.warn('MySQL user insert notice:', err));
 
       const newUser: UserRecord = {

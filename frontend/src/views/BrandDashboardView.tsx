@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Building2,
   PlusCircle,
@@ -17,11 +17,20 @@ import {
   Clock,
   ChevronDown,
   ChevronUp,
-  Star
+  Star,
+  User2,
+  FileText,
+  Globe,
+  Phone,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+  Save
 } from 'lucide-react';
 import { usePlatform } from '../context/PlatformContext';
 import { CreatorCard } from '../components/common/CreatorCard';
 import { ChangePasswordForm } from '../components/common/ChangePasswordForm';
+import { apiUrl } from '../config/api';
 
 export const BrandDashboardView: React.FC = () => {
   const {
@@ -38,7 +47,85 @@ export const BrandDashboardView: React.FC = () => {
     updateApplicantStatus,
   } = usePlatform();
 
-  const [activeTab, setActiveTab] = useState<'briefs' | 'pitches' | 'enquiries' | 'shortlists' | 'settings'>('briefs');
+  const [activeTab, setActiveTab] = useState<'briefs' | 'pitches' | 'enquiries' | 'shortlists' | 'profile' | 'settings'>('briefs');
+
+  // Brand Profile State
+  const [bpBrandName, setBpBrandName] = useState(authUser?.companyName || '');
+  const [bpGstNumber, setBpGstNumber] = useState(authUser?.gstNumber || '');
+  const [bpDescription, setBpDescription] = useState('');
+  const [bpWebsite, setBpWebsite] = useState('');
+  const [bpIndustry, setBpIndustry] = useState('');
+  const [bpCity, setBpCity] = useState('');
+  const [bpContactPerson, setBpContactPerson] = useState(authUser?.name || '');
+  const [bpPhone, setBpPhone] = useState('');
+  const [bpLogoUrl, setBpLogoUrl] = useState('');
+  const [bpSaving, setBpSaving] = useState(false);
+  const [bpSaveMsg, setBpSaveMsg] = useState<string | null>(null);
+  const [bpLoaded, setBpLoaded] = useState(false);
+
+  // Fetch brand profile on mount
+  useEffect(() => {
+    const token = localStorage.getItem('sc_auth_token');
+    if (!token || !authUser || authUser.role !== 'BRAND') return;
+    fetch(apiUrl('/api/brands/profile'), {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && data.profile) {
+          setBpBrandName(data.profile.brandName || authUser?.companyName || '');
+          setBpGstNumber(data.profile.gstNumber || authUser?.gstNumber || '');
+          setBpDescription(data.profile.description || '');
+          setBpWebsite(data.profile.website || '');
+          setBpIndustry(data.profile.industry || '');
+          setBpCity(data.profile.city || '');
+          setBpContactPerson(data.profile.contactPerson || authUser?.name || '');
+          setBpPhone(data.profile.phone || '');
+          setBpLogoUrl(data.profile.logoUrl || '');
+        }
+        setBpLoaded(true);
+      })
+      .catch(() => setBpLoaded(true));
+  }, [authUser]);
+
+  const handleSaveBrandProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBpSaving(true);
+    setBpSaveMsg(null);
+    try {
+      const token = localStorage.getItem('sc_auth_token');
+      const res = await fetch(apiUrl('/api/brands/profile'), {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          brandName: bpBrandName,
+          gstNumber: bpGstNumber,
+          description: bpDescription,
+          website: bpWebsite,
+          industry: bpIndustry,
+          city: bpCity,
+          contactPerson: bpContactPerson,
+          phone: bpPhone,
+          logoUrl: bpLogoUrl,
+          email: authUser?.email,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setBpSaveMsg('✅ Brand profile updated successfully!');
+      } else {
+        setBpSaveMsg('❌ ' + (data.error || 'Failed to save profile'));
+      }
+    } catch {
+      setBpSaveMsg('❌ Network error. Please try again.');
+    } finally {
+      setBpSaving(false);
+      setTimeout(() => setBpSaveMsg(null), 4000);
+    }
+  };
 
   // Message Modal State
   const [msgModalCreator, setMsgModalCreator] = useState<{
@@ -90,6 +177,7 @@ export const BrandDashboardView: React.FC = () => {
 
   const brandDisplayName = authUser?.companyName || authUser?.name || activeBrandName;
   const [pitchScope, setPitchScope] = useState<'my' | 'all'>('my');
+  const approvalStatus = authUser?.approvalStatus || 'approved';
 
   // Match briefs belonging to the brand
   const myBrandBriefs = campaigns.filter(
@@ -179,6 +267,32 @@ export const BrandDashboardView: React.FC = () => {
     <div className="min-h-screen bg-slate-50/60 py-8 font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
+        {/* Approval Status Banner */}
+        {approvalStatus === 'pending' && (
+          <div className="flex items-start gap-3 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900">
+            <Clock className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-black">Account Pending Approval</p>
+              <p className="text-xs font-medium mt-0.5">Your brand account is under review by our team. You can still set up your brand profile. Once approved, your profile and campaigns will go live.</p>
+            </div>
+          </div>
+        )}
+        {approvalStatus === 'rejected' && (
+          <div className="flex items-start gap-3 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900">
+            <XCircle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-black">Account Rejected</p>
+              <p className="text-xs font-medium mt-0.5">Your brand account was not approved. Please contact support for more information.</p>
+            </div>
+          </div>
+        )}
+        {approvalStatus === 'approved' && (
+          <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 w-fit">
+            <CheckCircle className="w-4 h-4 text-emerald-500" />
+            <span className="text-xs font-bold">Brand Account Approved & Active</span>
+          </div>
+        )}
+
         {/* Header */}
         <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -239,6 +353,14 @@ export const BrandDashboardView: React.FC = () => {
           >
             <Folder className="w-3.5 h-3.5" />
             <span>Saved Shortlists ({savedFolders.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('profile')}
+            className={`pb-3 flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap ${activeTab === 'profile' ? 'text-[#D4A338] border-b-2 border-blue-600' : 'hover:text-slate-800'}`}
+          >
+            <User2 className="w-3.5 h-3.5" />
+            <span>Brand Profile</span>
           </button>
 
           <button
@@ -630,7 +752,154 @@ export const BrandDashboardView: React.FC = () => {
           </div>
         )}
 
-        {/* Tab 5: Settings */}
+        {/* Tab 5: Profile */}
+        {activeTab === 'profile' && (
+          <div className="animate-fadeIn max-w-3xl space-y-6">
+            <div className="bg-white p-6 rounded-3xl border border-slate-200">
+              <div className="mb-6">
+                <h3 className="text-lg font-black text-slate-900">Brand Profile</h3>
+                <p className="text-xs text-slate-500">Manage how your brand appears to creators and the public.</p>
+              </div>
+
+              {!bpLoaded ? (
+                <div className="text-center text-xs text-slate-500 py-10">Loading profile...</div>
+              ) : (
+                <form onSubmit={handleSaveBrandProfile} className="space-y-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Company / Brand Name *</label>
+                      <div className="relative">
+                        <Building2 className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                        <input
+                          type="text"
+                          required
+                          value={bpBrandName}
+                          onChange={e => setBpBrandName(e.target.value)}
+                          className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500 bg-slate-50"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">GST Number</label>
+                      <div className="relative">
+                        <FileText className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                        <input
+                          type="text"
+                          value={bpGstNumber}
+                          onChange={e => setBpGstNumber(e.target.value.toUpperCase())}
+                          className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500 bg-slate-50 uppercase"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Contact Person</label>
+                      <div className="relative">
+                        <User2 className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                        <input
+                          type="text"
+                          value={bpContactPerson}
+                          onChange={e => setBpContactPerson(e.target.value)}
+                          className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500 bg-slate-50"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Phone Number</label>
+                      <div className="relative">
+                        <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                        <input
+                          type="text"
+                          value={bpPhone}
+                          onChange={e => setBpPhone(e.target.value)}
+                          className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500 bg-slate-50"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Website URL</label>
+                      <div className="relative">
+                        <Globe className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                        <input
+                          type="url"
+                          value={bpWebsite}
+                          onChange={e => setBpWebsite(e.target.value)}
+                          placeholder="https://"
+                          className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500 bg-slate-50"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Industry</label>
+                      <select
+                        value={bpIndustry}
+                        onChange={e => setBpIndustry(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500 bg-slate-50"
+                      >
+                        <option value="">Select Industry</option>
+                        <option value="Fashion">Fashion & Apparel</option>
+                        <option value="Beauty">Beauty & Cosmetics</option>
+                        <option value="Tech">Tech & Gadgets</option>
+                        <option value="Food">Food & Beverage</option>
+                        <option value="Travel">Travel & Hospitality</option>
+                        <option value="Finance">Finance & Fintech</option>
+                        <option value="Education">Education</option>
+                        <option value="Health">Health & Wellness</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Brand Description</label>
+                    <textarea
+                      rows={4}
+                      value={bpDescription}
+                      onChange={e => setBpDescription(e.target.value)}
+                      placeholder="Tell creators a bit about your brand..."
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500 bg-slate-50 resize-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Logo URL (Optional)</label>
+                    <input
+                      type="url"
+                      value={bpLogoUrl}
+                      onChange={e => setBpLogoUrl(e.target.value)}
+                      placeholder="https://"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500 bg-slate-50"
+                    />
+                    {bpLogoUrl && (
+                      <div className="mt-2">
+                        <img src={bpLogoUrl} alt="Logo Preview" className="h-12 w-12 object-cover rounded-lg border border-slate-200" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+                    <div className="text-xs font-semibold">
+                      {bpSaveMsg && (
+                        <span className={bpSaveMsg.includes('✅') ? 'text-emerald-600' : 'text-rose-600'}>
+                          {bpSaveMsg}
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={bpSaving}
+                      className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-500/20 transition flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Save className="w-3.5 h-3.5" />
+                      {bpSaving ? 'Saving...' : 'Save Profile'}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Tab 6: Settings */}
         {activeTab === 'settings' && (
           <div className="animate-fadeIn max-w-2xl">
             <ChangePasswordForm />

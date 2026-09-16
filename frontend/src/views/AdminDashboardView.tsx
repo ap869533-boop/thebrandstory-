@@ -57,7 +57,67 @@ export const AdminDashboardView: React.FC = () => {
     deleteCategory,
   } = usePlatform();
 
-  const [activeTab, setActiveTab] = useState<'creators' | 'stats' | 'campaigns' | 'brands' | 'categories' | 'settings'>('creators');
+  const [activeTab, setActiveTab] = useState<'creators' | 'stats' | 'campaigns' | 'brands' | 'categories' | 'settings' | 'brand-approvals'>('creators');
+  const [adminBrands, setAdminBrands] = useState<any[]>([]);
+  const [adminPendingCampaigns, setAdminPendingCampaigns] = useState<any[]>([]);
+
+  // Fetch admin brands & pending campaigns
+  useEffect(() => {
+    const token = localStorage.getItem('sc_auth_token');
+    if (!token || authUser?.role !== 'ADMIN') return;
+
+    fetch(apiUrl('/api/brands/admin/list'), { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => { if (d.success) setAdminBrands(d.brands || []) })
+      .catch(e => console.error(e));
+
+    fetch(apiUrl('/api/brands/admin/campaigns/pending'), { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => { if (d.success) setAdminPendingCampaigns(d.campaigns || []) })
+      .catch(e => console.error(e));
+  }, [authUser]);
+
+  const handleBrandApproval = async (id: string, action: 'approve' | 'reject') => {
+    const token = localStorage.getItem('sc_auth_token');
+    try {
+      const res = await fetch(apiUrl(`/api/brands/admin/${id}/approve`), {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ action })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAdminBrands(prev => prev.map(b => b.id === id ? { ...b, approvalStatus: data.approvalStatus } : b));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleCampaignApproval = async (id: string, action: 'approve' | 'reject') => {
+    const token = localStorage.getItem('sc_auth_token');
+    try {
+      const res = await fetch(apiUrl(`/api/brands/admin/campaigns/${id}/approve`), {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ action })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAdminPendingCampaigns(prev => prev.filter(c => c.id !== id));
+        // Force refresh campaigns logic would go here ideally
+        window.location.reload(); 
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
   const [creatorFilterTab, setCreatorFilterTab] = useState<'all' | 'pending' | 'active' | 'suspended'>('all');
   const [creatorSearch, setCreatorSearch] = useState('');
   const [brandSearch, setBrandSearch] = useState('');
@@ -427,6 +487,21 @@ export const AdminDashboardView: React.FC = () => {
           </button>
 
           <button
+            onClick={() => setActiveTab('brand-approvals')}
+            className={`pb-3 flex items-center gap-1.5 transition cursor-pointer ${
+              activeTab === 'brand-approvals' ? 'text-[#D4A338] border-b-2 border-blue-600' : 'hover:text-slate-800'
+            }`}
+          >
+            <Building className="w-3.5 h-3.5" />
+            <span>Brand Approvals ({adminBrands.filter(b => b.approvalStatus === 'pending').length})</span>
+            {adminBrands.filter(b => b.approvalStatus === 'pending').length > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-white text-[10px] font-black">
+                {adminBrands.filter(b => b.approvalStatus === 'pending').length}
+              </span>
+            )}
+          </button>
+
+          <button
             onClick={() => setActiveTab('settings')}
             className={`pb-3 flex items-center gap-1.5 transition cursor-pointer ${
               activeTab === 'settings' ? 'text-[#D4A338] border-b-2 border-blue-600' : 'hover:text-slate-800'
@@ -728,6 +803,82 @@ export const AdminDashboardView: React.FC = () => {
           </div>
         )}
 
+        {/* Tab: Brand Approvals */}
+        {activeTab === 'brand-approvals' && (
+          <div className="space-y-4 animate-fadeIn">
+            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
+                <h3 className="text-base font-black text-slate-900">Brand Registrations</h3>
+                <span className="text-xs text-slate-500">Approve or reject brand accounts before they go live</span>
+              </div>
+
+              {adminBrands.length === 0 ? (
+                <div className="text-center py-10 text-xs text-slate-500">No brand accounts found.</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs text-slate-600">
+                    <thead className="bg-slate-50 text-slate-500 font-bold">
+                      <tr>
+                        <th className="px-4 py-3 rounded-l-xl">Brand/Company</th>
+                        <th className="px-4 py-3">Contact</th>
+                        <th className="px-4 py-3">GST Number</th>
+                        <th className="px-4 py-3">Status</th>
+                        <th className="px-4 py-3 rounded-r-xl">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {adminBrands.map((brand) => (
+                        <tr key={brand.id} className="hover:bg-slate-50/50 transition">
+                          <td className="px-4 py-3">
+                            <div className="font-bold text-slate-900 text-sm">{brand.brandName || brand.companyName}</div>
+                            <div className="text-[10px] text-slate-400 mt-0.5">{brand.industry} • {brand.city}</div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="font-medium text-slate-800">{brand.contactPerson || brand.userName}</div>
+                            <div className="text-[10px] text-slate-500 mt-0.5">{brand.userEmail}</div>
+                          </td>
+                          <td className="px-4 py-3 font-mono text-[10px] tracking-wider text-slate-500">
+                            {brand.gstNumber || 'N/A'}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${
+                              brand.approvalStatus === 'approved' ? 'bg-emerald-100 text-emerald-800' :
+                              brand.approvalStatus === 'rejected' ? 'bg-rose-100 text-rose-800' :
+                              'bg-amber-100 text-amber-800'
+                            }`}>
+                              {brand.approvalStatus?.toUpperCase() || 'PENDING'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            {brand.approvalStatus === 'pending' && (
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => handleBrandApproval(brand.id, 'approve')}
+                                  className="p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-lg transition"
+                                  title="Approve Brand"
+                                >
+                                  <Check className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleBrandApproval(brand.id, 'reject')}
+                                  className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition"
+                                  title="Reject Brand"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Tab 2: Brand Partners & Logo Slider Management */}
         {activeTab === 'brands' && (
           <div className="space-y-6 animate-fadeIn">
@@ -939,11 +1090,55 @@ export const AdminDashboardView: React.FC = () => {
 
         {/* Tab 4: Live Campaigns */}
         {activeTab === 'campaigns' && (
-          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-xs space-y-4 animate-fadeIn">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-sm font-black text-slate-900">Live Brand Requirements & Opportunities ({campaigns.length})</h3>
-              <span className="text-[11px] text-slate-400">Total pitches received across active briefs</span>
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-xs space-y-8 animate-fadeIn">
+            {/* Pending Campaign Approvals Section */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-black text-slate-900">Pending Campaign Approvals</h3>
+                  <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-bold rounded-full">{adminPendingCampaigns.length}</span>
+                </div>
+              </div>
+              
+              {adminPendingCampaigns.length === 0 ? (
+                <div className="text-center py-6 text-xs text-slate-500 bg-slate-50 rounded-xl border border-slate-100">
+                  No campaigns pending approval
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {adminPendingCampaigns.map((camp) => (
+                    <div key={camp.id} className="p-4 bg-amber-50/50 rounded-2xl border border-amber-200 space-y-3">
+                      <div>
+                        <h4 className="font-bold text-slate-900 text-sm">{camp.campaignTitle}</h4>
+                        <p className="text-[11px] text-slate-500 font-medium mt-0.5">{camp.companyName} • {camp.email}</p>
+                      </div>
+                      <p className="text-xs text-slate-600 line-clamp-2">{camp.campaignDescription}</p>
+                      <div className="flex items-center gap-2 pt-2">
+                        <button
+                          onClick={() => handleCampaignApproval(camp.id, 'approve')}
+                          className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition"
+                        >
+                          Approve & Live
+                        </button>
+                        <button
+                          onClick={() => handleCampaignApproval(camp.id, 'reject')}
+                          className="px-4 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs rounded-lg transition border border-rose-200"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
+
+            {/* Live Campaigns Section */}
+            <div className="space-y-4 pt-4 border-t border-slate-200">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="text-sm font-black text-slate-900">Live Brand Requirements & Opportunities ({campaigns.length})</h3>
+                <span className="text-[11px] text-slate-400">Total pitches received across active briefs</span>
+              </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {campaigns.map((camp) => (
@@ -978,6 +1173,7 @@ export const AdminDashboardView: React.FC = () => {
               ))}
             </div>
           </div>
+        </div>
         )}
 
         {/* Tab 5: Category Management */}

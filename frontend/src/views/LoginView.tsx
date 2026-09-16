@@ -13,7 +13,9 @@ import {
   ShieldCheck,
   Check,
   Eye,
-  EyeOff
+  EyeOff,
+  FileText,
+  Clock
 } from 'lucide-react';
 import { usePlatform } from '../context/PlatformContext';
 import { UserRole } from '../types';
@@ -42,6 +44,7 @@ export const LoginView: React.FC = () => {
   const [username, setUsername] = useState('');
   const [phone, setPhone] = useState('');
   const [companyName, setCompanyName] = useState('');
+  const [gstNumber, setGstNumber] = useState('');
   const [category, setCategory] = useState('Fashion');
   const [city, setCity] = useState('Delhi NCR');
 
@@ -239,6 +242,7 @@ export const LoginView: React.FC = () => {
             role,
             phone: phone.trim() || undefined,
             companyName: role === 'BRAND' ? companyName.trim() : undefined,
+            gstNumber: role === 'BRAND' ? gstNumber.trim() : undefined,
             username: role === 'CREATOR' ? username.trim() : undefined,
             category,
             city,
@@ -267,10 +271,17 @@ export const LoginView: React.FC = () => {
             }
           }
 
-          setSuccessMsg('Account created successfully! Redirecting...');
-          setTimeout(() => {
-            handlePostAuthRedirect(data.user?.role || role);
-          }, 800);
+          if (data.user?.role === 'BRAND') {
+            setSuccessMsg('Brand account created! Your account is pending admin approval. You will be notified once approved.');
+            setTimeout(() => {
+              handlePostAuthRedirect(data.user?.role || role);
+            }, 2500);
+          } else {
+            setSuccessMsg('Account created successfully! Redirecting...');
+            setTimeout(() => {
+              handlePostAuthRedirect(data.user?.role || role);
+            }, 800);
+          }
         }
       }
     } catch (err: any) {
@@ -439,6 +450,7 @@ export const LoginView: React.FC = () => {
                 </div>
 
                 {role === 'BRAND' ? (
+                  <>
                   <div>
                     <label className="block text-slate-700 font-bold mb-1">Company / Brand Name *</label>
                     <div className="relative">
@@ -456,6 +468,22 @@ export const LoginView: React.FC = () => {
                       <span className="text-[11px] text-rose-600 font-semibold mt-1 block">{fieldErrors.companyName}</span>
                     )}
                   </div>
+                  <div>
+                    <label className="block text-slate-700 font-bold mb-1">GST Number <span className="text-slate-400 font-normal">(optional)</span></label>
+                    <div className="relative">
+                      <FileText className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5" />
+                      <input
+                        type="text"
+                        placeholder="e.g. 22AAAAA0000A1Z5"
+                        value={gstNumber}
+                        onChange={(e) => setGstNumber(e.target.value.toUpperCase())}
+                        maxLength={15}
+                        className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] transition font-mono text-xs tracking-wider"
+                      />
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Your GST number for verified brand badge</p>
+                  </div>
+                  </>
                 ) : (
                   <div>
                     <label className="block text-slate-700 font-bold mb-1">Instagram Profile URL</label>
