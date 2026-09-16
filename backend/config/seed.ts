@@ -82,8 +82,6 @@ async function runSeed() {
         avg_likes INT UNSIGNED DEFAULT 0,
         avg_comments INT UNSIGNED DEFAULT 0,
         brand_collaborations_count INT UNSIGNED DEFAULT 0,
-        trust_score TINYINT UNSIGNED DEFAULT 85,
-        trust_signals JSON DEFAULT NULL,
         is_verified BOOLEAN DEFAULT FALSE,
         verification_requested BOOLEAN DEFAULT FALSE,
         is_top20 BOOLEAN DEFAULT FALSE,
@@ -112,7 +110,6 @@ async function runSeed() {
         INDEX idx_creators_category (primary_category),
         INDEX idx_creators_city (current_city),
         INDEX idx_creators_followers (followers),
-        INDEX idx_creators_trust (trust_score),
         INDEX idx_creators_price (starting_price),
         INDEX idx_creators_verified (is_verified),
         INDEX idx_creators_top20 (is_top20),
@@ -381,20 +378,20 @@ async function runSeed() {
         `INSERT INTO creators (
           id, name, username, avatar, cover_image, reel_video_url, bio, current_city, state, preferred_cities,
           primary_category, sub_categories, languages, gender, age_group, followers,
-          avg_views, avg_likes, avg_comments, brand_collaborations_count, trust_score, trust_signals,
+          avg_views, avg_likes, avg_comments, brand_collaborations_count,
           is_verified, is_top20, is_rising, is_featured, is_trending, status, starting_price,
           reel_price, story_price, post_price, ugc_price, is_negotiable, is_barter_available,
           collaboration_types, social_platforms, audience, portfolio, phone, email, profile_views, saved_count
         ) VALUES (
           ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
           ?, ?, ?, ?, ?, ?,
-          ?, ?, ?, ?, ?, ?,
+          ?, ?, ?, ?,
           ?, ?, ?, ?, ?, ?, ?,
           ?, ?, ?, ?, ?, ?,
           ?, ?, ?, ?, ?, ?, ?, ?
         ) ON DUPLICATE KEY UPDATE
           name=VALUES(name), followers=VALUES(followers),
-          trust_score=VALUES(trust_score), starting_price=VALUES(starting_price), reel_price=VALUES(reel_price),
+          starting_price=VALUES(starting_price), reel_price=VALUES(reel_price),
           reel_video_url=VALUES(reel_video_url);`,
         [
           c.id,
@@ -417,8 +414,6 @@ async function runSeed() {
           c.avgLikes || 1500,
           c.avgComments || 90,
           c.brandCollaborationsCount || 5,
-          c.trustScore || 88,
-          JSON.stringify(c.trustSignals || {}),
           c.isVerified || false,
           c.isTop20 || false,
           c.isRising || false,

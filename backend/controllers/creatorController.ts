@@ -43,8 +43,6 @@ export function mapDbRowToCreator(row: any): Creator {
     avgLikes: Number(row.avg_likes) || 0,
     avgComments: Number(row.avg_comments) || 0,
     brandCollaborationsCount: Number(row.brand_collaborations_count) || 0,
-    trustScore: Number(row.trust_score) || 0,
-    trustSignals: typeof row.trust_signals === 'string' ? JSON.parse(row.trust_signals) : (row.trust_signals || {}),
     isVerified: Boolean(row.is_verified),
     verificationRequested: Boolean(row.verification_requested),
     isTop20: Boolean(row.is_top20),
@@ -164,7 +162,7 @@ export async function getCreators(req: Request, res: Response) {
     }
 
     // SQL Index-backed Sorting
-    let orderByClause = 'ORDER BY trust_score DESC, followers DESC';
+    let orderByClause = 'ORDER BY followers DESC, is_verified DESC';
     if (sortBy === 'followers') {
       orderByClause = 'ORDER BY followers DESC';
     } else if (sortBy === 'engagement') {
@@ -408,8 +406,8 @@ export async function createCreator(req: Request, res: Response) {
         id, name, username, avatar, cover_image, bio, current_city, primary_category, email, phone,
         followers, avg_views, starting_price, reel_price, story_price, post_price,
         ugc_price, is_barter_available, collaboration_types, preferred_cities, sub_categories,
-        languages, trust_score, is_verified, verification_requested, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
+        languages, is_verified, verification_requested, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
       [
         newCreator.id,
         newCreator.name,
@@ -433,7 +431,6 @@ export async function createCreator(req: Request, res: Response) {
         JSON.stringify(newCreator.preferredCities),
         JSON.stringify(newCreator.subCategories),
         JSON.stringify(newCreator.languages),
-        newCreator.trustScore,
         0,
         1,
         'pending',

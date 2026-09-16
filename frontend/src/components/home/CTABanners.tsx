@@ -24,7 +24,7 @@ export const CTABanners: React.FC = () => {
               </p>
               <div className="flex flex-wrap gap-3 pt-2 text-xs text-slate-400">
                 <span className="flex items-center gap-1"><span className="text-[#D4A338]">✓</span> Zero Middleman Markups</span>
-                <span className="flex items-center gap-1"><span className="text-[#D4A338]">✓</span> Verified Trust Scores</span>
+                <span className="flex items-center gap-1"><span className="text-[#D4A338]">✓</span> Verified Creator Profiles</span>
                 <span className="flex items-center gap-1"><span className="text-[#D4A338]">✓</span> Free Quote Dispatch</span>
               </div>
             </div>
@@ -54,7 +54,7 @@ export const CTABanners: React.FC = () => {
                 Are You a Creator? List Yourself FREE Today
               </h3>
               <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-lg">
-                Get discovered by thousands of active brands, marketing teams, and local businesses across India. Build your authenticated Trust Score and receive direct paid enquiries.
+                Get discovered by thousands of active brands, marketing teams, and local businesses across India. Build your verified profile and receive direct paid enquiries.
               </p>
               <div className="flex flex-wrap gap-3 pt-2 text-xs text-slate-400">
                 <span className="flex items-center gap-1"><span className="text-[#D4A338]">✓</span> Instant Public Profile</span>

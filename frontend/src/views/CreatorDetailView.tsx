@@ -31,7 +31,7 @@ import {
   X
 } from 'lucide-react';
 import { usePlatform } from '../context/PlatformContext';
-import { TrustScoreBadge } from '../components/common/TrustScoreBadge';
+
 import { Creator } from '../types';
 import { cleanInstagramHandle } from '../utils/sanitize';
 
@@ -304,15 +304,6 @@ export const CreatorDetailView: React.FC = () => {
               </span>
               <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mt-0.5">
                 Posts
-              </span>
-            </div>
-
-            <div className="w-px h-8 bg-slate-200" />
-
-            <div className="text-center">
-              <TrustScoreBadge score={creator.trustScore} size="sm" />
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mt-1">
-                Trust Score
               </span>
             </div>
           </div>

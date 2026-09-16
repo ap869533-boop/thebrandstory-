@@ -143,8 +143,8 @@ export interface Creator {
   avgComments: number;
   totalPosts?: number;
   brandCollaborationsCount: number;
-  trustScore: number;
-  trustSignals: TrustSignals;
+  trustScore?: number;
+  trustSignals?: TrustSignals;
   isVerified: boolean;
   verificationRequested?: boolean;
   verificationStepsCompleted: string[];

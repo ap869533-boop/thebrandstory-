@@ -23,7 +23,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { usePlatform } from '../../context/PlatformContext';
-import { TrustScoreBadge } from './TrustScoreBadge';
+
 
 export const CreatorDetailModal: React.FC = () => {
   const {
@@ -231,7 +231,7 @@ export const CreatorDetailModal: React.FC = () => {
             </p>
 
             {/* Quick Metrics Bar */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-4 border-t border-slate-100">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-4 border-t border-slate-100">
               <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200/60">
                 <span className="text-[10px] uppercase font-bold text-slate-400 block">Followers</span>
                 <span className="text-base font-black text-slate-900">
@@ -251,16 +251,6 @@ export const CreatorDetailModal: React.FC = () => {
                 <span className="text-base font-black text-[#b88628]">
                   ₹{(creator.startingPrice ?? 0).toLocaleString('en-IN')}
                 </span>
-              </div>
-
-              <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200/60 flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Trust Score</span>
-                  <span className="text-base font-black text-slate-900">{creator.trustScore}/100</span>
-                </div>
-                <div className="w-8 h-8 rounded-lg bg-black text-white flex items-center justify-center font-black text-xs">
-                  {creator.trustScore}
-                </div>
               </div>
             </div>
 

@@ -27,21 +27,23 @@ export async function runAutoMigrations() {
       }
     }
 
-    // 2. Add missing columns safely (ignore duplicate column errors)
+    // 2. Add missing columns / remove deprecated columns safely
     const alterQueries = [
       `ALTER TABLE users ADD COLUMN gst_number VARCHAR(50) DEFAULT NULL`,
       `ALTER TABLE users ADD COLUMN approval_status VARCHAR(20) DEFAULT 'pending'`,
-      `ALTER TABLE campaign_requirements ADD COLUMN approval_status VARCHAR(20) DEFAULT 'pending'`
+      `ALTER TABLE campaign_requirements ADD COLUMN approval_status VARCHAR(20) DEFAULT 'pending'`,
+      `ALTER TABLE creator_profiles DROP COLUMN trust_score`,
+      `ALTER TABLE creator_profiles DROP COLUMN trust_signals`
     ];
 
     for (const query of alterQueries) {
       try {
         await pool.query(query);
-        console.log(`[AutoMigrate] Successfully added new column via: ${query}`);
+        console.log(`[AutoMigrate] Successfully executed: ${query}`);
       } catch (err: any) {
-        // ER_DUP_FIELDNAME means the column is already there, which is perfectly fine.
-        if (err.code !== 'ER_DUP_FIELDNAME') {
-          console.warn(`[AutoMigrate] Alter Table Warning:`, err.message);
+        // ER_DUP_FIELDNAME / ER_CANT_DROP_FIELD_OR_KEY are fine if column exists/already dropped
+        if (err.code !== 'ER_DUP_FIELDNAME' && err.code !== 'ER_CANT_DROP_FIELD_OR_KEY') {
+          console.warn(`[AutoMigrate] Alter Table Notice:`, err.message);
         }
       }
     }

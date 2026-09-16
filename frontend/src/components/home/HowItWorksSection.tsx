@@ -4,7 +4,7 @@ import { usePlatform } from '../../context/PlatformContext';
 
 export const HowItWorksSection: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'brands' | 'creators'>('brands');
-  const { navigateTo, openOnboardingModal, openTrustScoreModal, requireRole } = usePlatform();
+  const { navigateTo, openOnboardingModal, requireRole } = usePlatform();
 
   return (
     <section className="py-16 bg-black text-white border-b border-zinc-900 relative overflow-hidden">
@@ -58,7 +58,7 @@ export const HowItWorksSection: React.FC = () => {
               </div>
               <h3 className="text-lg font-black text-white">Search, Filter & Compare</h3>
               <p className="text-xs text-zinc-300 leading-relaxed font-normal">
-                Filter 50,000+ creators by city, category, engagement rate, starting price, and thebrandsstory. Trust Score. Compare up to 4 creators side-by-side with full media kit analytics.
+                Filter 50,000+ creators by city, category, engagement rate, and starting price. Compare up to 4 creators side-by-side with full media kit analytics.
               </p>
             </div>
 
@@ -90,7 +90,7 @@ export const HowItWorksSection: React.FC = () => {
               </div>
               <h3 className="text-lg font-black text-white">Create Verified Media Kit</h3>
               <p className="text-xs text-zinc-300 leading-relaxed font-normal">
-                Sign up free in 2 minutes. Link your Instagram/YouTube accounts, set transparent rate cards for Reels, Stories, UGC & Barter, and get your TrustScore™ verification badge.
+                Sign up free in 2 minutes. Link your Instagram/YouTube accounts, and set transparent rate cards for Reels, Stories, UGC & Barter.
               </p>
             </div>
 

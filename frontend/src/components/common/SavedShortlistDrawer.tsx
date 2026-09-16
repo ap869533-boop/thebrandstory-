@@ -14,7 +14,7 @@ import {
   Users
 } from 'lucide-react';
 import { usePlatform } from '../../context/PlatformContext';
-import { TrustScoreBadge } from './TrustScoreBadge';
+
 
 export const SavedShortlistDrawer: React.FC = () => {
   const {

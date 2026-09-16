@@ -78,9 +78,7 @@ CREATE TABLE IF NOT EXISTS `creators` (
   `avg_comments` INT UNSIGNED DEFAULT 0,
   `brand_collaborations_count` INT UNSIGNED DEFAULT 0,
   
-  -- Trust Score & Badges
-  `trust_score` TINYINT UNSIGNED DEFAULT 85,
-  `trust_signals` JSON DEFAULT NULL,
+  -- Badges & Status
   `is_verified` BOOLEAN DEFAULT FALSE,
   `verification_requested` BOOLEAN DEFAULT FALSE,
   `is_top20` BOOLEAN DEFAULT FALSE,
@@ -116,7 +114,6 @@ CREATE TABLE IF NOT EXISTS `creators` (
   INDEX `idx_creators_category` (`primary_category`),
   INDEX `idx_creators_city` (`current_city`),
   INDEX `idx_creators_followers` (`followers`),
-  INDEX `idx_creators_trust` (`trust_score`),
   INDEX `idx_creators_price` (`starting_price`),
   INDEX `idx_creators_verified` (`is_verified`),
   INDEX `idx_creators_top20` (`is_top20`),
@@ -126,7 +123,7 @@ CREATE TABLE IF NOT EXISTS `creators` (
   INDEX `idx_creators_status` (`status`),
   INDEX `idx_creators_created` (`created_at`),
   INDEX `idx_creators_composite_cat_city` (`primary_category`, `current_city`, `status`),
-  INDEX `idx_creators_composite_trust_rank` (`trust_score`, `followers`, `is_verified`)
+  INDEX `idx_creators_composite_rank` (`followers`, `is_verified`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 3. Live Campaign Requirements / Briefs Table

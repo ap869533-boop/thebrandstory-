@@ -151,8 +151,8 @@ export interface Creator {
   brandCollaborationsCount: number;
   
   // Trust
-  trustScore: number; // 0-100
-  trustSignals: TrustSignals;
+  trustScore?: number; // 0-100
+  trustSignals?: TrustSignals;
   isVerified: boolean;
   verificationRequested?: boolean;
   verificationStepsCompleted: string[];

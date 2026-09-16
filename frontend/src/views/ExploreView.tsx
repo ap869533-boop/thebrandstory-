@@ -119,7 +119,7 @@ export const ExploreView: React.FC = () => {
                 Influencer Discovery Marketplace
               </h1>
               <p className="text-xs text-slate-500 mt-0.5">
-                Explore 50,000+ verified creators across 500+ Indian cities with authenticated Trust Scores.
+                Explore 50,000+ verified creators across 500+ Indian cities.
               </p>
             </div>
 
@@ -571,8 +571,7 @@ export const ExploreView: React.FC = () => {
                     onChange={(e) => setFilters({ ...filters, sortBy: e.target.value as any })}
                     className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 focus:outline-hidden focus:border-[#D4A338] cursor-pointer"
                   >
-                    <option value="recommended">Recommended (Trust & Reach)</option>
-                    <option value="trust_score">Highest thebrandsstory. Trust Score</option>
+                    <option value="recommended">Recommended</option>
                     <option value="followers">Most Followers</option>
                     <option value="engagement">Highest Engagement Rate (%)</option>
                     <option value="lowest_price">Lowest Starting Price (₹)</option>

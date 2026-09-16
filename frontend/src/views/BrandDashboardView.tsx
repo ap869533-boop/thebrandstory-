@@ -599,7 +599,6 @@ export const BrandDashboardView: React.FC = () => {
                               <div className="flex flex-wrap gap-3 mb-3 text-[11px] text-slate-500">
                                 <span>📍 {creator.currentCity}</span>
                                 <span>🏷️ {creator.primaryCategory}</span>
-                                <span>⭐ Trust: {creator.trustScore}/100</span>
                                 <span>💰 From ₹{creator.startingPrice?.toLocaleString('en-IN')}</span>
                               </div>
                             )}

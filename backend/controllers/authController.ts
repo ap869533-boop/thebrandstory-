@@ -229,8 +229,8 @@ export async function signup(req: Request, res: Response) {
           id, user_id, name, username, avatar, cover_image, bio, current_city, primary_category,
           followers, avg_views, starting_price, reel_price, story_price, post_price,
           ugc_price, is_barter_available, collaboration_types, preferred_cities, sub_categories,
-          languages, trust_score, phone, email
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          languages, phone, email
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           createdCreatorProfile.id,
           userId,
@@ -253,7 +253,6 @@ export async function signup(req: Request, res: Response) {
           JSON.stringify(createdCreatorProfile.preferredCities),
           JSON.stringify(createdCreatorProfile.subCategories),
           JSON.stringify(createdCreatorProfile.languages),
-          createdCreatorProfile.trustScore,
           createdCreatorProfile.phone,
           createdCreatorProfile.email,
         ]
@@ -411,8 +410,8 @@ export async function fetchOrCreateCreatorProfile(user: any): Promise<Creator | 
         id, user_id, name, username, avatar, cover_image, reel_video_url, bio, current_city, primary_category,
         followers, avg_views, starting_price, reel_price, story_price, post_price,
         ugc_price, is_barter_available, collaboration_types, preferred_cities, sub_categories,
-        languages, trust_score, phone, email, is_verified, verification_requested, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
+        languages, phone, email, is_verified, verification_requested, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
       [
         newCreator.id,
         user.id,
@@ -436,7 +435,6 @@ export async function fetchOrCreateCreatorProfile(user: any): Promise<Creator | 
         JSON.stringify(newCreator.preferredCities),
         JSON.stringify(newCreator.subCategories),
         JSON.stringify(newCreator.languages),
-        newCreator.trustScore,
         newCreator.phone || null,
         newCreator.email || null,
         0,
@@ -745,8 +743,8 @@ export async function verifyOtp(req: Request, res: Response) {
             id, user_id, name, username, avatar, cover_image, reel_video_url, bio, current_city, primary_category,
             followers, avg_views, starting_price, reel_price, story_price, post_price,
             ugc_price, is_barter_available, collaboration_types, preferred_cities, sub_categories,
-            languages, trust_score, phone, email, is_verified, verification_requested, status
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
+            languages, phone, email, is_verified, verification_requested, status
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
           [
             createdCreatorProfile.id,
             userId,
@@ -770,7 +768,6 @@ export async function verifyOtp(req: Request, res: Response) {
             JSON.stringify(createdCreatorProfile.preferredCities),
             JSON.stringify(createdCreatorProfile.subCategories),
             JSON.stringify(createdCreatorProfile.languages),
-            createdCreatorProfile.trustScore,
             createdCreatorProfile.phone || null,
             createdCreatorProfile.email || null,
             0,
