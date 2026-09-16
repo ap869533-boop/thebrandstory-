@@ -22,11 +22,16 @@ import {
   FileText,
   Globe,
   Phone,
-  AlertCircle,
   CheckCircle,
   XCircle,
+  AlertCircle,
   Save,
-  ExternalLink
+  ExternalLink,
+  Facebook,
+  Instagram,
+  Youtube,
+  Linkedin,
+  Camera
 } from 'lucide-react';
 import { usePlatform } from '../context/PlatformContext';
 import { CreatorCard } from '../components/common/CreatorCard';
@@ -61,6 +66,10 @@ export const BrandDashboardView: React.FC = () => {
   const [bpContactPerson, setBpContactPerson] = useState(authUser?.name || '');
   const [bpPhone, setBpPhone] = useState('');
   const [bpLogoUrl, setBpLogoUrl] = useState('');
+  const [bpFacebookUrl, setBpFacebookUrl] = useState('');
+  const [bpInstagramUrl, setBpInstagramUrl] = useState('');
+  const [bpYoutubeUrl, setBpYoutubeUrl] = useState('');
+  const [bpLinkedinUrl, setBpLinkedinUrl] = useState('');
   const [bpSaving, setBpSaving] = useState(false);
   const [bpSaveMsg, setBpSaveMsg] = useState<string | null>(null);
   const [bpLoaded, setBpLoaded] = useState(false);
@@ -84,6 +93,10 @@ export const BrandDashboardView: React.FC = () => {
           setBpContactPerson(data.profile.contactPerson || authUser?.name || '');
           setBpPhone(data.profile.phone || '');
           setBpLogoUrl(data.profile.logoUrl || '');
+          setBpFacebookUrl(data.profile.facebookUrl || '');
+          setBpInstagramUrl(data.profile.instagramUrl || '');
+          setBpYoutubeUrl(data.profile.youtubeUrl || '');
+          setBpLinkedinUrl(data.profile.linkedinUrl || '');
         }
         setBpLoaded(true);
       })
@@ -126,6 +139,10 @@ export const BrandDashboardView: React.FC = () => {
           contactPerson: bpContactPerson,
           phone: bpPhone,
           logoUrl: bpLogoUrl,
+          facebookUrl: bpFacebookUrl,
+          instagramUrl: bpInstagramUrl,
+          youtubeUrl: bpYoutubeUrl,
+          linkedinUrl: bpLinkedinUrl,
           email: authUser?.email,
         }),
       });
@@ -385,7 +402,14 @@ export const BrandDashboardView: React.FC = () => {
                 <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full bg-gradient-to-br from-[#D4A338] to-[#996c14] p-[2px] sm:p-[3px] shrink-0 relative shadow-lg shadow-[#D4A338]/20 group-hover:shadow-[#D4A338]/40 transition-shadow duration-500">
                   <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden border-2 sm:border-[3px] border-white">
                     {bpLogoUrl ? (
-                      <img src={bpLogoUrl} alt={brandDisplayName} className="w-full h-full object-cover" />
+                      <img 
+                        src={bpLogoUrl.startsWith('/') ? apiUrl(bpLogoUrl) : bpLogoUrl} 
+                        alt={brandDisplayName} 
+                        className="w-full h-full object-cover" 
+                        onError={(e) => { 
+                          (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(brandDisplayName)}&background=fde68a&color=b45309&font-size=0.4&bold=true`; 
+                        }} 
+                      />
                     ) : (
                       <span className="text-xl sm:text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-[#D4A338] to-[#996c14] tracking-wider">
                         {brandDisplayName.substring(0, 2).toUpperCase()}
@@ -901,143 +925,299 @@ export const BrandDashboardView: React.FC = () => {
 
         {/* Tab 5: Profile */}
         {activeTab === 'profile' && (
-          <div className="animate-fadeIn max-w-3xl space-y-6">
-            <div className="bg-white p-6 rounded-3xl border border-slate-200">
-              <div className="mb-6">
-                <h3 className="text-lg font-black text-slate-900">Brand Profile</h3>
-                <p className="text-xs text-slate-500">Manage how your brand appears to creators and the public.</p>
+          <div className="animate-fadeIn max-w-4xl space-y-6 mx-auto">
+            <div className="bg-white p-6 sm:p-10 rounded-[2rem] border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden">
+              {/* Colorful top border accent */}
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
+              
+              <div className="mb-8">
+                <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Brand Profile</h3>
+                <p className="text-sm text-slate-500 mt-1">Manage how your brand appears to creators and the public.</p>
               </div>
 
               {!bpLoaded ? (
                 <div className="text-center text-xs text-slate-500 py-10">Loading profile...</div>
               ) : (
-                <form onSubmit={handleSaveBrandProfile} className="space-y-5">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">Company / Brand Name *</label>
-                      <div className="relative">
-                        <Building2 className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                        <input
-                          type="text"
-                          required
-                          value={bpBrandName}
-                          onChange={e => setBpBrandName(e.target.value)}
-                          className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500 bg-slate-50"
+                <form onSubmit={handleSaveBrandProfile} className="space-y-10">
+                  {/* Header Section: Logo & Basic Info */}
+                  <div className="flex flex-col lg:flex-row gap-10 items-start">
+                    {/* Logo Upload area */}
+                    <div className="flex flex-col items-center gap-3 shrink-0">
+                      <div className="relative group w-36 h-36 rounded-full border-[3px] border-dashed border-indigo-200 hover:border-indigo-400 flex flex-col items-center justify-center bg-indigo-50/30 cursor-pointer overflow-hidden transition-all duration-300 shadow-sm hover:shadow-md">
+                        {bpLogoUrl ? (
+                          <img 
+                            src={bpLogoUrl.startsWith('/') ? apiUrl(bpLogoUrl) : bpLogoUrl} 
+                            alt="Brand Logo" 
+                            className="w-full h-full object-cover p-1 rounded-full" 
+                            onError={(e) => { 
+                              (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(brandDisplayName)}&background=e0e7ff&color=4338ca&font-size=0.4&bold=true`; 
+                            }} 
+                          />
+                        ) : (
+                          <div className="text-center p-2 text-indigo-400 group-hover:text-indigo-500 transition-colors">
+                            <span className="text-4xl font-black text-indigo-300 tracking-wider block mb-1">
+                              {brandDisplayName.substring(0, 2).toUpperCase()}
+                            </span>
+                            <span className="text-[10px] font-bold uppercase tracking-widest">Upload Logo</span>
+                          </div>
+                        )}
+                        {/* Hidden file input */}
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-50"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            const reader = new FileReader();
+                            reader.onloadend = async () => {
+                              const base64Image = reader.result as string;
+                              setBpLogoUrl(base64Image); // Optimistic preview
+                              try {
+                                const token = localStorage.getItem('sc_auth_token');
+                                const res = await fetch(apiUrl('/api/upload'), {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                                  body: JSON.stringify({ image: base64Image, type: 'avatar', creatorId: authUser?.id })
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                  setBpLogoUrl(data.url);
+                                }
+                              } catch (err) {
+                                console.error('Upload failed', err);
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          }}
                         />
+                        {bpLogoUrl && (
+                          <div className="absolute inset-0 bg-indigo-900/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[2px]">
+                            <Camera className="w-8 h-8 text-white" />
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-[11px] text-slate-400 font-semibold tracking-wide">Recommended: 400x400px</span>
+                    </div>
+
+                    {/* Basic Info inputs */}
+                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-6 w-full">
+                      <div className="group">
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Company / Brand Name <span className="text-rose-500">*</span></label>
+                        <div className="relative">
+                          <div className="absolute left-3.5 top-3 p-0.5 bg-blue-100 text-blue-600 rounded-md group-focus-within:bg-blue-600 group-focus-within:text-white transition-colors">
+                            <Building2 className="w-3.5 h-3.5" />
+                          </div>
+                          <input
+                            type="text"
+                            required
+                            value={bpBrandName}
+                            onChange={e => setBpBrandName(e.target.value)}
+                            className="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 bg-slate-50/50 hover:bg-white transition-all shadow-sm"
+                          />
+                        </div>
+                      </div>
+                      <div className="group">
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">GST Number</label>
+                        <div className="relative">
+                          <div className="absolute left-3.5 top-3 p-0.5 bg-emerald-100 text-emerald-600 rounded-md group-focus-within:bg-emerald-600 group-focus-within:text-white transition-colors">
+                            <FileText className="w-3.5 h-3.5" />
+                          </div>
+                          <input
+                            type="text"
+                            value={bpGstNumber}
+                            onChange={e => setBpGstNumber(e.target.value.toUpperCase())}
+                            className="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 bg-slate-50/50 hover:bg-white transition-all shadow-sm uppercase placeholder:normal-case"
+                            placeholder="Optional"
+                          />
+                        </div>
+                      </div>
+                      <div className="group">
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Contact Person</label>
+                        <div className="relative">
+                          <div className="absolute left-3.5 top-3 p-0.5 bg-amber-100 text-amber-600 rounded-md group-focus-within:bg-amber-600 group-focus-within:text-white transition-colors">
+                            <User2 className="w-3.5 h-3.5" />
+                          </div>
+                          <input
+                            type="text"
+                            value={bpContactPerson}
+                            onChange={e => setBpContactPerson(e.target.value)}
+                            className="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500 bg-slate-50/50 hover:bg-white transition-all shadow-sm"
+                          />
+                        </div>
+                      </div>
+                      <div className="group">
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Phone Number</label>
+                        <div className="relative">
+                          <div className="absolute left-3.5 top-3 p-0.5 bg-indigo-100 text-indigo-600 rounded-md group-focus-within:bg-indigo-600 group-focus-within:text-white transition-colors">
+                            <Phone className="w-3.5 h-3.5" />
+                          </div>
+                          <input
+                            type="tel"
+                            maxLength={10}
+                            value={bpPhone}
+                            onChange={e => {
+                              const val = e.target.value;
+                              if (val === '' || (/^[0-9]+$/.test(val) && val.length <= 10)) {
+                                setBpPhone(val);
+                              }
+                            }}
+                            className="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 bg-slate-50/50 hover:bg-white transition-all shadow-sm"
+                          />
+                        </div>
                       </div>
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">GST Number</label>
-                      <div className="relative">
-                        <FileText className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                        <input
-                          type="text"
-                          value={bpGstNumber}
-                          onChange={e => setBpGstNumber(e.target.value.toUpperCase())}
-                          className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500 bg-slate-50 uppercase"
-                        />
-                      </div>
+                  </div>
+
+                  <hr className="border-slate-100" />
+
+                  {/* Description & Industry */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div className="md:col-span-2 space-y-2">
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">Brand Description</label>
+                      <textarea
+                        rows={5}
+                        value={bpDescription}
+                        onChange={e => setBpDescription(e.target.value)}
+                        placeholder="Tell creators a bit about your brand, mission, and products. This helps them pitch better ideas..."
+                        className="w-full px-5 py-4 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 bg-slate-50/50 hover:bg-white transition-all resize-none leading-relaxed shadow-sm"
+                      />
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">Contact Person</label>
-                      <div className="relative">
-                        <User2 className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                        <input
-                          type="text"
-                          value={bpContactPerson}
-                          onChange={e => setBpContactPerson(e.target.value)}
-                          className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500 bg-slate-50"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">Phone Number</label>
-                      <div className="relative">
-                        <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                        <input
-                          type="text"
-                          value={bpPhone}
-                          onChange={e => setBpPhone(e.target.value)}
-                          className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500 bg-slate-50"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">Website URL</label>
-                      <div className="relative">
-                        <Globe className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                        <input
-                          type="url"
-                          value={bpWebsite}
-                          onChange={e => setBpWebsite(e.target.value)}
-                          placeholder="https://"
-                          className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500 bg-slate-50"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">Industry</label>
+                    <div className="space-y-2">
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">Industry</label>
                       <select
                         value={bpIndustry}
                         onChange={e => setBpIndustry(e.target.value)}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500 bg-slate-50"
+                        className="w-full px-5 py-4 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 bg-slate-50/50 hover:bg-white transition-all appearance-none cursor-pointer shadow-sm font-medium text-slate-700"
+                        style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%238b5cf6\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2.5\' d=\'M19 9l-7 7-7-7\'%3E%3C/path%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1.25rem center', backgroundSize: '1.2rem' }}
                       >
                         <option value="">Select Industry</option>
-                        <option value="Fashion">Fashion & Apparel</option>
-                        <option value="Beauty">Beauty & Cosmetics</option>
-                        <option value="Tech">Tech & Gadgets</option>
-                        <option value="Food">Food & Beverage</option>
-                        <option value="Travel">Travel & Hospitality</option>
-                        <option value="Finance">Finance & Fintech</option>
+                        <option value="Technology">Technology</option>
+                        <option value="Fashion">Fashion</option>
+                        <option value="Beauty & Cosmetics">Beauty & Cosmetics</option>
+                        <option value="Food & Beverage">Food & Beverage</option>
+                        <option value="Automotive">Automotive</option>
+                        <option value="Luxury">Luxury</option>
+                        <option value="Sports & Fitness">Sports & Fitness</option>
+                        <option value="Entertainment">Entertainment</option>
+                        <option value="Gaming">Gaming</option>
+                        <option value="Travel & Hospitality">Travel & Hospitality</option>
+                        <option value="Healthcare">Healthcare</option>
+                        <option value="Finance & Banking">Finance & Banking</option>
+                        <option value="E-commerce & Retail">E-commerce & Retail</option>
+                        <option value="Consumer Electronics">Consumer Electronics</option>
+                        <option value="Telecommunications">Telecommunications</option>
+                        <option value="Real Estate">Real Estate</option>
                         <option value="Education">Education</option>
-                        <option value="Health">Health & Wellness</option>
-                        <option value="Other">Other</option>
+                        <option value="Energy">Energy</option>
+                        <option value="Home & Lifestyle">Home & Lifestyle</option>
+                        <option value="Media & Publishing">Media & Publishing</option>
                       </select>
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Brand Description</label>
-                    <textarea
-                      rows={4}
-                      value={bpDescription}
-                      onChange={e => setBpDescription(e.target.value)}
-                      placeholder="Tell creators a bit about your brand..."
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500 bg-slate-50 resize-none"
-                    />
-                  </div>
+                  <hr className="border-slate-100" />
 
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Logo URL (Optional)</label>
-                    <input
-                      type="url"
-                      value={bpLogoUrl}
-                      onChange={e => setBpLogoUrl(e.target.value)}
-                      placeholder="https://"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500 bg-slate-50"
-                    />
-                    {bpLogoUrl && (
-                      <div className="mt-2">
-                        <img src={bpLogoUrl} alt="Logo Preview" className="h-12 w-12 object-cover rounded-lg border border-slate-200" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                  {/* Social Links Section */}
+                  <div className="bg-slate-50/50 rounded-2xl p-6 sm:p-8 border border-slate-100">
+                    <div className="flex items-center justify-between mb-6">
+                      <h4 className="text-base font-black text-slate-900 flex items-center gap-2.5">
+                        <div className="p-1.5 bg-blue-100 text-blue-600 rounded-lg">
+                          <Globe className="w-5 h-5" />
+                        </div>
+                        Online Presence & Social Links
+                      </h4>
+                      <span className="text-[10px] font-bold text-slate-400 bg-white border border-slate-200 px-3 py-1 rounded-full uppercase tracking-widest shadow-sm">Optional</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div className="group">
+                        <div className="relative">
+                          <Globe className="w-5 h-5 text-slate-400 absolute left-4 top-3.5 group-focus-within:text-blue-500 transition-colors" />
+                          <input
+                            type="url"
+                            value={bpWebsite}
+                            onChange={e => setBpWebsite(e.target.value)}
+                            placeholder="Website URL (e.g. https://...)"
+                            className="w-full pl-12 pr-4 py-3.5 border border-white bg-white shadow-sm rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-slate-200 transition-all font-medium"
+                          />
+                        </div>
                       </div>
-                    )}
+                      <div className="group">
+                        <div className="relative">
+                          <Instagram className="w-5 h-5 text-slate-400 absolute left-4 top-3.5 group-focus-within:text-pink-500 transition-colors" />
+                          <input
+                            type="url"
+                            value={bpInstagramUrl}
+                            onChange={e => setBpInstagramUrl(e.target.value)}
+                            placeholder="Instagram Profile URL"
+                            className="w-full pl-12 pr-4 py-3.5 border border-white bg-white shadow-sm rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-pink-500/10 focus:border-pink-500 hover:border-slate-200 transition-all font-medium"
+                          />
+                        </div>
+                      </div>
+                      <div className="group">
+                        <div className="relative">
+                          <Youtube className="w-5 h-5 text-slate-400 absolute left-4 top-3.5 group-focus-within:text-red-500 transition-colors" />
+                          <input
+                            type="url"
+                            value={bpYoutubeUrl}
+                            onChange={e => setBpYoutubeUrl(e.target.value)}
+                            placeholder="YouTube Channel URL"
+                            className="w-full pl-12 pr-4 py-3.5 border border-white bg-white shadow-sm rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-red-500/10 focus:border-red-500 hover:border-slate-200 transition-all font-medium"
+                          />
+                        </div>
+                      </div>
+                      <div className="group">
+                        <div className="relative">
+                          <Facebook className="w-5 h-5 text-slate-400 absolute left-4 top-3.5 group-focus-within:text-blue-600 transition-colors" />
+                          <input
+                            type="url"
+                            value={bpFacebookUrl}
+                            onChange={e => setBpFacebookUrl(e.target.value)}
+                            placeholder="Facebook Page URL"
+                            className="w-full pl-12 pr-4 py-3.5 border border-white bg-white shadow-sm rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 hover:border-slate-200 transition-all font-medium"
+                          />
+                        </div>
+                      </div>
+                      <div className="group sm:col-span-2 md:col-span-1">
+                        <div className="relative">
+                          <Linkedin className="w-5 h-5 text-slate-400 absolute left-4 top-3.5 group-focus-within:text-blue-700 transition-colors" />
+                          <input
+                            type="url"
+                            value={bpLinkedinUrl}
+                            onChange={e => setBpLinkedinUrl(e.target.value)}
+                            placeholder="LinkedIn Company Page URL"
+                            className="w-full pl-12 pr-4 py-3.5 border border-white bg-white shadow-sm rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-blue-700/10 focus:border-blue-700 hover:border-slate-200 transition-all font-medium"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                    <div className="text-xs font-semibold">
+                  <div className="pt-8 mt-6 flex flex-col sm:flex-row items-center justify-between gap-6">
+                    <div className="text-sm font-semibold w-full sm:w-auto">
                       {bpSaveMsg && (
-                        <span className={bpSaveMsg.includes('✅') ? 'text-emerald-600' : 'text-rose-600'}>
-                          {bpSaveMsg}
-                        </span>
+                        <div className={`px-5 py-3 rounded-2xl flex items-center gap-3 w-full sm:w-auto border ${bpSaveMsg.includes('✅') ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'} shadow-sm animate-fadeIn`}>
+                          {bpSaveMsg.includes('✅') ? <CheckCircle className="w-5 h-5 text-emerald-500" /> : <AlertCircle className="w-5 h-5 text-rose-500" />}
+                          {bpSaveMsg.replace('✅ ', '').replace('❌ ', '')}
+                        </div>
                       )}
                     </div>
                     <button
                       type="submit"
                       disabled={bpSaving}
-                      className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-500/20 transition flex items-center gap-1.5 cursor-pointer"
+                      className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 disabled:opacity-50 text-white font-black text-sm rounded-2xl shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2.5 cursor-pointer uppercase tracking-wide"
                     >
-                      <Save className="w-3.5 h-3.5" />
-                      {bpSaving ? 'Saving...' : 'Save Profile'}
+                      {bpSaving ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                          Saving Profile...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4" />
+                          Save Changes
+                        </>
+                      )}
                     </button>
                   </div>
                 </form>

@@ -15,6 +15,10 @@ function mapDbRowToBrandProfile(row: any) {
     coverUrl: row.cover_url || '',
     description: row.description || '',
     website: row.website || '',
+    facebookUrl: row.facebook_url || '',
+    instagramUrl: row.instagram_url || '',
+    youtubeUrl: row.youtube_url || '',
+    linkedinUrl: row.linkedin_url || '',
     industry: row.industry || '',
     city: row.city || '',
     contactPerson: row.contact_person || '',
@@ -69,6 +73,10 @@ export async function createBrandProfile(req: AuthenticatedRequest, res: Respons
       coverUrl,
       description,
       website,
+      facebookUrl,
+      instagramUrl,
+      youtubeUrl,
+      linkedinUrl,
       industry,
       city,
       contactPerson,
@@ -98,6 +106,10 @@ export async function createBrandProfile(req: AuthenticatedRequest, res: Respons
       coverUrl: coverUrl || '',
       description: description || '',
       website: website || '',
+      facebookUrl: facebookUrl || '',
+      instagramUrl: instagramUrl || '',
+      youtubeUrl: youtubeUrl || '',
+      linkedinUrl: linkedinUrl || '',
       industry: industry || '',
       city: city || '',
       contactPerson: contactPerson || '',
@@ -112,9 +124,9 @@ export async function createBrandProfile(req: AuthenticatedRequest, res: Respons
     brandProfilesStore.unshift(profile as any);
 
     await dbQuery(
-      `INSERT INTO brand_profiles (id, user_id, brand_name, gst_number, logo_url, cover_url, description, website, industry, city, contact_person, phone, email, approval_status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, userId, brandName, gstNumber || null, logoUrl || null, coverUrl || null, description || null, website || null, industry || null, city || null, contactPerson || null, phone || null, email || null, currentApprovalStatus]
+      `INSERT INTO brand_profiles (id, user_id, brand_name, gst_number, logo_url, cover_url, description, website, facebook_url, instagram_url, youtube_url, linkedin_url, industry, city, contact_person, phone, email, approval_status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, userId, brandName, gstNumber || null, logoUrl || null, coverUrl || null, description || null, website || null, facebookUrl || null, instagramUrl || null, youtubeUrl || null, linkedinUrl || null, industry || null, city || null, contactPerson || null, phone || null, email || null, currentApprovalStatus]
     ).catch(err => console.warn('MySQL brand profile insert notice:', err));
 
     res.status(201).json({ success: true, profile });
@@ -140,6 +152,10 @@ export async function updateBrandProfile(req: AuthenticatedRequest, res: Respons
       coverUrl,
       description,
       website,
+      facebookUrl,
+      instagramUrl,
+      youtubeUrl,
+      linkedinUrl,
       industry,
       city,
       contactPerson,
@@ -159,8 +175,8 @@ export async function updateBrandProfile(req: AuthenticatedRequest, res: Respons
 
     // Update in MySQL
     await dbQuery(
-      `UPDATE brand_profiles SET brand_name=?, gst_number=?, logo_url=?, cover_url=?, description=?, website=?, industry=?, city=?, contact_person=?, phone=?, email=? WHERE user_id=?`,
-      [brandName, gstNumber || null, logoUrl || null, coverUrl || null, description || null, website || null, industry || null, city || null, contactPerson || null, phone || null, email || null, userId]
+      `UPDATE brand_profiles SET brand_name=?, gst_number=?, logo_url=?, cover_url=?, description=?, website=?, facebook_url=?, instagram_url=?, youtube_url=?, linkedin_url=?, industry=?, city=?, contact_person=?, phone=?, email=? WHERE user_id=?`,
+      [brandName, gstNumber || null, logoUrl || null, coverUrl || null, description || null, website || null, facebookUrl || null, instagramUrl || null, youtubeUrl || null, linkedinUrl || null, industry || null, city || null, contactPerson || null, phone || null, email || null, userId]
     ).catch(err => console.warn('MySQL brand profile update notice:', err));
 
     // Update in memory
@@ -173,6 +189,10 @@ export async function updateBrandProfile(req: AuthenticatedRequest, res: Respons
       coverUrl: coverUrl || '',
       description: description || '',
       website: website || '',
+      facebookUrl: facebookUrl || '',
+      instagramUrl: instagramUrl || '',
+      youtubeUrl: youtubeUrl || '',
+      linkedinUrl: linkedinUrl || '',
       industry: industry || '',
       city: city || '',
       contactPerson: contactPerson || '',

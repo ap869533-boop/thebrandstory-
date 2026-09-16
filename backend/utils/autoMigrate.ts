@@ -149,7 +149,11 @@ export async function runAutoMigrations() {
       `ALTER TABLE creator_profiles DROP COLUMN trust_score`,
       `ALTER TABLE creator_profiles DROP COLUMN trust_signals`,
       `ALTER TABLE campaign_applicants MODIFY COLUMN creator_name VARCHAR(120) DEFAULT NULL`,
-      `ALTER TABLE campaign_applicants MODIFY COLUMN creator_avatar VARCHAR(500) DEFAULT NULL`
+      `ALTER TABLE campaign_applicants MODIFY COLUMN creator_avatar VARCHAR(500) DEFAULT NULL`,
+      `ALTER TABLE brand_profiles ADD COLUMN facebook_url VARCHAR(255) DEFAULT NULL`,
+      `ALTER TABLE brand_profiles ADD COLUMN instagram_url VARCHAR(255) DEFAULT NULL`,
+      `ALTER TABLE brand_profiles ADD COLUMN youtube_url VARCHAR(255) DEFAULT NULL`,
+      `ALTER TABLE brand_profiles ADD COLUMN linkedin_url VARCHAR(255) DEFAULT NULL`
     ];
 
     for (const query of alterQueries) {
