@@ -4,7 +4,7 @@ import { usePlatform } from '../../context/PlatformContext';
 import { CITIES_LIST, CATEGORIES_LIST } from '../../data/initialData';
 
 export const Footer: React.FC = () => {
-  const { navigateTo, openOnboardingModal, openTrustScoreModal, cities } = usePlatform();
+  const { navigateTo, openOnboardingModal, cities } = usePlatform();
 
   return (
     <footer className="bg-black text-slate-400 border-t border-zinc-900 text-xs">
@@ -56,11 +56,6 @@ export const Footer: React.FC = () => {
                   Open Brand Briefs
                 </button>
               </li>
-              <li>
-                <button onClick={openTrustScoreModal} className="hover:text-white transition">
-                  Trust Score Metrics
-                </button>
-              </li>
             </ul>
           </div>
 
@@ -78,11 +73,6 @@ export const Footer: React.FC = () => {
               <li>
                 <button onClick={() => navigateTo('opportunities')} className="hover:text-white transition">
                   Browse Paid Brand Deals
-                </button>
-              </li>
-              <li>
-                <button onClick={openTrustScoreModal} className="hover:text-white transition">
-                  How Trust Score Works
                 </button>
               </li>
               <li>
@@ -129,8 +119,6 @@ export const Footer: React.FC = () => {
           </div>
           <div className="flex items-center gap-4 text-[11px]">
             <button onClick={() => navigateTo('blog')} className="hover:text-white transition cursor-pointer">Insights & Reports</button>
-            <span>•</span>
-            <button onClick={openTrustScoreModal} className="hover:text-white transition cursor-pointer">Trust & Verification Policy</button>
             <span>•</span>
             <button onClick={() => navigateTo('post-requirement')} className="hover:text-white transition cursor-pointer">Enterprise Solutions</button>
           </div>

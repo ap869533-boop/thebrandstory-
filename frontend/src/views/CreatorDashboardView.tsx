@@ -32,7 +32,6 @@ import {
 } from 'lucide-react';
 import { usePlatform } from '../context/PlatformContext';
 import { Creator } from '../types';
-import { TrustScoreBadge } from '../components/common/TrustScoreBadge';
 import { ChangePasswordForm } from '../components/common/ChangePasswordForm';
 import { cleanInstagramHandle } from '../utils/sanitize';
 
@@ -46,7 +45,6 @@ export const CreatorDashboardView: React.FC = () => {
     updateEnquiryStatus,
     updateApplicantStatus,
     navigateTo,
-    openTrustScoreModal,
     authUser,
     openAuthModal,
   } = usePlatform();
@@ -170,7 +168,7 @@ export const CreatorDashboardView: React.FC = () => {
     );
   })();
 
-  const [activeTab, setActiveTab] = useState<'leads' | 'rates' | 'reels' | 'profile' | 'pitches' | 'settings'>('leads');
+  const [activeTab, setActiveTab] = useState<'leads' | 'profile' | 'pitches' | 'settings'>('leads');
 
   // Form states synced with creator's database fields
   const [bio, setBio] = useState(creator.bio || '');
@@ -718,8 +716,6 @@ export const CreatorDashboardView: React.FC = () => {
           {[
             { key: 'leads', icon: <MessageSquare className="w-3.5 h-3.5" />, label: `Enquiries (${myEnquiries.length})` },
             { key: 'profile', icon: <Edit3 className="w-3.5 h-3.5" />, label: 'Edit Profile' },
-            { key: 'rates', icon: <IndianRupee className="w-3.5 h-3.5" />, label: 'Rate Card' },
-            { key: 'reels', icon: <Film className="w-3.5 h-3.5" />, label: `Reels (${(creator.portfolio || []).length})` },
             { key: 'pitches', icon: <Flame className="w-3.5 h-3.5" />, label: `Briefs (${campaigns.length})` },
             { key: 'settings', icon: <Settings className="w-3.5 h-3.5" />, label: 'Settings' },
           ].map(tab => (
@@ -1185,301 +1181,6 @@ export const CreatorDashboardView: React.FC = () => {
           </form>
         )}
 
-        {/* Tab 1: Commercial Rate Card */}
-        {activeTab === 'rates' && (
-
-          <form onSubmit={handleSaveRates} className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-xs space-y-6 animate-fadeIn">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-              <div>
-                <h3 className="text-base font-black text-slate-900">Manage Commercial Rate Card</h3>
-                <p className="text-xs text-slate-500">Update your deliverable pricing. Changes are directly saved to the MySQL database.</p>
-              </div>
-              <button
-                type="submit"
-                className="px-5 py-2.5 bg-black hover:bg-zinc-900 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-500/20 transition flex items-center gap-1.5 cursor-pointer"
-              >
-                <Save className="w-4 h-4" />
-                <span>Save to Database</span>
-              </button>
-            </div>
-
-            {savedSuccess && (
-              <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl font-bold flex items-center gap-2 animate-fadeIn">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>Rate card & bio successfully updated in MySQL database!</span>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-xs">
-              <div>
-                <label className="block text-slate-700 font-bold mb-1">Reel (1x) (₹)</label>
-                <input
-                  type="number"
-                  value={reelPrice}
-                  onChange={(e) => setReelPrice(e.target.value === '' ? '' : Number(e.target.value))}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-bold mb-1">Story with Link (₹)</label>
-                <input
-                  type="number"
-                  value={storyPrice}
-                  onChange={(e) => setStoryPrice(e.target.value === '' ? '' : Number(e.target.value))}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-bold mb-1">Feed Post (₹)</label>
-                <input
-                  type="number"
-                  value={profilePostPrice}
-                  onChange={(e) => setProfilePostPrice(e.target.value === '' ? '' : Number(e.target.value))}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-bold mb-1">UGC Video Ad (₹)</label>
-                <input
-                  type="number"
-                  value={ugcPrice}
-                  onChange={(e) => setUgcPrice(e.target.value === '' ? '' : Number(e.target.value))}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-bold mb-1">Event / Visit (₹)</label>
-                <input
-                  type="number"
-                  value={profileEventPrice}
-                  onChange={(e) => setProfileEventPrice(e.target.value === '' ? '' : Number(e.target.value))}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-bold mb-1">Starting Price (₹)</label>
-                <input
-                  type="number"
-                  value={startingPrice}
-                  onChange={(e) => setStartingPrice(e.target.value === '' ? '' : Number(e.target.value))}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-bold"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-slate-700 font-bold mb-1 text-xs">Creator Bio & Collaboration Pitch</label>
-              <textarea
-                rows={3}
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 text-xs font-medium"
-              />
-            </div>
-
-            <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                id="barterAvailable"
-                checked={isBarterAvailable}
-                onChange={(e) => setIsBarterAvailable(e.target.checked)}
-                className="w-4 h-4 rounded"
-              />
-              <label htmlFor="barterAvailable" className="text-xs font-bold text-slate-700 cursor-pointer">
-                Available for Barter / Product Collaborations
-              </label>
-            </div>
-          </form>
-        )}
-
-        {/* Tab: Reels & Portfolio Upload */}
-        {activeTab === 'reels' && (
-          <div className="space-y-6 animate-fadeIn">
-            {/* Hidden file inputs */}
-            <input
-              type="file"
-              ref={reelVideoInputRef}
-              accept="video/*"
-              className="hidden"
-              onChange={(e) => {
-                if (e.target.files?.[0]) handleReelUpload(e.target.files[0], 'video');
-              }}
-            />
-            <input
-              type="file"
-              ref={reelThumbnailInputRef}
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                if (e.target.files?.[0]) handleReelUpload(e.target.files[0], 'thumbnail');
-              }}
-            />
-
-            {/* Upload New Reel */}
-            <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-5">
-              <div className="flex items-center gap-2 border-b border-slate-100 pb-4">
-                <Film className="w-5 h-5 text-[#D4A338]" />
-                <div>
-                  <h3 className="text-base font-black text-slate-900">Upload New Reel / Portfolio Content</h3>
-                  <p className="text-xs text-slate-500">Uploaded reels appear on your public profile for brands to see</p>
-                </div>
-              </div>
-
-              {uploadNotice && (
-                <div className={`p-3 rounded-xl text-xs font-bold flex items-center gap-2 ${
-                  uploadNotice.includes('failed') || uploadNotice.includes('Failed')
-                    ? 'bg-red-50 border border-red-200 text-red-800'
-                    : 'bg-emerald-50 border border-emerald-200 text-emerald-800'
-                }`}>
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>{uploadNotice}</span>
-                </div>
-              )}
-
-              {reelUploadSuccess && (
-                <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl font-bold flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  <span>Reel saved to your profile & database successfully!</span>
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1 text-xs">Reel Title *</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. My Summer Collection Look"
-                    value={reelTitle}
-                    onChange={(e) => setReelTitle(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 text-xs font-medium"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1 text-xs">Brand Name (if collab)</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Nykaa, Myntra, Zomato"
-                    value={reelBrandName}
-                    onChange={(e) => setReelBrandName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 text-xs font-medium"
-                  />
-                </div>
-              </div>
-
-              {/* Video URL or File Upload */}
-              <div className="space-y-3 border-t border-slate-100 pt-4">
-                <label className="block text-slate-700 font-bold text-xs">
-                  Reel Video Source (URL or File Upload)
-                </label>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Direct Video URL Input */}
-                  <div className="space-y-2 bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                    <span className="text-xs font-bold text-slate-800 block">Option A: Paste Video URL</span>
-                    <input
-                      type="url"
-                      placeholder="Paste a direct video link or reel link"
-                      value={uploadedReelUrl}
-                      onChange={(e) => setUploadedReelUrl(e.target.value)}
-                      className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 outline-none"
-                    />
-                    <p className="text-[10px] text-slate-400">Direct MP4, MOV, or CDN URL</p>
-                  </div>
-
-                  {/* Direct File Upload */}
-                  <div
-                    onClick={() => reelVideoInputRef.current?.click()}
-                    className="border-2 border-dashed border-slate-200 hover:border-blue-400 rounded-2xl p-4 text-center cursor-pointer transition group bg-slate-50 flex flex-col items-center justify-center"
-                  >
-                    {isUploadingReel ? (
-                      <div className="flex flex-col items-center gap-1">
-                        <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
-                        <span className="text-[11px] text-slate-500 font-medium">Uploading video...</span>
-                      </div>
-                    ) : uploadedReelUrl ? (
-                      <div className="flex flex-col items-center gap-1">
-                        <Play className="w-5 h-5 text-emerald-500" />
-                        <span className="text-xs text-emerald-600 font-bold">Video URL Set ✓</span>
-                        <span className="text-[10px] text-slate-400 truncate max-w-[180px]">{uploadedReelUrl}</span>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center gap-1">
-                        <Film className="w-5 h-5 text-slate-400 group-hover:text-blue-500 transition" />
-                        <span className="text-xs font-bold text-slate-700">Option B: Upload Video File</span>
-                        <span className="text-[10px] text-slate-400">Click to select MP4/MOV file</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <button
-                onClick={handleSaveReel}
-                disabled={!reelTitle.trim() && !uploadedReelUrl && !uploadedThumbnailUrl}
-                className="w-full py-3 bg-black hover:bg-zinc-900 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-500/20 transition flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Save Reel to Profile & Database</span>
-              </button>
-            </div>
-
-            {/* Existing Portfolio Items */}
-            {creator.portfolio && creator.portfolio.length > 0 && (
-              <div className="space-y-4">
-                <h3 className="text-sm font-black text-slate-900">Your Portfolio ({creator.portfolio.length} items)</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {creator.portfolio.map((item) => (
-                    <div key={item.id} className="relative group rounded-2xl overflow-hidden bg-slate-900 h-48 border border-slate-200">
-                      {(item as any).videoUrl ? (
-                        <video
-                          src={(item as any).videoUrl}
-                          className="w-full h-full object-cover"
-                          muted
-                          autoPlay
-                          loop
-                          playsInline
-                          poster={item.thumbnail}
-                        />
-                      ) : item.thumbnail ? (
-                        <img src={item.thumbnail} alt={item.title} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full bg-slate-800 flex items-center justify-center">
-                          <Film className="w-8 h-8 text-slate-600" />
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
-                      <div className="absolute bottom-0 left-0 right-0 p-3">
-                        <p className="text-white text-xs font-bold line-clamp-1">{item.title}</p>
-                        {item.brandName && <p className="text-blue-300 text-[10px]">{item.brandName}</p>}
-                      </div>
-                      <button
-                        onClick={() => handleDeleteReel(item.id)}
-                        className="absolute top-2 right-2 w-7 h-7 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition cursor-pointer"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {(!creator.portfolio || creator.portfolio.length === 0) && (
-              <div className="bg-white rounded-2xl p-10 border border-slate-200 text-center space-y-3">
-                <Film className="w-10 h-10 text-slate-300 mx-auto" />
-                <h3 className="font-bold text-slate-800 text-sm">No Portfolio Items Yet</h3>
-                <p className="text-xs text-slate-500">Upload your first reel above to show brands your content quality.</p>
-              </div>
-            )}
-          </div>
-        )}
-
         {/* Tab 2: Direct Brand Enquiries */}
         {activeTab === 'leads' && (
           <div className="space-y-4 animate-fadeIn">
@@ -1610,34 +1311,68 @@ export const CreatorDashboardView: React.FC = () => {
           </div>
         )}
 
-        {/* Tab 3: Live Opportunities */}
-        {activeTab === 'pitches' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fadeIn">
-            {campaigns.map((camp) => (
-              <div key={camp.id} className="bg-white p-5 rounded-2xl border border-slate-200 space-y-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <span className="text-[10px] font-bold text-[#D4A338] uppercase">{camp.companyName}</span>
-                    <h4 className="font-black text-slate-900 text-sm">{camp.campaignTitle}</h4>
-                  </div>
-                  <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-black">
-                    {camp.budget}
-                  </span>
-                </div>
-                <p className="text-xs text-slate-600 line-clamp-2">{camp.campaignDescription}</p>
-                <div className="flex justify-between items-center text-xs pt-2 border-t border-slate-100">
-                  <span className="text-slate-400 font-medium">{camp.city} • {camp.category}</span>
+        {/* Tab 3: My Pitches */}
+        {activeTab === 'pitches' && (() => {
+          const myPitchedCampaigns = campaigns.filter(camp => 
+            (camp.applicants || []).some(a => a.creatorId === creator.id || a.creatorName === creator.name)
+          );
+
+          return (
+            <div className="space-y-4 animate-fadeIn">
+              {myPitchedCampaigns.length === 0 ? (
+                <div className="bg-white p-12 text-center rounded-3xl border border-slate-200 space-y-2">
+                  <Flame className="w-10 h-10 text-slate-300 mx-auto" />
+                  <h3 className="font-bold text-slate-800 text-sm">No Pitches Yet</h3>
+                  <p className="text-xs text-slate-500">When you pitch for a campaign, you can track its status here.</p>
                   <button
                     onClick={() => navigateTo('opportunities')}
-                    className="px-3 py-1.5 bg-black text-white rounded-lg font-bold hover:bg-zinc-900 transition cursor-pointer"
+                    className="mt-2 px-4 py-2 bg-black text-white font-bold text-xs rounded-xl hover:bg-zinc-900 transition cursor-pointer"
                   >
-                    Submit Pitch
+                    Find Live Campaigns
                   </button>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {myPitchedCampaigns.map((camp) => {
+                    const myPitch = (camp.applicants || []).find(a => a.creatorId === creator.id || a.creatorName === creator.name);
+                    const isConfirmed = myPitch?.status === 'Accepted';
+                    const isDeclined = myPitch?.status === 'Declined';
+                    const isPending = myPitch?.status === 'Pending';
+                    
+                    return (
+                      <div key={camp.id} className="bg-white p-5 rounded-2xl border border-slate-200 space-y-3">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <span className="text-[10px] font-bold text-[#D4A338] uppercase">{camp.companyName}</span>
+                            <h4 className="font-black text-slate-900 text-sm">{camp.campaignTitle}</h4>
+                          </div>
+                          <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-black">
+                            {camp.budget}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-600 line-clamp-2">{camp.campaignDescription}</p>
+                        <div className="flex justify-between items-center text-xs pt-2 border-t border-slate-100">
+                          <span className="text-slate-400 font-medium">{camp.city} • {camp.category}</span>
+                          <span className={`px-3 py-1.5 rounded-lg font-bold text-[11px] flex items-center gap-1 ${
+                            isConfirmed ? 'bg-emerald-100 text-emerald-800' : 
+                            isDeclined ? 'bg-red-100 text-red-700' : 
+                            isPending ? 'bg-amber-100 text-amber-800' :
+                            'bg-blue-100 text-blue-800'
+                          }`}>
+                            {isConfirmed ? '✅ Confirmed by Brand' :
+                             isDeclined ? '❌ Pitch Declined' :
+                             isPending ? '⏳ Pitch Pending Review' :
+                             '🔄 Shortlisted (Check Messages)'}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Tab 4: Account Settings */}
         {activeTab === 'settings' && (

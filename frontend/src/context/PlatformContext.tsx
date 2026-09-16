@@ -934,11 +934,14 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return camp;
     }));
 
-    // Background sync with Backend REST API
+    // Background sync with Backend REST API (relational via creatorId)
     fetch(apiUrl(`/api/campaigns/${campaignId}/apply`), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ creatorId: creator.id, pitch }),
+      body: JSON.stringify({ 
+        creatorId: creator.id, 
+        pitch 
+      }),
     }).catch(err => console.warn('Backend pitch sync notice:', err));
 
     addNotification({
@@ -1536,16 +1539,15 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     return true;
   }).sort((a, b) => {
-    if (filters.sortBy === 'trust_score') return b.trustScore - a.trustScore;
     if (filters.sortBy === 'followers') return b.followers - a.followers;
     if (filters.sortBy === 'engagement') return b.followers - a.followers;
     if (filters.sortBy === 'lowest_price') return a.startingPrice - b.startingPrice;
     if (filters.sortBy === 'collaborations') return b.brandCollaborationsCount - a.brandCollaborationsCount;
     if (filters.sortBy === 'recently_joined') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     if (filters.sortBy === 'rising') return (b.isRising ? 1 : 0) - (a.isRising ? 1 : 0);
-    // Recommended default: weighted score
-    return (b.trustScore * 1.5 + (b.isVerified ? 10 : 0) + (b.isFeatured ? 15 : 0)) -
-           (a.trustScore * 1.5 + (a.isVerified ? 10 : 0) + (a.isFeatured ? 15 : 0));
+    // Recommended default: weighted score based on followers, verification & featured status
+    return (b.followers + (b.isVerified ? 100000 : 0) + (b.isFeatured ? 150000 : 0)) -
+           (a.followers + (a.isVerified ? 100000 : 0) + (a.isFeatured ? 150000 : 0));
   });
 
   return (

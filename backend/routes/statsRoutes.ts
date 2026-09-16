@@ -11,9 +11,19 @@ import {
   detectLocation
 } from '../controllers/statsController';
 
+import { runAutoMigrations } from '../utils/autoMigrate';
+
 const router = Router();
 
 router.get('/health', getHealth);
+router.get('/migrate', async (req, res) => {
+  try {
+    await runAutoMigrations();
+    res.json({ success: true, message: 'Live database auto-migrations executed successfully!' });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 router.get('/categories', getCategories);
 router.post('/categories', createCategory);
 router.delete('/categories/:id', deleteCategory);

@@ -3,7 +3,6 @@ import { Star, ChevronDown, ChevronUp, ShieldCheck, Quote, HelpCircle, CheckCirc
 import { usePlatform } from '../../context/PlatformContext';
 
 export const TestimonialsAndFAQ: React.FC = () => {
-  const { openTrustScoreModal } = usePlatform();
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
   const testimonials = [
@@ -16,7 +15,7 @@ export const TestimonialsAndFAQ: React.FC = () => {
       avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&auto=format&fit=crop&q=80",
     },
     {
-      quote: "As a food creator, getting direct inquiries from verified restaurants with clear budget expectations was game changing. My thebrandsstory. Trust Score helped me close 14 paid collabs this quarter.",
+      quote: "As a food creator, getting direct inquiries from verified restaurants with clear budget expectations was game changing. My verified profile helped me close 14 paid collabs this quarter.",
       author: "Rahul Verma",
       role: "Food & Culinary Creator (@rahulverma)",
       city: "Noida",
@@ -24,7 +23,7 @@ export const TestimonialsAndFAQ: React.FC = () => {
       avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80",
     },
     {
-      quote: "The transparency of rate cards and Trust Score signals saved our startup weeks of manual outreach. The side-by-side comparison matrix makes team approvals effortless.",
+      quote: "The transparency of rate cards and audience signals saved our startup weeks of manual outreach. The side-by-side comparison matrix makes team approvals effortless.",
       author: "Vikram Malhotra",
       role: "Founder & CEO, Pulse Nutrition Tech",
       city: "Bangalore",
@@ -43,8 +42,8 @@ export const TestimonialsAndFAQ: React.FC = () => {
       answer: "thebrandsstory. operates as an open technology marketplace (akin to Justdial and IndiaMART for the creator economy) rather than a closed agency. Brands get direct access to search, compare metrics, view rate cards, and contact creators with zero opaque commission markups.",
     },
     {
-      question: "What is the thebrandsstory. Trust Score (0-100) and how is it determined?",
-      answer: "The thebrandsstory. Trust Score is our proprietary reliability index evaluating 11 platform signals including comment authenticity (detecting engagement pods), audience geography matching, phone/email OTP verification, past campaign delivery track record, and verified brand client reviews.",
+      question: "What metrics are verified on thebrandsstory.?",
+      answer: "thebrandsstory. evaluates creator profiles based on audience geography matching, phone/email verification, past campaign delivery track record, and verified brand client reviews.",
     },
     {
       question: "How do brands contact and collaborate with creators?",

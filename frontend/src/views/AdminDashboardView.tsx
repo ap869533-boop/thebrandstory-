@@ -32,7 +32,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { usePlatform } from '../context/PlatformContext';
-import { TrustScoreBadge } from '../components/common/TrustScoreBadge';
+
 import { Creator } from '../types';
 import { ChangePasswordForm } from '../components/common/ChangePasswordForm';
 
@@ -623,7 +623,7 @@ export const AdminDashboardView: React.FC = () => {
                       <th className="p-4">Niche / City</th>
                       <th className="p-4">Audience & Metrics</th>
                       <th className="p-4">Pricing</th>
-                      <th className="p-4">Status & Trust</th>
+                      <th className="p-4">Status</th>
                       <th className="p-4">Badges</th>
                       <th className="p-4 text-right">Approval Actions</th>
                     </tr>
@@ -693,7 +693,7 @@ export const AdminDashboardView: React.FC = () => {
                               <span className="text-[10px] text-slate-400">Starting Rate</span>
                             </td>
 
-                            {/* 5. Status & Trust */}
+                            {/* 5. Status */}
                             <td className="p-4">
                               <div className="space-y-1">
                                 {isPending ? (
@@ -712,9 +712,6 @@ export const AdminDashboardView: React.FC = () => {
                                     <span>Live Active</span>
                                   </span>
                                 )}
-                                <div>
-                                  <TrustScoreBadge score={c.trustScore} size="sm" />
-                                </div>
                               </div>
                             </td>
 

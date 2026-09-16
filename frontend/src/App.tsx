@@ -6,7 +6,6 @@ import { EnquiryModal } from './components/common/EnquiryModal';
 import { CompareDrawer } from './components/common/CompareDrawer';
 import { SavedShortlistDrawer } from './components/common/SavedShortlistDrawer';
 import { CreatorOnboardingModal } from './components/common/CreatorOnboardingModal';
-import { TrustScoreInfoModal } from './components/common/TrustScoreInfoModal';
 import { AuthModal } from './components/common/AuthModal';
 
 // Views
@@ -62,7 +61,6 @@ const MainAppContent: React.FC = () => {
       <CompareDrawer />
       <SavedShortlistDrawer />
       <CreatorOnboardingModal />
-      <TrustScoreInfoModal />
       <AuthModal />
     </div>
   );

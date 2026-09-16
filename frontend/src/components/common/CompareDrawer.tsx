@@ -1,7 +1,7 @@
 import React from 'react';
 import { X, Scale, ArrowRight, ShieldCheck, Trash2, MessageSquare, Check, Sparkles } from 'lucide-react';
 import { usePlatform } from '../../context/PlatformContext';
-import { TrustScoreBadge } from './TrustScoreBadge';
+
 
 export const CompareDrawer: React.FC = () => {
   const {
@@ -123,15 +123,6 @@ export const CompareDrawer: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {/* Trust Score */}
-              <tr className="hover:bg-slate-50/50 transition">
-                <td className="py-3 font-semibold text-slate-600">Trust Score</td>
-                {compareList.map((c) => (
-                  <td key={c.id} className="py-3 px-3 text-center">
-                    <TrustScoreBadge score={c.trustScore} size="sm" />
-                  </td>
-                ))}
-              </tr>
 
               {/* Followers */}
               <tr className="hover:bg-slate-50/50 transition">

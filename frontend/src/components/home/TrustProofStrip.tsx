@@ -23,7 +23,7 @@ export const TrustProofStrip: React.FC = () => {
     },
     {
       value: '100% Real',
-      label: 'TrustScore™ Verified',
+      label: 'Audience Verified',
       desc: 'Zero Fake Bots / Pods',
       icon: ShieldCheck,
     },

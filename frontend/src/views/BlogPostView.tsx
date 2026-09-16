@@ -60,13 +60,13 @@ export const BlogPostView: React.FC = () => {
               {post.excerpt}
             </p>
             <p>
-              In modern Indian digital commerce, influencer discovery has shifted dramatically from opaque agency rosters to open technology marketplaces. Brands require authentic local reach, verified Trust Scores, and transparent rate cards to guarantee high return on ad spend.
+              In modern Indian digital commerce, influencer discovery has shifted dramatically from opaque agency rosters to open technology marketplaces. Brands require authentic local reach, verified creator profiles, and transparent rate cards to guarantee high return on ad spend.
             </p>
             <h2 className="text-xl font-bold text-slate-900 pt-4">Key Takeaways for Brands & Creators</h2>
             <ul className="list-disc pl-5 space-y-2">
               <li>Always verify audience geography: Ensure at least 85%+ followers originate from the targeted Indian cities.</li>
               <li>Filter by engagement rates rather than vanity follower counts: Nano and Micro creators often deliver 3x higher engagement than macro celebrities.</li>
-              <li>Audit with the thebrandsstory. Trust Score to eliminate engagement pod manipulation.</li>
+              <li>Audit with verified creator metrics to eliminate engagement pod manipulation.</li>
             </ul>
           </div>
 

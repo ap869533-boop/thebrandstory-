@@ -10,11 +10,11 @@ export const TopCreatorsSection: React.FC = () => {
 
   const cityActive = filters.city && filters.city !== 'all';
 
-  // Top 20 creators ranked by Trust Score and Featured status — filtered by selected city
+  // Top 20 creators ranked by followers and Featured status — filtered by selected city
   const topCreators = creators
     .filter((c) => {
       if (c.status !== 'active') return false;
-      const baseMatch = c.isTop20 || c.trustScore >= 92 || c.isFeatured;
+      const baseMatch = c.isTop20 || c.followers >= 50000 || c.isFeatured;
       if (!baseMatch) return false;
       // Apply city filter from hero dropdown strictly by actual location
       if (cityActive) {
@@ -22,7 +22,7 @@ export const TopCreatorsSection: React.FC = () => {
       }
       return true;
     })
-    .sort((a, b) => b.trustScore - a.trustScore)
+    .sort((a, b) => b.followers - a.followers)
     .slice(0, 10);
 
   const scroll = (direction: 'left' | 'right') => {
@@ -35,7 +35,7 @@ export const TopCreatorsSection: React.FC = () => {
   const handleViewAllTop20 = () => {
     setFilters((prev) => ({
       ...prev,
-      sortBy: 'trust_score',
+      sortBy: 'followers',
       category: 'all',
       city: filters.city || 'all',
     }));
@@ -56,8 +56,8 @@ export const TopCreatorsSection: React.FC = () => {
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 mt-1">
               {cityActive
-                ? `Curated creators from ${filters.city} with highest Trust Scores & verified engagement`
-                : 'Curated leaders with highest thebrandsstory. Trust Scores, verified engagement & proven campaign ROI'}
+                ? `Curated creators from ${filters.city} with verified engagement`
+                : 'Curated leaders with verified engagement & proven campaign ROI'}
             </p>
           </div>
 
