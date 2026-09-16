@@ -46,6 +46,7 @@ export const BrandDashboardView: React.FC = () => {
     submitEnquiry,
     updateApplicantStatus,
     setAuthUser,
+    openAuthModal,
   } = usePlatform();
 
   const [activeTab, setActiveTab] = useState<'briefs' | 'pitches' | 'enquiries' | 'shortlists' | 'profile' | 'settings'>('briefs');
@@ -95,7 +96,7 @@ export const BrandDashboardView: React.FC = () => {
       .then(r => r.json())
       .then(data => {
         if (data.success && data.user) {
-          if (data.user.approvalStatus !== authUser.approvalStatus || data.user.status !== authUser.status) {
+          if (data.user.approvalStatus !== authUser.approvalStatus || data.user.status !== (authUser as any).status) {
             setAuthUser({ ...authUser, ...data.user });
           }
         }
