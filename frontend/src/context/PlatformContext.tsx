@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiUrl } from '../config/api';
 import {
   Creator,
@@ -215,56 +216,38 @@ interface PlatformContextType {
 const PlatformContext = createContext<PlatformContextType | undefined>(undefined);
 
 export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const navigate = useNavigate();
   // Navigation
-  const [currentView, setCurrentView] = useState<string>(() => {
-    const path = window.location.pathname;
-    if (path === '/admin') return 'admin-dashboard';
-    if (path === '/login') return 'login';
-    if (path === '/post-requirement') return 'post-requirement';
-    return 'home';
-  });
-  const [viewParams, setViewParams] = useState<{
-    id?: string;
-    slug?: string;
-    username?: string;
-    citySlug?: string;
-    categorySlug?: string;
-    blogSlug?: string;
-    redirectAfter?: string;
-    role?: UserRole;
-    message?: string;
-    mode?: 'login' | 'signup';
-  }>({});
+  const [currentView, setCurrentView] = useState<string>('home');
+  const [viewParams, setViewParams] = useState<any>({});
 
   const navigateTo = (
     view: string,
-    params: {
-      id?: string;
-      slug?: string;
-      username?: string;
-      citySlug?: string;
-      categorySlug?: string;
-      blogSlug?: string;
-      redirectAfter?: string;
-      role?: UserRole;
-      message?: string;
-      mode?: 'login' | 'signup';
-    } = {}
+    params: any = {}
   ) => {
     setCurrentView(view);
     setViewParams(params);
     window.scrollTo({ top: 0, behavior: 'smooth' });
     
-    // Sync the browser URL to match the view
-    if (view === 'admin-dashboard') {
-      window.history.pushState({}, '', '/admin');
-    } else if (view === 'login') {
-      window.history.pushState({}, '', '/login');
-    } else if (view === 'post-requirement') {
-      window.history.pushState({}, '', '/post-requirement');
-    } else if (view === 'home') {
-      window.history.pushState({}, '', '/');
-    }
+    let path = '/';
+    if (view === 'home') path = '/';
+    else if (view === 'login') path = '/login';
+    else if (view === 'explore') path = '/explore';
+    else if (view === 'creator-detail' && params.username) path = `/creator/${params.username}`;
+    else if (view === 'creator-detail' && params.id) path = `/creator/${params.id}`; // fallback
+    else if (view === 'city-page' && params.citySlug) path = `/city/${params.citySlug}`;
+    else if (view === 'category-page' && params.categorySlug) path = `/category/${params.categorySlug}`;
+    else if (view === 'post-requirement') path = '/post-requirement';
+    else if (view === 'opportunities') path = '/opportunities';
+    else if (view === 'creator-dashboard') path = '/dashboard/creator';
+    else if (view === 'brand-dashboard') path = '/dashboard/brand';
+    else if (view === 'admin-dashboard') path = '/admin';
+    else if (view === 'blog') path = '/blog';
+    else if (view === 'blog-post' && params.blogSlug) path = `/blog/${params.blogSlug}`;
+    else path = `/${view}`;
+    
+    // Sync the browser URL using React Router
+    navigate(path, { state: params, replace: params.redirectAfter ? true : false });
   };
 
   // Auth State

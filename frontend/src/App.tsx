@@ -24,42 +24,10 @@ import { BlogView } from './views/BlogView';
 import { BlogPostView } from './views/BlogPostView';
 import { LoginView } from './views/LoginView';
 
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
+
 const MainAppContent: React.FC = () => {
-  const { currentView } = usePlatform();
-
-  const renderView = () => {
-    switch (currentView) {
-      case 'home':
-        return <HomeView />;
-      case 'login':
-        return <LoginView />;
-      case 'explore':
-        return <ExploreView />;
-      case 'creator-detail':
-        return <CreatorDetailView />;
-      case 'city-page':
-        return <CityPageView />;
-      case 'category-page':
-        return <CategoryPageView />;
-      case 'post-requirement':
-        return <PostRequirementView />;
-      case 'opportunities':
-        return <OpportunitiesView />;
-      case 'creator-dashboard':
-        return <CreatorDashboardView />;
-      case 'brand-dashboard':
-        return <BrandDashboardView />;
-      case 'admin-dashboard':
-        return <AdminDashboardView />;
-      case 'blog':
-        return <BlogView />;
-      case 'blog-post':
-        return <BlogPostView />;
-      default:
-        return <HomeView />;
-    }
-  };
-
   return (
     <div className="min-h-screen flex flex-col bg-white text-slate-900 font-sans antialiased selection:bg-blue-100 selection:text-blue-900 w-full max-w-full overflow-x-hidden">
       {/* Sticky Header Navigation */}
@@ -67,7 +35,23 @@ const MainAppContent: React.FC = () => {
 
       {/* Main Dynamic View */}
       <main className="flex-1 w-full max-w-full overflow-x-hidden">
-        {renderView()}
+        <Routes>
+          <Route path="/" element={<HomeView />} />
+          <Route path="/login" element={<LoginView />} />
+          <Route path="/explore" element={<ExploreView />} />
+          <Route path="/creator/:username" element={<CreatorDetailView />} />
+          <Route path="/city/:citySlug" element={<CityPageView />} />
+          <Route path="/category/:categorySlug" element={<CategoryPageView />} />
+          <Route path="/post-requirement" element={<PostRequirementView />} />
+          <Route path="/opportunities" element={<OpportunitiesView />} />
+          <Route path="/dashboard/creator" element={<CreatorDashboardView />} />
+          <Route path="/dashboard/brand" element={<BrandDashboardView />} />
+          <Route path="/admin" element={<AdminDashboardView />} />
+          <Route path="/blog" element={<BlogView />} />
+          <Route path="/blog/:blogSlug" element={<BlogPostView />} />
+          {/* Catch all route - redirect to home */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </main>
 
       {/* SEO & Directory Footer */}
@@ -86,8 +70,12 @@ const MainAppContent: React.FC = () => {
 
 export default function App() {
   return (
-    <PlatformProvider>
-      <MainAppContent />
-    </PlatformProvider>
+    <HelmetProvider>
+      <BrowserRouter>
+        <PlatformProvider>
+          <MainAppContent />
+        </PlatformProvider>
+      </BrowserRouter>
+    </HelmetProvider>
   );
 }
