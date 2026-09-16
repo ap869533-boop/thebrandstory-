@@ -938,7 +938,12 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     fetch(apiUrl(`/api/campaigns/${campaignId}/apply`), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ creatorId: creator.id, pitch }),
+      body: JSON.stringify({ 
+        creatorId: creator.id, 
+        creatorName: creator.name, 
+        creatorAvatar: creator.avatar, 
+        pitch 
+      }),
     }).catch(err => console.warn('Backend pitch sync notice:', err));
 
     addNotification({

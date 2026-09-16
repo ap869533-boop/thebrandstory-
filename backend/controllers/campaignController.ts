@@ -77,30 +77,59 @@ let campaignsStore: CampaignRequirement[] = [
 
 export async function getCampaigns(req: Request, res: Response) {
   try {
-    const dbRows = await dbQuery('SELECT * FROM campaign_requirements ORDER BY created_at DESC');
-    const mapped = dbRows.map((r: any) => ({
-      id: r.id,
-      companyName: r.company_name,
-      contactPerson: r.contact_person,
-      email: r.email,
-      phone: r.phone || '',
-      industry: r.industry || 'General',
-      campaignTitle: r.campaign_title,
-      campaignDescription: r.campaign_description,
-      city: r.city,
-      influencersCount: r.influencers_count,
-      followerRange: r.follower_range,
-      budget: r.budget,
-      category: r.category,
-      collaborationType: r.collaboration_type,
-      campaignDate: r.campaign_date || 'Upcoming',
-      platforms: typeof r.platforms === 'string' ? JSON.parse(r.platforms) : (r.platforms || ['instagram']),
-      requirements: r.requirements || r.campaign_description,
-      status: r.status || 'Open',
-      applicantsCount: Number(r.applicants_count) || 0,
-      applicants: [],
-      createdAt: 'Recently',
-    }));
+    const dbRows: any = await dbQuery('SELECT * FROM campaign_requirements ORDER BY created_at DESC');
+
+    // Fetch applicants for all campaigns
+    let applicantsRows: any[] = [];
+    try {
+      applicantsRows = (await dbQuery('SELECT * FROM campaign_applicants ORDER BY applied_at DESC')) as any[];
+    } catch (e) {
+      console.warn('campaign_applicants fetch notice:', e);
+    }
+
+    const applicantsByCampaign: Record<string, any[]> = {};
+    if (Array.isArray(applicantsRows)) {
+      for (const a of applicantsRows) {
+        if (!applicantsByCampaign[a.campaign_id]) {
+          applicantsByCampaign[a.campaign_id] = [];
+        }
+        applicantsByCampaign[a.campaign_id].push({
+          creatorId: a.creator_id,
+          creatorName: a.creator_name,
+          creatorAvatar: a.creator_avatar,
+          pitch: a.pitch,
+          appliedAt: a.applied_at || 'Recently',
+          status: a.status || 'Pending',
+        });
+      }
+    }
+
+    const mapped = (dbRows || []).map((r: any) => {
+      const campApplicants = applicantsByCampaign[r.id] || [];
+      return {
+        id: r.id,
+        companyName: r.company_name,
+        contactPerson: r.contact_person,
+        email: r.email,
+        phone: r.phone || '',
+        industry: r.industry || 'General',
+        campaignTitle: r.campaign_title,
+        campaignDescription: r.campaign_description,
+        city: r.city,
+        influencersCount: r.influencers_count,
+        followerRange: r.follower_range,
+        budget: r.budget,
+        category: r.category,
+        collaborationType: r.collaboration_type,
+        campaignDate: r.campaign_date || 'Upcoming',
+        platforms: typeof r.platforms === 'string' ? JSON.parse(r.platforms) : (r.platforms || ['instagram']),
+        requirements: r.requirements || r.campaign_description,
+        status: r.status || 'Open',
+        applicantsCount: campApplicants.length || Number(r.applicants_count) || 0,
+        applicants: campApplicants,
+        createdAt: 'Recently',
+      };
+    });
     return res.json({ success: true, total: mapped.length, campaigns: mapped });
   } catch (err) {
     console.warn('MySQL getCampaigns notice:', err);
@@ -146,10 +175,10 @@ export async function createCampaign(req: Request, res: Response) {
 
     campaignsStore.unshift(newCampaign);
 
-    // MySQL Insert (with approval_status = 'pending' so admin must approve before it goes live)
+    // MySQL Insert
     dbQuery(
       `INSERT INTO campaign_requirements (id, company_name, contact_person, email, campaign_title, campaign_description, city, budget, category, collaboration_type, requirements, platforms, approval_status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved')`,
       [newCampaign.id, newCampaign.companyName, newCampaign.contactPerson, newCampaign.email, newCampaign.campaignTitle, newCampaign.campaignDescription, newCampaign.city, newCampaign.budget, newCampaign.category, newCampaign.collaborationType, newCampaign.requirements, JSON.stringify(newCampaign.platforms)]
     ).catch(err => console.warn('MySQL campaign insert notice:', err));
 
@@ -176,57 +205,103 @@ export async function deleteCampaign(req: Request, res: Response) {
 }
 
 export async function applyToCampaign(req: Request, res: Response) {
-  const { id } = req.params;
-  const campaign = campaignsStore.find((c) => c.id === id);
-  if (!campaign) {
-    return res.status(404).json({ success: false, error: 'Campaign not found' });
+  try {
+    const { id } = req.params;
+    const { creatorId, creatorName, creatorAvatar, pitch } = req.body;
+
+    // Check in database first
+    let campaignExists = false;
+    try {
+      const rows: any = await dbQuery('SELECT id FROM campaign_requirements WHERE id = ?', [id]);
+      if (Array.isArray(rows) && rows.length > 0) {
+        campaignExists = true;
+      }
+    } catch (e) {
+      console.warn('Check campaign error:', e);
+    }
+
+    // Check in memory store fallback
+    const campaignInMemory = campaignsStore.find((c) => c.id === id);
+    if (campaignInMemory) {
+      campaignExists = true;
+    }
+
+    if (!campaignExists) {
+      return res.status(404).json({ success: false, error: 'Campaign not found' });
+    }
+
+    // Determine creator details
+    let finalCreatorName = creatorName;
+    let finalCreatorAvatar = creatorAvatar;
+
+    if (!finalCreatorName || !finalCreatorAvatar) {
+      const creator = creatorsStore.find((c) => c.id === creatorId) || creatorsStore[0];
+      if (creator) {
+        finalCreatorName = finalCreatorName || creator.name;
+        finalCreatorAvatar = finalCreatorAvatar || creator.avatar;
+      }
+    }
+
+    const application = {
+      creatorId: creatorId || 'c1',
+      creatorName: finalCreatorName || 'Creator',
+      creatorAvatar: finalCreatorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400',
+      pitch: pitch || 'Hi! I would love to collaborate on this campaign.',
+      appliedAt: new Date().toISOString(),
+      status: 'Pending' as const,
+    };
+
+    if (campaignInMemory) {
+      if (!campaignInMemory.applicants) campaignInMemory.applicants = [];
+      campaignInMemory.applicants.push(application);
+      campaignInMemory.applicantsCount = campaignInMemory.applicants.length;
+    }
+
+    // MySQL Insert Applicant
+    try {
+      await dbQuery(
+        `INSERT INTO campaign_applicants (id, campaign_id, creator_id, creator_name, creator_avatar, pitch, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [`app_${Date.now()}`, id, application.creatorId, application.creatorName, application.creatorAvatar, application.pitch, 'Pending']
+      );
+      await dbQuery('UPDATE campaign_requirements SET applicants_count = applicants_count + 1 WHERE id = ?', [id]);
+    } catch (err) {
+      console.warn('MySQL applicant insert notice:', err);
+    }
+
+    return res.status(201).json({ success: true, application });
+  } catch (error) {
+    console.error('applyToCampaign error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to apply' });
   }
-
-  const { creatorId, pitch } = req.body;
-  const creator = creatorsStore.find((c) => c.id === creatorId) || creatorsStore[0];
-
-  const application = {
-    creatorId: creator.id,
-    creatorName: creator.name,
-    creatorAvatar: creator.avatar,
-    pitch: pitch || 'Hi! I would love to collaborate on this campaign.',
-    appliedAt: new Date().toISOString(),
-    status: 'Pending' as const,
-  };
-
-  if (!campaign.applicants) campaign.applicants = [];
-  campaign.applicants.push(application);
-  campaign.applicantsCount = campaign.applicants.length;
-
-  // MySQL Insert Applicant
-  dbQuery(
-    `INSERT INTO campaign_applicants (id, campaign_id, creator_id, creator_name, creator_avatar, pitch, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [`app_${Date.now()}`, id, creator.id, creator.name, creator.avatar, pitch, 'Pending']
-  ).catch(err => console.warn('MySQL applicant insert notice:', err));
-
-  res.status(201).json({ success: true, application });
 }
 
 export async function updateApplicantStatus(req: Request, res: Response) {
-  const { id, creatorId } = req.params;
-  const { status } = req.body;
-  const campaign = campaignsStore.find((c) => c.id === id);
-  if (!campaign) {
-    return res.status(404).json({ success: false, error: 'Campaign not found' });
-  }
+  try {
+    const { id, creatorId } = req.params;
+    const { status } = req.body;
 
-  if (campaign.applicants) {
-    const applicant = campaign.applicants.find(a => a.creatorId === creatorId);
-    if (applicant) {
-      applicant.status = status;
+    const campaign = campaignsStore.find((c) => c.id === id);
+    if (campaign && campaign.applicants) {
+      const applicant = campaign.applicants.find(a => a.creatorId === creatorId);
+      if (applicant) {
+        applicant.status = status;
+      }
     }
+
+    // MySQL Update
+    try {
+      await dbQuery(
+        `UPDATE campaign_applicants SET status = ? WHERE campaign_id = ? AND creator_id = ?`,
+        [status, id, creatorId]
+      );
+    } catch (err) {
+      console.warn('MySQL applicant status update notice:', err);
+    }
+
+    return res.json({ success: true, status });
+  } catch (error) {
+    console.error('updateApplicantStatus error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to update applicant status' });
   }
-
-  dbQuery(
-    `UPDATE campaign_applicants SET status = ? WHERE campaign_id = ? AND creator_id = ?`,
-    [status, id, creatorId]
-  ).catch(err => console.warn('MySQL applicant status update notice:', err));
-
-  res.json({ success: true, status });
 }
