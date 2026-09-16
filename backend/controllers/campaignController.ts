@@ -285,6 +285,23 @@ export async function applyToCampaign(req: Request, res: Response) {
     const finalCreatorName = creatorRecord?.name || 'Creator';
     const finalCreatorAvatar = creatorRecord?.avatar || '';
 
+    // Check if creator has already pitched for this campaign
+    try {
+      const existingApp: any = await dbQuery(
+        'SELECT id FROM campaign_applicants WHERE campaign_id = ? AND creator_id = ? LIMIT 1',
+        [id, finalCreatorId]
+      );
+      if (Array.isArray(existingApp) && existingApp.length > 0) {
+        return res.status(400).json({ success: false, error: 'Already pitched for this campaign brief' });
+      }
+    } catch (e) {
+      console.warn('Check duplicate applicant error:', e);
+    }
+
+    if (campaignInMemory && campaignInMemory.applicants?.some(a => a.creatorId === finalCreatorId)) {
+      return res.status(400).json({ success: false, error: 'Already pitched for this campaign brief' });
+    }
+
     const application = {
       creatorId: finalCreatorId,
       creatorName: finalCreatorName,

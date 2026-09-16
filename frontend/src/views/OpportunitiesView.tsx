@@ -5,10 +5,20 @@ import { CampaignRequirement } from '../types';
 import { CATEGORIES_LIST, CITIES_LIST } from '../data/initialData';
 
 export const OpportunitiesView: React.FC = () => {
-  const { campaigns, applyToCampaign, activeCreatorId, navigateTo, categories, cities, requireRole } = usePlatform();
+  const { campaigns, applyToCampaign, activeCreatorId, authUser, navigateTo, categories, cities, requireRole } = usePlatform();
   const [selectedCampaign, setSelectedCampaign] = useState<CampaignRequirement | null>(null);
   const [pitchText, setPitchText] = useState('');
   const [hasApplied, setHasApplied] = useState<string | null>(null);
+
+  const isAlreadyPitched = (camp: CampaignRequirement) => {
+    if (!camp || !Array.isArray(camp.applicants)) return false;
+    const currentCreatorId = activeCreatorId || authUser?.creatorProfile?.id;
+    const currentEmail = authUser?.email;
+    return camp.applicants.some((a: any) =>
+      (currentCreatorId && (a.creatorId === currentCreatorId || a.id === currentCreatorId)) ||
+      (currentEmail && (a.email === currentEmail || a.creatorEmail === currentEmail))
+    );
+  };
 
   // Local filters
   const [searchFilter, setSearchFilter] = useState('');
@@ -168,13 +178,23 @@ export const OpportunitiesView: React.FC = () => {
                     </span>
                   </div>
 
-                  <button
-                    onClick={() => handleApply(camp)}
-                    className="w-full py-2.5 bg-black hover:bg-zinc-900 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    Pitch My Profile
-                  </button>
+                  {isAlreadyPitched(camp) ? (
+                    <button
+                      disabled
+                      className="w-full py-2.5 bg-emerald-50 text-emerald-700 font-bold text-xs rounded-xl border border-emerald-200 flex items-center justify-center gap-1.5 cursor-not-allowed opacity-90"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Already Pitched</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleApply(camp)}
+                      className="w-full py-2.5 bg-black hover:bg-zinc-900 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Pitch My Profile</span>
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

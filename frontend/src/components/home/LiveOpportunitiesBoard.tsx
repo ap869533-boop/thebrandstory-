@@ -14,10 +14,20 @@ import { usePlatform } from '../../context/PlatformContext';
 import type { CampaignRequirement } from '../../types';
 
 export const LiveOpportunitiesBoard: React.FC = () => {
-  const { campaigns, applyToCampaign, activeCreatorId, navigateTo, requireRole } = usePlatform();
+  const { campaigns, applyToCampaign, activeCreatorId, authUser, navigateTo, requireRole } = usePlatform();
   const [selectedCampaign, setSelectedCampaign] = useState<CampaignRequirement | null>(null);
   const [pitchText, setPitchText] = useState('');
   const [hasApplied, setHasApplied] = useState<string | null>(null);
+
+  const isAlreadyPitched = (camp: CampaignRequirement) => {
+    if (!camp || !Array.isArray(camp.applicants)) return false;
+    const currentCreatorId = activeCreatorId || authUser?.creatorProfile?.id;
+    const currentEmail = authUser?.email;
+    return camp.applicants.some((a: any) =>
+      (currentCreatorId && (a.creatorId === currentCreatorId || a.id === currentCreatorId)) ||
+      (currentEmail && (a.email === currentEmail || a.creatorEmail === currentEmail))
+    );
+  };
 
   const handleApply = (campaign: CampaignRequirement) => {
     if (!requireRole('CREATOR', 'pitch for a brand campaign', 'home')) return;
@@ -168,15 +178,26 @@ export const LiveOpportunitiesBoard: React.FC = () => {
                     applied
                   </span>
 
-                  <button
-                    type="button"
-                    onClick={() => handleApply(camp)}
-                    className="px-4 py-2 bg-black hover:bg-[#D4A338] hover:text-black text-white font-bold text-xs rounded-xl shadow-xs transition-all duration-200 flex items-center gap-1.5 cursor-pointer group/btn"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-amber-400 group-hover/btn:text-black transition-colors" />
-                    <span>Pitch Now</span>
-                    <ArrowRight className="w-3 h-3 opacity-70 group-hover/btn:opacity-100 group-hover/btn:translate-x-0.5 transition-all" />
-                  </button>
+                  {isAlreadyPitched(camp) ? (
+                    <button
+                      type="button"
+                      disabled
+                      className="px-4 py-2 bg-emerald-50 text-emerald-700 font-bold text-xs rounded-xl border border-emerald-200 flex items-center gap-1.5 cursor-not-allowed opacity-90"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Already Pitched</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleApply(camp)}
+                      className="px-4 py-2 bg-black hover:bg-[#D4A338] hover:text-black text-white font-bold text-xs rounded-xl shadow-xs transition-all duration-200 flex items-center gap-1.5 cursor-pointer group/btn"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400 group-hover/btn:text-black transition-colors" />
+                      <span>Pitch Now</span>
+                      <ArrowRight className="w-3 h-3 opacity-70 group-hover/btn:opacity-100 group-hover/btn:translate-x-0.5 transition-all" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

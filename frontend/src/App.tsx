@@ -21,6 +21,7 @@ import { BrandDashboardView } from './views/BrandDashboardView';
 import { AdminDashboardView } from './views/AdminDashboardView';
 import { BlogView } from './views/BlogView';
 import { BlogPostView } from './views/BlogPostView';
+import { BrandDetailView } from './views/BrandDetailView';
 import { LoginView } from './views/LoginView';
 
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
@@ -39,6 +40,7 @@ const MainAppContent: React.FC = () => {
           <Route path="/login" element={<LoginView />} />
           <Route path="/explore" element={<ExploreView />} />
           <Route path="/creator/:username" element={<CreatorDetailView />} />
+          <Route path="/brand/:brandId" element={<BrandDetailView />} />
           <Route path="/city/:citySlug" element={<CityPageView />} />
           <Route path="/category/:categorySlug" element={<CategoryPageView />} />
           <Route path="/post-requirement" element={<PostRequirementView />} />

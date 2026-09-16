@@ -146,16 +146,20 @@ export const FeaturedBrandsSection: React.FC = () => {
               {/* 4. Soft Blue Pill Action Button (Design matched to reference image) */}
               <button
                 onClick={() => {
-                  if (brand.website) {
-                    const url = brand.website.startsWith('http') ? brand.website : `https://${brand.website}`;
-                    window.open(url, '_blank');
-                  } else {
-                    navigateTo('opportunities');
-                  }
+                  navigateTo('brand-detail', {
+                    id: brand.id,
+                    brandName: brand.brandName,
+                    companyName: brand.brandName,
+                    logoUrl: brand.logoUrl,
+                    description: brand.description,
+                    industry: brand.industry,
+                    city: brand.city,
+                    website: brand.website
+                  });
                 }}
                 className="w-full py-3 rounded-full bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 font-bold text-xs sm:text-sm transition-all duration-200 cursor-pointer shadow-2xs flex items-center justify-center gap-1.5 group-hover:shadow-md"
               >
-                <span>View Campaigns</span>
+                <span>View Profile</span>
               </button>
             </div>
           ))}
