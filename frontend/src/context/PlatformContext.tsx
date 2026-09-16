@@ -934,14 +934,12 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return camp;
     }));
 
-    // Background sync with Backend REST API
+    // Background sync with Backend REST API (relational via creatorId)
     fetch(apiUrl(`/api/campaigns/${campaignId}/apply`), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         creatorId: creator.id, 
-        creatorName: creator.name, 
-        creatorAvatar: creator.avatar, 
         pitch 
       }),
     }).catch(err => console.warn('Backend pitch sync notice:', err));

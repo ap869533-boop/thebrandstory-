@@ -33,7 +33,9 @@ export async function runAutoMigrations() {
       `ALTER TABLE users ADD COLUMN approval_status VARCHAR(20) DEFAULT 'pending'`,
       `ALTER TABLE campaign_requirements ADD COLUMN approval_status VARCHAR(20) DEFAULT 'pending'`,
       `ALTER TABLE creator_profiles DROP COLUMN trust_score`,
-      `ALTER TABLE creator_profiles DROP COLUMN trust_signals`
+      `ALTER TABLE creator_profiles DROP COLUMN trust_signals`,
+      `ALTER TABLE campaign_applicants MODIFY COLUMN creator_name VARCHAR(120) DEFAULT NULL`,
+      `ALTER TABLE campaign_applicants MODIFY COLUMN creator_avatar VARCHAR(500) DEFAULT NULL`
     ];
 
     for (const query of alterQueries) {

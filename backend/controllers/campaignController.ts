@@ -79,10 +79,29 @@ export async function getCampaigns(req: Request, res: Response) {
   try {
     const dbRows: any = await dbQuery('SELECT * FROM campaign_requirements ORDER BY created_at DESC');
 
-    // Fetch applicants for all campaigns
+    // Relational Fetch: Join campaign_applicants with creators and users
     let applicantsRows: any[] = [];
     try {
-      applicantsRows = (await dbQuery('SELECT * FROM campaign_applicants ORDER BY applied_at DESC')) as any[];
+      applicantsRows = (await dbQuery(`
+        SELECT 
+          ca.id,
+          ca.campaign_id,
+          ca.creator_id,
+          ca.pitch,
+          ca.status,
+          ca.applied_at,
+          COALESCE(c.name, ca.creator_name, u.name, 'Creator') as creator_name,
+          COALESCE(c.username, '') as creator_username,
+          COALESCE(c.avatar, ca.creator_avatar, u.avatar, '') as creator_avatar,
+          COALESCE(c.primary_category, 'Influencer') as creator_category,
+          COALESCE(c.current_city, 'India') as creator_city,
+          COALESCE(c.followers, 0) as creator_followers,
+          COALESCE(c.avg_views, 0) as creator_avg_views
+        FROM campaign_applicants ca
+        LEFT JOIN creators c ON (c.id = ca.creator_id OR c.user_id = ca.creator_id)
+        LEFT JOIN users u ON u.id = ca.creator_id
+        ORDER BY ca.applied_at DESC
+      `)) as any[];
     } catch (e) {
       console.warn('campaign_applicants fetch notice:', e);
     }
@@ -96,9 +115,14 @@ export async function getCampaigns(req: Request, res: Response) {
         applicantsByCampaign[a.campaign_id].push({
           creatorId: a.creator_id,
           creatorName: a.creator_name,
+          creatorUsername: a.creator_username,
           creatorAvatar: a.creator_avatar,
+          creatorCategory: a.creator_category,
+          creatorCity: a.creator_city,
+          creatorFollowers: Number(a.creator_followers) || 0,
+          creatorAvgViews: Number(a.creator_avg_views) || 0,
           pitch: a.pitch,
-          appliedAt: a.applied_at || 'Recently',
+          appliedAt: a.applied_at ? new Date(a.applied_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Recently',
           status: a.status || 'Pending',
         });
       }
@@ -207,7 +231,11 @@ export async function deleteCampaign(req: Request, res: Response) {
 export async function applyToCampaign(req: Request, res: Response) {
   try {
     const { id } = req.params;
-    const { creatorId, creatorName, creatorAvatar, pitch } = req.body;
+    const { creatorId, pitch } = req.body;
+
+    if (!creatorId) {
+      return res.status(400).json({ success: false, error: 'creatorId is required' });
+    }
 
     // Check in database first
     let campaignExists = false;
@@ -230,22 +258,42 @@ export async function applyToCampaign(req: Request, res: Response) {
       return res.status(404).json({ success: false, error: 'Campaign not found' });
     }
 
-    // Determine creator details
-    let finalCreatorName = creatorName;
-    let finalCreatorAvatar = creatorAvatar;
-
-    if (!finalCreatorName || !finalCreatorAvatar) {
-      const creator = creatorsStore.find((c) => c.id === creatorId) || creatorsStore[0];
-      if (creator) {
-        finalCreatorName = finalCreatorName || creator.name;
-        finalCreatorAvatar = finalCreatorAvatar || creator.avatar;
+    // Relational Lookup: query creators/users table using creatorId
+    let creatorRecord: any = null;
+    try {
+      const cRows: any = await dbQuery(
+        'SELECT id, name, username, avatar, primary_category, current_city, followers, avg_views FROM creators WHERE id = ? OR user_id = ? LIMIT 1',
+        [creatorId, creatorId]
+      );
+      if (Array.isArray(cRows) && cRows.length > 0) {
+        creatorRecord = cRows[0];
+      } else {
+        const uRows: any = await dbQuery('SELECT id, name, avatar FROM users WHERE id = ? LIMIT 1', [creatorId]);
+        if (Array.isArray(uRows) && uRows.length > 0) {
+          creatorRecord = uRows[0];
+        }
       }
+    } catch (e) {
+      console.warn('Creator relational lookup error:', e);
     }
 
+    if (!creatorRecord) {
+      creatorRecord = creatorsStore.find((c) => c.id === creatorId) || creatorsStore[0];
+    }
+
+    const finalCreatorId = creatorRecord?.id || creatorId;
+    const finalCreatorName = creatorRecord?.name || 'Creator';
+    const finalCreatorAvatar = creatorRecord?.avatar || '';
+
     const application = {
-      creatorId: creatorId || 'c1',
-      creatorName: finalCreatorName || 'Creator',
-      creatorAvatar: finalCreatorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400',
+      creatorId: finalCreatorId,
+      creatorName: finalCreatorName,
+      creatorUsername: creatorRecord?.username || '',
+      creatorAvatar: finalCreatorAvatar,
+      creatorCategory: creatorRecord?.primary_category || creatorRecord?.primaryCategory || 'Influencer',
+      creatorCity: creatorRecord?.current_city || creatorRecord?.currentCity || 'Pan India',
+      creatorFollowers: Number(creatorRecord?.followers) || 0,
+      creatorAvgViews: Number(creatorRecord?.avg_views) || 0,
       pitch: pitch || 'Hi! I would love to collaborate on this campaign.',
       appliedAt: new Date().toISOString(),
       status: 'Pending' as const,
@@ -257,12 +305,12 @@ export async function applyToCampaign(req: Request, res: Response) {
       campaignInMemory.applicantsCount = campaignInMemory.applicants.length;
     }
 
-    // MySQL Insert Applicant
+    // MySQL Insert Applicant with creator_id relation
     try {
       await dbQuery(
         `INSERT INTO campaign_applicants (id, campaign_id, creator_id, creator_name, creator_avatar, pitch, status)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [`app_${Date.now()}`, id, application.creatorId, application.creatorName, application.creatorAvatar, application.pitch, 'Pending']
+        [`app_${Date.now()}`, id, finalCreatorId, finalCreatorName, finalCreatorAvatar, application.pitch, 'Pending']
       );
       await dbQuery('UPDATE campaign_requirements SET applicants_count = applicants_count + 1 WHERE id = ?', [id]);
     } catch (err) {

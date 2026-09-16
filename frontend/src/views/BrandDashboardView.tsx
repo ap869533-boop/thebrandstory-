@@ -25,7 +25,8 @@ import {
   AlertCircle,
   CheckCircle,
   XCircle,
-  Save
+  Save,
+  ExternalLink
 } from 'lucide-react';
 import { usePlatform } from '../context/PlatformContext';
 import { CreatorCard } from '../components/common/CreatorCard';
@@ -996,30 +997,56 @@ export const BrandDashboardView: React.FC = () => {
                   </div>
                 ) : (
                   campPitches.map((applicant, idx) => {
-                    const creatorInfo = creators.find(c => c.id === applicant.creatorId);
-                    
+                    const creatorInfo = creators.find(c => c.id === applicant.creatorId || (c as any).userId === applicant.creatorId);
+                    const creatorName = applicant.creatorName || creatorInfo?.name || 'Creator';
+                    const creatorAvatar = applicant.creatorAvatar || creatorInfo?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(creatorName)}&background=e0e7ff&color=4f46e5`;
+                    const city = (applicant as any).creatorCity || creatorInfo?.currentCity || 'Pan India';
+                    const followers = (applicant as any).creatorFollowers || creatorInfo?.followers || 0;
+                    const avgViews = (applicant as any).creatorAvgViews || creatorInfo?.avgViews || 0;
+                    const username = (applicant as any).creatorUsername || creatorInfo?.username;
+
+                    const handleViewProfile = () => {
+                      setActivePitchesCampaignId(null);
+                      navigateTo('creator-detail', { username: username || creatorName, id: applicant.creatorId });
+                    };
+
                     return (
-                      <div key={idx} className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+                      <div key={idx} className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:border-slate-300 transition">
                         <div className="flex flex-col sm:flex-row gap-4">
                           <img
-                            src={applicant.creatorAvatar}
-                            alt={applicant.creatorName}
-                            className="w-16 h-16 rounded-2xl object-cover shrink-0 border border-slate-100"
-                            onError={(e) => { (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(applicant.creatorName)}&background=e0e7ff&color=4f46e5`; }}
+                            src={creatorAvatar}
+                            alt={creatorName}
+                            onClick={handleViewProfile}
+                            className="w-16 h-16 rounded-2xl object-cover shrink-0 border border-slate-100 cursor-pointer hover:opacity-90 transition shadow-sm"
+                            onError={(e) => { (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(creatorName)}&background=e0e7ff&color=4f46e5`; }}
                           />
                           <div className="flex-1 min-w-0">
                             <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
-                              <h4 className="font-bold text-slate-900">{applicant.creatorName}</h4>
+                              <div className="flex items-center gap-2">
+                                <h4 
+                                  onClick={handleViewProfile}
+                                  className="font-bold text-slate-900 hover:text-blue-600 cursor-pointer transition flex items-center gap-1.5"
+                                >
+                                  {creatorName}
+                                </h4>
+                                {username && (
+                                  <span className="text-xs text-slate-400 font-medium">@{username}</span>
+                                )}
+                              </div>
                               <span className="text-[10px] text-slate-400">{applicant.appliedAt}</span>
                             </div>
                             
-                            {creatorInfo && (
-                              <div className="flex flex-wrap gap-3 mb-3 text-[11px] font-medium text-slate-500">
-                                <span>📍 {creatorInfo.currentCity}</span>
-                                <span>👥 {creatorInfo.followers?.toLocaleString('en-IN')} followers</span>
-                                <span>👁️ {(creatorInfo.avgViews || 0).toLocaleString('en-IN')} avg views</span>
-                              </div>
-                            )}
+                            <div className="flex flex-wrap items-center gap-3 mb-3 text-[11px] font-medium text-slate-500">
+                              <span>📍 {city}</span>
+                              {Boolean(followers) && <span>👥 {Number(followers).toLocaleString('en-IN')} followers</span>}
+                              {Boolean(avgViews) && <span>👁️ {Number(avgViews).toLocaleString('en-IN')} avg views</span>}
+                              <button
+                                onClick={handleViewProfile}
+                                className="text-blue-600 hover:text-blue-700 font-bold flex items-center gap-1 ml-auto text-[11px] cursor-pointer"
+                              >
+                                View Profile <ExternalLink className="w-3 h-3" />
+                              </button>
+                            </div>
 
                             <div className="bg-slate-50 rounded-xl p-3 mb-4 text-xs text-slate-700 italic border border-slate-100">
                               "{applicant.pitch}"
