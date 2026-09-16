@@ -1307,7 +1307,13 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // Modals & Popups
   const [enquiryModalCreator, setEnquiryModalCreator] = useState<Creator | null>(null);
-  const openEnquiryModal = (creator?: Creator) => setEnquiryModalCreator(creator || creators[0] || null);
+  const openEnquiryModal = (creator?: Creator) => {
+    if (!authUser) {
+      openAuthModal('login', 'BRAND', 'Please sign in to send a direct booking enquiry or request a quote.');
+      return;
+    }
+    setEnquiryModalCreator(creator || creators[0] || null);
+  };
   const closeEnquiryModal = () => setEnquiryModalCreator(null);
 
   const [creatorDetailModalCreator, setCreatorDetailModalCreator] = useState<Creator | null>(null);

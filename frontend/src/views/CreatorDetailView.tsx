@@ -42,6 +42,7 @@ export const CreatorDetailView: React.FC = () => {
     authUser,
     navigateTo,
     openEnquiryModal,
+    openAuthModal,
     isCreatorSaved,
     toggleSaveCreator,
     addCreatorReview,
@@ -196,7 +197,13 @@ export const CreatorDetailView: React.FC = () => {
             </button>
 
             <button
-              onClick={() => openEnquiryModal(creator)}
+              onClick={() => {
+                if (!authUser) {
+                  openAuthModal('login', 'BRAND', 'Please log in to send a direct booking enquiry.');
+                  return;
+                }
+                openEnquiryModal(creator);
+              }}
               className="px-4 py-1.5 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold shadow-xs transition flex items-center gap-1.5 cursor-pointer"
             >
               <MessageSquare className="w-3.5 h-3.5 text-blue-400" />
@@ -423,7 +430,13 @@ export const CreatorDetailView: React.FC = () => {
             </div>
 
             <button
-              onClick={() => openEnquiryModal(creator)}
+              onClick={() => {
+                if (!authUser) {
+                  openAuthModal('login', 'BRAND', 'Please log in to request a quote or book this creator.');
+                  return;
+                }
+                openEnquiryModal(creator);
+              }}
               className="px-4 py-2 rounded-xl bg-black hover:bg-zinc-900 text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
             >
               <MessageSquare className="w-3.5 h-3.5" />
@@ -867,6 +880,10 @@ export const CreatorDetailView: React.FC = () => {
             <button
               onClick={() => {
                 setSelectedPost(null);
+                if (!authUser) {
+                  openAuthModal('login', 'BRAND', 'Please log in to book this creator for deliverables.');
+                  return;
+                }
                 openEnquiryModal(creator);
               }}
               className="w-full py-2.5 bg-slate-900 hover:bg-black text-white font-bold text-xs rounded-xl shadow-md transition cursor-pointer"

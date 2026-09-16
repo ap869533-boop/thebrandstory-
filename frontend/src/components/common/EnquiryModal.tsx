@@ -5,13 +5,13 @@ import { CITIES_LIST, CAMPAIGN_TYPES } from '../../data/initialData';
 import confetti from 'canvas-confetti';
 
 export const EnquiryModal: React.FC = () => {
-  const { enquiryModalCreator, closeEnquiryModal, submitEnquiry, activeBrandName, cities } = usePlatform();
+  const { enquiryModalCreator, closeEnquiryModal, submitEnquiry, activeBrandName, cities, authUser, openAuthModal } = usePlatform();
 
   const [formData, setFormData] = useState({
-    brandName: activeBrandName || '',
-    contactPerson: '',
-    email: '',
-    phone: '',
+    brandName: authUser?.company_name || activeBrandName || '',
+    contactPerson: authUser?.name || '',
+    email: authUser?.email || '',
+    phone: authUser?.phone || '',
     campaignType: 'Sponsored Instagram Reel',
     campaignDescription: '',
     city: enquiryModalCreator?.currentCity || 'Delhi NCR',
@@ -26,8 +26,19 @@ export const EnquiryModal: React.FC = () => {
 
   if (!enquiryModalCreator) return null;
 
+  if (!authUser) {
+    closeEnquiryModal();
+    openAuthModal('login', 'BRAND', 'Please sign in to send a direct booking enquiry or request a quote.');
+    return null;
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!authUser) {
+      closeEnquiryModal();
+      openAuthModal('login', 'BRAND', 'Please sign in to send a direct booking enquiry or request a quote.');
+      return;
+    }
     if (!formData.brandName || !formData.email || !formData.phone) {
       alert('Please fill out brand name, email, and phone number');
       return;
