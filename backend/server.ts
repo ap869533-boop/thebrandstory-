@@ -11,6 +11,7 @@ if (!process.env.DB_NAME) {
 }
 
 import { getDbPool } from './config/db';
+import { runAutoMigrations } from './utils/autoMigrate';
 
 // Modular Route Handlers
 import authRoutes from './routes/authRoutes';
@@ -88,6 +89,7 @@ async function startServer() {
   try {
     await getDbPool();
     console.log('✅ MySQL Database pool ready');
+    await runAutoMigrations();
   } catch (err: any) {
     console.warn('⚠️ MySQL connection notice:', err.message);
   }

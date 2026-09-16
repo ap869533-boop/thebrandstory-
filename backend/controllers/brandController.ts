@@ -200,24 +200,43 @@ export async function adminListBrands(req: AuthenticatedRequest, res: Response) 
 
     const statusFilter = (req.query.status as string) || 'all';
     let sql = `
-      SELECT bp.*, u.name as user_name, u.email as user_email, u.phone as user_phone, u.company_name
-      FROM brand_profiles bp
-      JOIN users u ON u.id = bp.user_id
+      SELECT 
+        u.id as user_id, u.name as user_name, u.email as user_email, u.phone as user_phone, u.company_name, u.approval_status as user_approval_status,
+        bp.id as bp_id, bp.brand_name, bp.gst_number, bp.logo_url, bp.cover_url, bp.description, bp.website, bp.industry, bp.city, bp.contact_person, bp.approval_status as bp_approval_status, bp.rejection_reason, bp.is_featured, bp.created_at
+      FROM users u
+      LEFT JOIN brand_profiles bp ON u.id = bp.user_id
+      WHERE u.role = 'BRAND'
     `;
     const params: any[] = [];
 
     if (statusFilter !== 'all') {
-      sql += ' WHERE bp.approval_status = ?';
-      params.push(statusFilter);
+      sql += ' AND (bp.approval_status = ? OR (bp.approval_status IS NULL AND u.approval_status = ?))';
+      params.push(statusFilter, statusFilter);
     }
 
-    sql += ' ORDER BY bp.created_at DESC';
+    sql += ' ORDER BY u.created_at DESC';
 
     const rows = await dbQuery(sql, params);
 
     if (rows) {
       const profiles = rows.map((r: any) => ({
-        ...mapDbRowToBrandProfile(r),
+        id: r.bp_id || `temp_${r.user_id}`,
+        userId: r.user_id,
+        brandName: r.brand_name || r.company_name || r.user_name,
+        gstNumber: r.gst_number || '',
+        logoUrl: r.logo_url || '',
+        coverUrl: r.cover_url || '',
+        description: r.description || '',
+        website: r.website || '',
+        industry: r.industry || '',
+        city: r.city || '',
+        contactPerson: r.contact_person || r.user_name,
+        phone: r.user_phone || '',
+        email: r.user_email || '',
+        approvalStatus: r.bp_approval_status || r.user_approval_status || 'pending',
+        rejectionReason: r.rejection_reason || '',
+        isFeatured: Boolean(r.is_featured),
+        createdAt: r.created_at || new Date().toISOString(),
         userName: r.user_name,
         userEmail: r.user_email,
         userPhone: r.user_phone,
@@ -271,6 +290,43 @@ export async function adminApproveBrand(req: AuthenticatedRequest, res: Response
   } catch (error) {
     console.error('adminApproveBrand error:', error);
     res.status(500).json({ success: false, error: 'Failed to update brand approval status' });
+  }
+}
+
+// =============================================
+// DELETE /api/admin/brands/:id  (admin delete brand user)
+// =============================================
+export async function adminDeleteBrand(req: AuthenticatedRequest, res: Response) {
+  try {
+    if (!req.user || (req.user.role !== 'ADMIN' && req.user.role !== 'SALES')) {
+      return res.status(403).json({ success: false, error: 'Admin access required' });
+    }
+
+    const { id } = req.params; // this could be brand profile id or user id if temp_
+    
+    // Determine user_id to delete
+    let userIdToDelete = id.startsWith('temp_') ? id.replace('temp_', '') : null;
+    
+    if (!userIdToDelete) {
+      const bp = await dbQuery('SELECT user_id FROM brand_profiles WHERE id = ?', [id]);
+      if (bp && bp.length > 0) userIdToDelete = bp[0].user_id;
+    }
+
+    if (userIdToDelete) {
+      // Deleting the user will cascade delete brand_profiles
+      await dbQuery('DELETE FROM users WHERE id = ?', [userIdToDelete]);
+      
+      // Also remove from memory
+      const memIdx = brandProfilesStore.findIndex(p => p.userId === userIdToDelete);
+      if (memIdx >= 0) brandProfilesStore.splice(memIdx, 1);
+      
+      return res.json({ success: true, message: 'Brand deleted successfully' });
+    }
+    
+    res.status(404).json({ success: false, error: 'Brand not found' });
+  } catch (error) {
+    console.error('adminDeleteBrand error:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete brand' });
   }
 }
 

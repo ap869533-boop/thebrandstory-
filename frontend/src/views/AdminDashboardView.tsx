@@ -97,6 +97,29 @@ export const AdminDashboardView: React.FC = () => {
     }
   };
 
+  const handleDeleteBrand = async (id: string, brandName: string) => {
+    if (!window.confirm(`Are you sure you want to permanently delete the brand "${brandName}" and their user account?`)) return;
+
+    const token = localStorage.getItem('sc_auth_token');
+    try {
+      const res = await fetch(apiUrl(`/api/brands/admin/${id}`), {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAdminBrands(prev => prev.filter(b => b.id !== id));
+      } else {
+        alert('Failed to delete brand: ' + data.error);
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error deleting brand');
+    }
+  };
+
   const handleCampaignApproval = async (id: string, action: 'approve' | 'reject') => {
     const token = localStorage.getItem('sc_auth_token');
     try {
@@ -850,24 +873,33 @@ export const AdminDashboardView: React.FC = () => {
                             </span>
                           </td>
                           <td className="px-4 py-3">
-                            {brand.approvalStatus === 'pending' && (
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => handleBrandApproval(brand.id, 'approve')}
-                                  className="p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-lg transition"
-                                  title="Approve Brand"
-                                >
-                                  <Check className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleBrandApproval(brand.id, 'reject')}
-                                  className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition"
-                                  title="Reject Brand"
-                                >
-                                  <X className="w-4 h-4" />
-                                </button>
-                              </div>
-                            )}
+                            <div className="flex gap-2 items-center">
+                              {brand.approvalStatus === 'pending' && (
+                                <>
+                                  <button
+                                    onClick={() => handleBrandApproval(brand.id, 'approve')}
+                                    className="p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-lg transition"
+                                    title="Approve Brand"
+                                  >
+                                    <Check className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleBrandApproval(brand.id, 'reject')}
+                                    className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition"
+                                    title="Reject Brand"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </>
+                              )}
+                              <button
+                                onClick={() => handleDeleteBrand(brand.id, brand.brandName || brand.companyName)}
+                                className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition"
+                                title="Delete Brand Permanently"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}

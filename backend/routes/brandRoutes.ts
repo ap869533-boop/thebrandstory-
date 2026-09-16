@@ -6,6 +6,7 @@ import {
   updateBrandProfile,
   adminListBrands,
   adminApproveBrand,
+  adminDeleteBrand,
   getFeaturedBrands,
   adminGetPendingCampaigns,
   adminApproveCampaign,
@@ -24,6 +25,7 @@ router.put('/profile', authMiddleware, updateBrandProfile);
 // Admin routes
 router.get('/admin/list', authMiddleware, adminListBrands);
 router.patch('/admin/:id/approve', authMiddleware, adminApproveBrand);
+router.delete('/admin/:id', authMiddleware, adminDeleteBrand);
 router.get('/admin/campaigns/pending', authMiddleware, adminGetPendingCampaigns);
 router.patch('/admin/campaigns/:id/approve', authMiddleware, adminApproveCampaign);
 
