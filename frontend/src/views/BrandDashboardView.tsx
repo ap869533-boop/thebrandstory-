@@ -31,7 +31,10 @@ import {
   Instagram,
   Youtube,
   Linkedin,
-  Camera
+  Camera,
+  MapPin,
+  Mail,
+  Handshake
 } from 'lucide-react';
 import { usePlatform } from '../context/PlatformContext';
 import { CreatorCard } from '../components/common/CreatorCard';
@@ -54,7 +57,7 @@ export const BrandDashboardView: React.FC = () => {
     openAuthModal,
   } = usePlatform();
 
-  const [activeTab, setActiveTab] = useState<'briefs' | 'pitches' | 'enquiries' | 'shortlists' | 'profile' | 'settings'>('briefs');
+  const [activeTab, setActiveTab] = useState<'briefs' | 'enquiries' | 'deals' | 'profile' | 'settings'>('briefs');
 
   // Brand Profile State
   const [bpBrandName, setBpBrandName] = useState(authUser?.companyName || '');
@@ -392,7 +395,7 @@ export const BrandDashboardView: React.FC = () => {
                 title={approvalStatus === 'pending' ? 'Wait for admin approval to post briefs' : ''}
               >
                 <PlusCircle className="w-3.5 h-3.5" />
-                <span>{approvalStatus === 'pending' ? 'Approval Required' : 'Post New Brief'}</span>
+                <span>{approvalStatus === 'pending' ? 'Approval Required' : 'Create Campaign'}</span>
               </button>
             </div>
             
@@ -428,9 +431,7 @@ export const BrandDashboardView: React.FC = () => {
                       {brandDisplayName}
                     </h1>
                     <div>
-                      {approvalStatus === 'approved' ? (
-                         <span className="inline-block px-2 py-0.5 sm:px-2.5 sm:py-1 bg-emerald-50 text-emerald-600 text-[9px] sm:text-[10px] font-bold rounded-lg uppercase tracking-wider border border-emerald-100">Verified Brand</span>
-                      ) : (
+                      {approvalStatus !== 'approved' && (
                          <span className="inline-block px-2 py-0.5 sm:px-2.5 sm:py-1 bg-amber-50 text-amber-600 text-[9px] sm:text-[10px] font-bold rounded-lg uppercase tracking-wider border border-amber-200">Pending Approval</span>
                       )}
                     </div>
@@ -457,7 +458,7 @@ export const BrandDashboardView: React.FC = () => {
                 }`}
               >
                 <PlusCircle className="w-4 h-4" />
-                <span>{approvalStatus === 'pending' ? 'Approval Required' : 'Post New Brief'}</span>
+                <span>{approvalStatus === 'pending' ? 'Approval Required' : 'Create Campaign'}</span>
               </button>
             </div>
           </div>
@@ -526,64 +527,83 @@ export const BrandDashboardView: React.FC = () => {
           
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex flex-wrap border-b border-slate-200 gap-4 sm:gap-6 text-xs font-bold text-slate-500 overflow-x-auto">
-          {approvalStatus === 'approved' && (
-            <>
-              <button
-                onClick={() => setActiveTab('briefs')}
-                className={`pb-3 flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap ${activeTab === 'briefs' ? 'text-[#D4A338] border-b-2 border-blue-600' : 'hover:text-slate-800'}`}
-              >
-                <Flame className="w-3.5 h-3.5" />
-                <span>My Posted Briefs ({myBriefs.length})</span>
-              </button>
+        {/* Modern Tab Navigation */}
+        <div className="relative mb-6 sm:mb-8">
+          {/* Scroll fade masks for mobile */}
+          <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-slate-50 to-transparent pointer-events-none z-10 sm:hidden rounded-l-2xl"></div>
+          <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-slate-50 to-transparent pointer-events-none z-10 sm:hidden rounded-r-2xl"></div>
+          
+          <div className="flex overflow-x-auto hide-scrollbar gap-2 p-1.5 bg-white border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] rounded-2xl items-center snap-x relative z-0 w-full" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            <style>{`
+              .hide-scrollbar::-webkit-scrollbar {
+                display: none;
+              }
+            `}</style>
 
-              <button
-                onClick={() => setActiveTab('pitches')}
-                className={`pb-3 flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap ${activeTab === 'pitches' ? 'text-[#D4A338] border-b-2 border-blue-600' : 'hover:text-slate-800'}`}
-              >
-                <Inbox className="w-3.5 h-3.5" />
-                <span>Creator Pitches ({allPitches.length})</span>
-                {allPitches.filter(p => p.status === 'Pending').length > 0 && (
-                  <span className="px-1.5 py-0.5 bg-amber-400 text-white text-[9px] font-black rounded-full">
-                    {allPitches.filter(p => p.status === 'Pending').length} New
-                  </span>
-                )}
-              </button>
+            {approvalStatus === 'approved' && (
+              <>
+                <button
+                  onClick={() => setActiveTab('briefs')}
+                  className={`snap-center shrink-0 px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl flex items-center gap-2 transition-all duration-300 font-bold text-[11px] sm:text-xs md:text-sm whitespace-nowrap cursor-pointer ${
+                    activeTab === 'briefs'
+                      ? 'bg-gradient-to-r from-rose-500 to-orange-500 text-white shadow-md shadow-orange-500/25 -translate-y-0.5'
+                      : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+                  }`}
+                >
+                  <Flame className="w-4 h-4" />
+                  <span>My Campaign ({myBriefs.length})</span>
+                </button>
 
-              <button
-                onClick={() => setActiveTab('enquiries')}
-                className={`pb-3 flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap ${activeTab === 'enquiries' ? 'text-[#D4A338] border-b-2 border-blue-600' : 'hover:text-slate-800'}`}
-              >
-                <MessageSquare className="w-3.5 h-3.5" />
-                <span>Direct Bookings ({myEnquiries.length})</span>
-              </button>
+                <button
+                  onClick={() => setActiveTab('enquiries')}
+                  className={`snap-center shrink-0 px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl flex items-center gap-2 transition-all duration-300 font-bold text-[11px] sm:text-xs md:text-sm whitespace-nowrap cursor-pointer ${
+                    activeTab === 'enquiries'
+                      ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md shadow-emerald-500/25 -translate-y-0.5'
+                      : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+                  }`}
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span>Inquiry ({myEnquiries.length})</span>
+                </button>
 
-              <button
-                onClick={() => setActiveTab('shortlists')}
-                className={`pb-3 flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap ${activeTab === 'shortlists' ? 'text-[#D4A338] border-b-2 border-blue-600' : 'hover:text-slate-800'}`}
-              >
-                <Folder className="w-3.5 h-3.5" />
-                <span>Saved Shortlists ({savedFolders.length})</span>
-              </button>
-            </>
-          )}
+                <button
+                  onClick={() => setActiveTab('deals')}
+                  className={`snap-center shrink-0 px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl flex items-center gap-2 transition-all duration-300 font-bold text-[11px] sm:text-xs md:text-sm whitespace-nowrap cursor-pointer ${
+                    activeTab === 'deals'
+                      ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-white shadow-md shadow-amber-500/25 -translate-y-0.5'
+                      : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+                  }`}
+                >
+                  <Handshake className="w-4 h-4" />
+                  <span>Deal (0)</span>
+                </button>
+              </>
+            )}
 
-          <button
-            onClick={() => setActiveTab('profile')}
-            className={`pb-3 flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap ${activeTab === 'profile' ? 'text-[#D4A338] border-b-2 border-blue-600' : 'hover:text-slate-800'}`}
-          >
-            <User2 className="w-3.5 h-3.5" />
-            <span>Brand Profile</span>
-          </button>
+            <button
+              onClick={() => setActiveTab('profile')}
+              className={`snap-center shrink-0 px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl flex items-center gap-2 transition-all duration-300 font-bold text-[11px] sm:text-xs md:text-sm whitespace-nowrap cursor-pointer ${
+                activeTab === 'profile'
+                  ? 'bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white shadow-md shadow-purple-500/25 -translate-y-0.5'
+                  : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+              }`}
+            >
+              <User2 className="w-4 h-4" />
+              <span>Brand Profile</span>
+            </button>
 
-          <button
-            onClick={() => setActiveTab('settings')}
-            className={`pb-3 flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap ${activeTab === 'settings' ? 'text-[#D4A338] border-b-2 border-blue-600' : 'hover:text-slate-800'}`}
-          >
-            <Settings className="w-3.5 h-3.5" />
-            <span>Account Settings</span>
-          </button>
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`snap-center shrink-0 px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl flex items-center gap-2 transition-all duration-300 font-bold text-[11px] sm:text-xs md:text-sm whitespace-nowrap cursor-pointer ${
+                activeTab === 'settings'
+                  ? 'bg-gradient-to-r from-slate-700 to-slate-900 text-white shadow-md shadow-slate-900/25 -translate-y-0.5'
+                  : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+              }`}
+            >
+              <Settings className="w-4 h-4" />
+              <span>Account Settings</span>
+            </button>
+          </div>
         </div>
 
         {/* Tab 1: Briefs */}
@@ -636,196 +656,14 @@ export const BrandDashboardView: React.FC = () => {
           </div>
         )}
 
-        {/* Tab 2: Creator Pitches (aggregated across all briefs) */}
-        {activeTab === 'pitches' && (
+        {/* Tab: Deals */}
+        {activeTab === 'deals' && (
           <div className="space-y-4 animate-fadeIn">
-            {allPitches.length === 0 ? (
-              <div className="bg-white p-12 text-center rounded-3xl border border-slate-200 space-y-3">
-                <Inbox className="w-10 h-10 text-slate-300 mx-auto" />
-                <h3 className="font-bold text-slate-800 text-sm">No Creator Pitches Yet</h3>
-                <p className="text-xs text-slate-500">
-                  When creators pitch their profile to your campaign briefs, they'll appear here. You can review their pitch and message them directly.
-                </p>
-                <button
-                  onClick={() => navigateTo('post-requirement')}
-                  className="px-4 py-2 bg-black text-white font-bold text-xs rounded-xl hover:bg-zinc-900 transition cursor-pointer"
-                >
-                  Post a Campaign Brief
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                  <div className="flex items-center gap-2">
-                    <p className="text-xs text-slate-500 font-medium">
-                      {allPitches.length} pitch{allPitches.length !== 1 ? 'es' : ''} received across {myBriefs.length} brief{myBriefs.length !== 1 ? 's' : ''}
-                    </p>
-                    {myBrandBriefs.length > 0 && (
-                      <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg text-[10px] font-bold">
-                        <button
-                          type="button"
-                          onClick={() => setPitchScope('my')}
-                          className={`px-2 py-0.5 rounded-md transition ${pitchScope === 'my' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'}`}
-                        >
-                          My Briefs ({myBrandBriefs.length})
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setPitchScope('all')}
-                          className={`px-2 py-0.5 rounded-md transition ${pitchScope === 'all' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'}`}
-                        >
-                          All Briefs ({campaigns.length})
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {allPitches.filter(p => p.status === 'Accepted').length > 0 && (
-                      <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-lg border border-emerald-200">
-                        {allPitches.filter(p => p.status === 'Accepted').length} Confirmed
-                      </span>
-                    )}
-                    <span className="px-2 py-0.5 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-lg border border-amber-200">
-                      {allPitches.filter(p => p.status === 'Pending').length} Pending Review
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  {allPitches.map((applicant, idx) => {
-                    const creator = creators.find(c => c.id === applicant.creatorId);
-                    const isConfirmed = applicant.status === 'Accepted';
-                    const isInquired = applicant.status === 'Shortlisted';
-                    return (
-                      <div
-                        key={idx}
-                        className={`bg-white p-5 rounded-2xl border transition-all ${
-                          isConfirmed
-                            ? 'border-emerald-300 shadow-xs bg-emerald-50/10'
-                            : isInquired
-                            ? 'border-blue-200 shadow-xs'
-                            : 'border-slate-200 hover:border-[#D4A338] hover:shadow-xs'
-                        }`}
-                      >
-                        <div className="flex items-start gap-4">
-                          {/* Avatar */}
-                          <img
-                            src={applicant.creatorAvatar}
-                            alt={applicant.creatorName}
-                            className="w-12 h-12 rounded-2xl object-cover shrink-0 border border-slate-200"
-                            onError={(e) => { (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(applicant.creatorName)}&background=e0e7ff&color=4f46e5`; }}
-                          />
-
-                          {/* Info */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-1">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="font-black text-slate-900 text-sm">{applicant.creatorName}</span>
-                                {creator && (
-                                  <span className="text-[10px] text-slate-500">
-                                    {creator.followers?.toLocaleString('en-IN')} followers • {(creator.avgViews || 0).toLocaleString('en-IN')} avg views
-                                  </span>
-                                )}
-                                <span className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full flex items-center gap-1 ${
-                                  isConfirmed
-                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                                    : isInquired
-                                    ? 'bg-blue-100 text-blue-800 border border-blue-300'
-                                    : applicant.status === 'Declined'
-                                    ? 'bg-red-100 text-red-700'
-                                    : 'bg-amber-100 text-amber-700'
-                                }`}>
-                                  {isConfirmed && <CheckCircle2 className="w-3 h-3 text-emerald-600" />}
-                                  {isInquired && <Clock className="w-3 h-3 text-blue-600" />}
-                                  {isConfirmed
-                                    ? 'Confirmed by Creator'
-                                    : isInquired
-                                    ? 'Inquiry Sent (Awaiting Confirmation)'
-                                    : applicant.status === 'Declined'
-                                    ? 'Declined'
-                                    : 'New Pitch'}
-                                </span>
-                              </div>
-                              <span className="text-[11px] text-slate-400 flex items-center gap-1 shrink-0">
-                                <Clock className="w-3 h-3" />
-                                {applicant.appliedAt}
-                              </span>
-                            </div>
-
-                            {/* Campaign badge */}
-                            <div className="flex items-center gap-1.5 mb-2">
-                              <span className="text-[10px] text-slate-400">Pitched for:</span>
-                              <span className="text-[10px] font-bold px-2 py-0.5 bg-blue-50 text-[#b88628] rounded">
-                                {applicant.campaignTitle}
-                              </span>
-                              <span className="text-[10px] font-bold text-emerald-600">{applicant.campaignBudget}</span>
-                            </div>
-
-                            {/* Pitch text */}
-                            <div className="bg-slate-50 rounded-xl p-3 mb-3">
-                              <p className="text-xs text-slate-700 leading-relaxed">"{applicant.pitch}"</p>
-                            </div>
-
-                            {/* Creator metrics */}
-                            {creator && (
-                              <div className="flex flex-wrap gap-3 mb-3 text-[11px] text-slate-500">
-                                <span>📍 {creator.currentCity}</span>
-                                <span>🏷️ {creator.primaryCategory}</span>
-                                <span>💰 From ₹{creator.startingPrice?.toLocaleString('en-IN')}</span>
-                              </div>
-                            )}
-
-                            {/* Status Banners */}
-                            {isConfirmed && (
-                              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900 font-bold flex items-center gap-2 mb-3">
-                                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                                <span>Collaboration Confirmed! The influencer has accepted your collaboration proposal.</span>
-                              </div>
-                            )}
-
-                            {isInquired && (
-                              <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-800 font-medium flex items-center gap-2 mb-3">
-                                <Clock className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                                <span>Inquiry sent to creator. Waiting for creator to confirm on their dashboard.</span>
-                              </div>
-                            )}
-
-                            {/* Action buttons */}
-                            <div className="flex flex-wrap gap-2">
-                              <button
-                                onClick={() => openMessageModal(applicant)}
-                                className={`px-4 py-2 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 cursor-pointer ${
-                                  isConfirmed
-                                    ? 'bg-emerald-600 hover:bg-emerald-700 shadow-xs'
-                                    : isInquired
-                                    ? 'bg-blue-600 hover:bg-blue-700 shadow-xs'
-                                    : 'bg-black hover:bg-[#D4A338] hover:text-black shadow-xs'
-                                }`}
-                              >
-                                <Send className="w-3.5 h-3.5" />
-                                {isConfirmed
-                                  ? 'Message Confirmed Creator'
-                                  : isInquired
-                                  ? 'Send Follow-up Inquiry'
-                                  : 'Inquire & Invite Creator'}
-                              </button>
-                              {creator && (
-                                <button
-                                  onClick={() => navigateTo('influencer-detail', { username: creator.username })}
-                                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition flex items-center gap-1.5 cursor-pointer"
-                                >
-                                  View Full Profile
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </>
-            )}
+            <div className="bg-white p-12 text-center rounded-3xl border border-slate-200 space-y-2">
+              <Handshake className="w-10 h-10 text-slate-300 mx-auto" />
+              <h3 className="font-bold text-slate-800 text-sm">No Deals Yet</h3>
+              <p className="text-xs text-slate-500">Your finalized collaborations and deals will appear here.</p>
+            </div>
           </div>
         )}
 
@@ -875,53 +713,7 @@ export const BrandDashboardView: React.FC = () => {
           </div>
         )}
 
-        {/* Tab 4: Shortlists */}
-        {activeTab === 'shortlists' && (
-          <div className="space-y-6 animate-fadeIn">
-            {savedFolders.length === 0 ? (
-              <div className="bg-white p-12 text-center rounded-3xl border border-slate-200 space-y-2">
-                <Folder className="w-10 h-10 text-slate-300 mx-auto" />
-                <h3 className="font-bold text-slate-800 text-sm">No Saved Shortlists</h3>
-                <p className="text-xs text-slate-500">Save creator profiles to shortlists while browsing the platform.</p>
-              </div>
-            ) : (
-              savedFolders.map((folder) => {
-                const folderCreators = creators.filter((c) => folder.creatorIds.includes(c.id));
-                return (
-                  <div key={folder.id} className="bg-white p-6 rounded-3xl border border-slate-200 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-                          <Folder className="w-4 h-4 text-amber-500" />
-                          <span>{folder.name}</span>
-                        </h3>
-                        <p className="text-xs text-slate-500">{folderCreators.length} Creators Shortlisted</p>
-                      </div>
-                      {deleteFolder && (
-                        <button
-                          onClick={() => deleteFolder(folder.id)}
-                          className="text-slate-400 hover:text-rose-600 p-2 rounded-lg hover:bg-slate-50 transition cursor-pointer"
-                          title="Delete List"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                    {folderCreators.length === 0 ? (
-                      <p className="text-xs text-slate-400 italic">No creators added to this shortlist yet.</p>
-                    ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {folderCreators.map((creator) => (
-                          <CreatorCard key={creator.id} creator={creator} variant="grid" />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })
-            )}
-          </div>
-        )}
+
 
         {/* Tab 5: Profile */}
         {activeTab === 'profile' && (
@@ -1005,30 +797,47 @@ export const BrandDashboardView: React.FC = () => {
                       <div className="group">
                         <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Company / Brand Name <span className="text-rose-500">*</span></label>
                         <div className="relative">
-                          <div className="absolute left-3.5 top-3 p-0.5 bg-blue-100 text-blue-600 rounded-md group-focus-within:bg-blue-600 group-focus-within:text-white transition-colors">
+                          <div className="absolute left-3.5 top-3 p-0.5 bg-slate-200 text-slate-500 rounded-md">
                             <Building2 className="w-3.5 h-3.5" />
                           </div>
                           <input
                             type="text"
-                            required
+                            readOnly
+                            title="Non-changeable"
                             value={bpBrandName}
-                            onChange={e => setBpBrandName(e.target.value)}
-                            className="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 bg-slate-50/50 hover:bg-white transition-all shadow-sm"
+                            className="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl text-sm bg-slate-100 text-slate-500 cursor-not-allowed shadow-none font-medium"
                           />
                         </div>
                       </div>
+
+                      <div className="group">
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Email Address <span className="text-rose-500">*</span></label>
+                        <div className="relative">
+                          <div className="absolute left-3.5 top-3 p-0.5 bg-slate-200 text-slate-500 rounded-md">
+                            <Mail className="w-3.5 h-3.5" />
+                          </div>
+                          <input
+                            type="email"
+                            readOnly
+                            title="Non-changeable"
+                            value={authUser?.email || ''}
+                            className="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl text-sm bg-slate-100 text-slate-500 cursor-not-allowed shadow-none font-medium"
+                          />
+                        </div>
+                      </div>
+
                       <div className="group">
                         <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">GST Number</label>
                         <div className="relative">
-                          <div className="absolute left-3.5 top-3 p-0.5 bg-emerald-100 text-emerald-600 rounded-md group-focus-within:bg-emerald-600 group-focus-within:text-white transition-colors">
+                          <div className="absolute left-3.5 top-3 p-0.5 bg-slate-200 text-slate-500 rounded-md">
                             <FileText className="w-3.5 h-3.5" />
                           </div>
                           <input
                             type="text"
+                            readOnly
+                            title="Non-changeable"
                             value={bpGstNumber}
-                            onChange={e => setBpGstNumber(e.target.value.toUpperCase())}
-                            className="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 bg-slate-50/50 hover:bg-white transition-all shadow-sm uppercase placeholder:normal-case"
-                            placeholder="Optional"
+                            className="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl text-sm bg-slate-100 text-slate-500 cursor-not-allowed shadow-none font-medium uppercase"
                           />
                         </div>
                       </div>
@@ -1072,8 +881,8 @@ export const BrandDashboardView: React.FC = () => {
                   <hr className="border-slate-100" />
 
                   {/* Description & Industry */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div className="md:col-span-2 space-y-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div className="md:col-span-2 lg:col-span-3 space-y-2">
                       <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">Brand Description</label>
                       <textarea
                         rows={5}
@@ -1113,6 +922,21 @@ export const BrandDashboardView: React.FC = () => {
                         <option value="Home & Lifestyle">Home & Lifestyle</option>
                         <option value="Media & Publishing">Media & Publishing</option>
                       </select>
+                    </div>
+                    <div className="md:col-span-1 lg:col-span-2 group">
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Location / City</label>
+                      <div className="relative">
+                        <div className="absolute left-3.5 top-3.5 p-0.5 bg-cyan-100 text-cyan-600 rounded-md group-focus-within:bg-cyan-600 group-focus-within:text-white transition-colors">
+                          <MapPin className="w-3.5 h-3.5" />
+                        </div>
+                        <input
+                          type="text"
+                          value={bpCity}
+                          onChange={e => setBpCity(e.target.value)}
+                          placeholder="e.g. Mumbai, Maharashtra"
+                          className="w-full pl-11 pr-4 py-3.5 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 bg-slate-50/50 hover:bg-white transition-all shadow-sm font-medium"
+                        />
+                      </div>
                     </div>
                   </div>
 
