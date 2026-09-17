@@ -790,8 +790,11 @@ export async function verifyOtp(req: Request, res: Response) {
       user.creatorProfile = await fetchOrCreateCreatorProfile(user);
     }
 
+    // For new registrations, ensure the role from request body is used (not DB default)
+    const responseRole = isNewUser ? (role || user.role) : user.role;
+
     const token = jwt.sign(
-      { id: user.id, email: user.email, name: user.name, role: user.role },
+      { id: user.id, email: user.email, name: user.name, role: responseRole },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -804,10 +807,11 @@ export async function verifyOtp(req: Request, res: Response) {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role,
+        role: responseRole,
         companyName: user.company_name,
         avatar: user.avatar,
-        creatorProfile: user.creatorProfile || undefined,
+        approvalStatus: responseRole === 'BRAND' ? 'pending' : 'approved',
+        creatorProfile: responseRole === 'CREATOR' ? (user.creatorProfile || undefined) : undefined,
       },
     });
 

@@ -260,26 +260,31 @@ export const LoginView: React.FC = () => {
             throw new Error(data.error || 'Failed to verify OTP & create account');
           }
 
+          // Use the role the user SELECTED on signup form as authoritative source
+          // (backend may return stale role if DB insert was delayed)
+          const effectiveRole: UserRole = role;
+          const userWithCorrectRole = data.user ? { ...data.user, role: effectiveRole } : null;
+
           if (data.token) localStorage.setItem('sc_auth_token', data.token);
-          if (data.user) {
-            localStorage.setItem('sc_auth_user', JSON.stringify(data.user));
-            setAuthUser(data.user);
-            setCurrentRole(data.user.role);
-            if (data.user.creatorProfile) {
-              setCreators((prev) => [data.user.creatorProfile, ...prev]);
-              setActiveCreatorId(data.user.creatorProfile.id);
+          if (userWithCorrectRole) {
+            localStorage.setItem('sc_auth_user', JSON.stringify(userWithCorrectRole));
+            setAuthUser(userWithCorrectRole);
+            setCurrentRole(effectiveRole);
+            if (userWithCorrectRole.creatorProfile && effectiveRole === 'CREATOR') {
+              setCreators((prev) => [userWithCorrectRole.creatorProfile, ...prev]);
+              setActiveCreatorId(userWithCorrectRole.creatorProfile.id);
             }
           }
 
-          if (data.user?.role === 'BRAND') {
+          if (effectiveRole === 'BRAND') {
             setSuccessMsg('Brand account created! Your account is pending admin approval. You will be notified once approved.');
             setTimeout(() => {
-              handlePostAuthRedirect(data.user?.role || role);
+              handlePostAuthRedirect('BRAND');
             }, 2500);
           } else {
             setSuccessMsg('Account created successfully! Redirecting...');
             setTimeout(() => {
-              handlePostAuthRedirect(data.user?.role || role);
+              handlePostAuthRedirect(effectiveRole);
             }, 800);
           }
         }
