@@ -600,17 +600,32 @@ export async function verifyOtp(req: Request, res: Response) {
     // OTP Verified. Clear it.
     otpCache.delete(cleanEmail);
 
-    // Check if user exists
+    const isSignupContext = !!(name && role && password); // True when called from signup form
+
+    // Check if user exists in DB
     const sqlUser = 'SELECT * FROM users WHERE email = ? LIMIT 1';
     const dbUsers = await dbQuery(sqlUser, [cleanEmail]);
 
     let user: any = null;
     let isNewUser = false;
 
-    if (dbUsers && dbUsers.length > 0) {
-      user = dbUsers[0];
+    const existingDbUser = (dbUsers && dbUsers.length > 0) ? dbUsers[0] : null;
+    const existingMemUser = memoryUsers.find((u) => u.email === cleanEmail);
+    const existingUser = existingDbUser || existingMemUser;
+
+    if (isSignupContext) {
+      // This is a SIGNUP attempt — if email already registered, reject it
+      if (existingUser) {
+        return res.status(409).json({
+          success: false,
+          error: 'This email is already registered. Please sign in instead.'
+        });
+      }
+      // New user signup path
+      user = null; // will be created below
     } else {
-      user = memoryUsers.find((u) => u.email === cleanEmail);
+      // This is a LOGIN via OTP path
+      user = existingUser || null;
     }
 
     // If user doesn't exist, we sign them up (auto-registration)
