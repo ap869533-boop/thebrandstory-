@@ -606,9 +606,22 @@ export async function deleteCreator(req: Request, res: Response) {
     const { id } = req.params;
     if (!id) return res.status(400).json({ success: false, error: 'Creator id is required' });
 
+    // Step 1: Get the user_id linked to this creator profile
+    const creatorRows = await dbQuery('SELECT user_id FROM creators WHERE id = ?', [id]);
+    const userId = creatorRows?.[0]?.user_id || null;
+
+    // Step 2: Delete creator profile from creators table
     await dbQuery('DELETE FROM creators WHERE id = ?', [id]);
+
+    // Step 3: Permanently delete from users table as well
+    if (userId) {
+      await dbQuery('DELETE FROM users WHERE id = ?', [userId]);
+    }
+
+    // Step 4: Remove from in-memory creators store
     creatorsStore = creatorsStore.filter((creator) => creator.id !== id);
-    return res.json({ success: true, message: 'Influencer deleted successfully' });
+
+    return res.json({ success: true, message: 'Influencer permanently deleted successfully' });
   } catch (error) {
     console.error('Delete creator error:', error);
     return res.status(500).json({ success: false, error: 'Failed to delete influencer' });
