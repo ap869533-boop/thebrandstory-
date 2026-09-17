@@ -224,6 +224,17 @@ export interface EnquiryLead {
   brandNotes?: string;
 }
 
+export interface BrandInquiryLead {
+  id: string; // e.g. SC-BRAND-INQ-1234
+  creatorId: string;
+  creatorName: string;
+  brandId: string;
+  brandName: string;
+  message: string;
+  status: 'New' | 'Read' | 'Replied' | 'Archived';
+  createdAt: string;
+}
+
 export interface CampaignRequirement {
   id: string;
   companyName: string;

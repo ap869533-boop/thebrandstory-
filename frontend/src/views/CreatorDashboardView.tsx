@@ -28,7 +28,9 @@ import {
   Globe,
   Users,
   TrendingUp,
-  X
+  X,
+  Bookmark,
+  Building2
 } from 'lucide-react';
 import { usePlatform } from '../context/PlatformContext';
 import { Creator } from '../types';
@@ -47,6 +49,9 @@ export const CreatorDashboardView: React.FC = () => {
     navigateTo,
     authUser,
     openAuthModal,
+    savedBrandIds,
+    toggleSaveBrand,
+    partnerBrands,
   } = usePlatform();
 
   // File input refs for photo uploads
@@ -168,7 +173,7 @@ export const CreatorDashboardView: React.FC = () => {
     );
   })();
 
-  const [activeTab, setActiveTab] = useState<'leads' | 'profile' | 'pitches' | 'settings'>('leads');
+  const [activeTab, setActiveTab] = useState<'leads' | 'profile' | 'pitches' | 'savedBrands' | 'settings'>('leads');
 
   // Form states synced with creator's database fields
   const [bio, setBio] = useState(creator.bio || '');
@@ -717,6 +722,7 @@ export const CreatorDashboardView: React.FC = () => {
             { key: 'leads', icon: <MessageSquare className="w-3.5 h-3.5" />, label: `Enquiries (${myEnquiries.length})` },
             { key: 'profile', icon: <Edit3 className="w-3.5 h-3.5" />, label: 'Edit Profile' },
             { key: 'pitches', icon: <Flame className="w-3.5 h-3.5" />, label: `Briefs (${campaigns.length})` },
+            { key: 'savedBrands', icon: <Bookmark className="w-3.5 h-3.5" />, label: `Saved Brands (${savedBrandIds.length})` },
             { key: 'settings', icon: <Settings className="w-3.5 h-3.5" />, label: 'Settings' },
           ].map(tab => (
             <button
@@ -1373,6 +1379,72 @@ export const CreatorDashboardView: React.FC = () => {
             </div>
           );
         })()}
+
+        {/* Tab 3.5: Saved Brands */}
+        {activeTab === 'savedBrands' && (
+          <div className="space-y-4 animate-fadeIn">
+            {savedBrandIds.length === 0 ? (
+              <div className="bg-white p-12 text-center rounded-3xl border border-slate-200 space-y-2">
+                <Bookmark className="w-10 h-10 text-slate-300 mx-auto" />
+                <h3 className="font-bold text-slate-800 text-sm">No Saved Brands Yet</h3>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                  Bookmark partner brands on their profile page to easily track and pitch collaborations.
+                </p>
+                <button
+                  onClick={() => navigateTo('home')}
+                  className="mt-3 px-4 py-2 bg-slate-900 text-white font-bold text-xs rounded-xl hover:bg-black transition cursor-pointer"
+                >
+                  Explore Featured Brands
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {savedBrandIds.map((brandId) => {
+                  const matchedPartner = partnerBrands.find((b) => b.id === brandId);
+                  const bName = matchedPartner?.name || `Brand (${brandId})`;
+                  return (
+                    <div
+                      key={brandId}
+                      className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between gap-4 hover:border-blue-300 transition"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden shrink-0">
+                          {matchedPartner?.logoUrl ? (
+                            <img src={matchedPartner.logoUrl} alt={bName} className="w-full h-full object-contain p-1" />
+                          ) : (
+                            <Building2 className="w-6 h-6 text-slate-400" />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-black text-slate-900 text-sm truncate">{bName}</h4>
+                          <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 inline-block mt-0.5">
+                            Verified Brand
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
+                        <button
+                          onClick={() => navigateTo('brand-detail', { id: brandId, brandName: matchedPartner?.name })}
+                          className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                        >
+                          <span>View Brand Profile</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => toggleSaveBrand(brandId)}
+                          title="Remove from saved"
+                          className="p-2 text-rose-500 hover:bg-rose-50 border border-rose-100 rounded-xl transition cursor-pointer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Tab 4: Account Settings */}
         {activeTab === 'settings' && (

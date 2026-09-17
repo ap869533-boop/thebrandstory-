@@ -15,7 +15,14 @@ import {
   FileText,
   MessageSquare,
   Send,
-  Users
+  Users,
+  Bookmark,
+  Share2,
+  BarChart3,
+  TrendingUp,
+  Clock,
+  Repeat,
+  Check
 } from 'lucide-react';
 import { usePlatform } from '../context/PlatformContext';
 import { BrandProfile, CampaignRequirement } from '../types';
@@ -29,7 +36,10 @@ export const BrandDetailView: React.FC = () => {
     navigateTo,
     applyToCampaign,
     activeCreatorId,
-    requireRole
+    requireRole,
+    isBrandSaved,
+    toggleSaveBrand,
+    submitBrandInquiry
   } = usePlatform();
 
   const [brand, setBrand] = useState<Partial<BrandProfile> | null>(null);
@@ -40,6 +50,13 @@ export const BrandDetailView: React.FC = () => {
   const [selectedCampaign, setSelectedCampaign] = useState<CampaignRequirement | null>(null);
   const [pitchText, setPitchText] = useState('');
   const [hasApplied, setHasApplied] = useState<string | null>(null);
+
+  // Inquiry state
+  const [isInquiryModalOpen, setIsInquiryModalOpen] = useState(false);
+  const [inquiryMessage, setInquiryMessage] = useState('');
+  const [hasInquired, setHasInquired] = useState(false);
+  const [isSubmittingInquiry, setIsSubmittingInquiry] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     // 1. Fetch featured brands to find matching brand
@@ -128,6 +145,73 @@ export const BrandDetailView: React.FC = () => {
     }, 1500);
   };
 
+  const brandId = (brand?.id || (viewParams.id as string) || 'brand_1').toString();
+  const isSaved = isBrandSaved(brandId);
+
+  const handleShare = async () => {
+    const shareUrl = window.location.href;
+    const shareData = {
+      title: `${brand?.brandName || 'Brand'} Profile | thebrandsstory`,
+      text: `Discover ${brand?.brandName || 'this brand'} and pitch for collaborations on thebrandsstory!`,
+      url: shareUrl,
+    };
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch {
+        // Fallback to clipboard if share was cancelled or failed
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      prompt('Copy profile URL:', shareUrl);
+    }
+  };
+
+  const handleInquireClick = () => {
+    if (!authUser || authUser.role !== 'CREATOR') {
+      requireRole('CREATOR', 'inquire with this brand', `brand/${brandId}`);
+      return;
+    }
+    setIsInquiryModalOpen(true);
+  };
+
+  const submitInquiry = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!authUser || authUser.role !== 'CREATOR') {
+      requireRole('CREATOR', 'send an inquiry to a brand', `brand/${brandId}`);
+      return;
+    }
+    if (!inquiryMessage.trim()) return;
+
+    setIsSubmittingInquiry(true);
+    try {
+      const ok = await submitBrandInquiry({
+        creatorId: authUser.id || activeCreatorId || 'c1',
+        creatorName: authUser.name || 'Influencer',
+        brandId: brandId,
+        brandName: brand?.brandName || 'Partner Brand',
+        message: inquiryMessage.trim(),
+      });
+      if (ok) {
+        setHasInquired(true);
+        setTimeout(() => {
+          setIsInquiryModalOpen(false);
+          setHasInquired(false);
+          setInquiryMessage('');
+        }, 2000);
+      }
+    } catch (err) {
+      console.error('Failed to submit inquiry', err);
+    } finally {
+      setIsSubmittingInquiry(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
@@ -159,19 +243,57 @@ export const BrandDetailView: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50/60 pb-16 font-sans">
-      {/* Top Navigation Back Bar */}
-      <div className="bg-white border-b border-slate-200/80 sticky top-16 z-20 shadow-2xs">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
-          <button
-            onClick={() => navigateTo('home')}
-            className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-900 transition cursor-pointer"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back to Home</span>
-          </button>
-          <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Verified Brand Profile</span>
+      {/* Top Navigation Back Bar - Placed cleanly above the profile with no overlap */}
+      <div className="relative z-10 bg-white border-b border-slate-200/80 px-4 sm:px-6 lg:px-8 py-2.5 shadow-2xs">
+        <div className="max-w-6xl mx-auto flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigateTo('home')}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-slate-950 transition cursor-pointer bg-slate-100 hover:bg-slate-200 px-3.5 py-1.5 rounded-full"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back to Home</span>
+            </button>
+          </div>
+          
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+            <button
+              onClick={() => toggleSaveBrand(brandId)}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-xs font-bold transition cursor-pointer shadow-xs whitespace-nowrap ${
+                isSaved
+                  ? 'bg-rose-50 border-rose-200 text-rose-600 hover:bg-rose-100'
+                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900'
+              }`}
+            >
+              <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-rose-500 text-rose-500' : ''}`} />
+              <span>{isSaved ? 'Saved' : 'Save'}</span>
+            </button>
+
+            <button
+              onClick={handleShare}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 text-xs font-bold transition cursor-pointer shadow-xs whitespace-nowrap"
+            >
+              {copied ? (
+                <>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="text-emerald-600">Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Share2 className="w-3.5 h-3.5" />
+                  <span>Share</span>
+                </>
+              )}
+            </button>
+
+            <button 
+              onClick={handleInquireClick}
+              className="flex items-center gap-1.5 px-4 md:px-5 py-1.5 rounded-full bg-[#D4A338] hover:bg-[#b88628] text-white text-xs font-bold transition cursor-pointer shadow-xs border border-transparent whitespace-nowrap"
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>Inquire</span>
+            </button>
           </div>
         </div>
       </div>
@@ -209,7 +331,7 @@ export const BrandDetailView: React.FC = () => {
               </div>
 
               <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-2xl">
-                {brand?.description || 'Verified partner brand collaborating with creators on India\'s biggest influencer platform.'}
+                {brand?.description || 'Verified partner brand hiring creators on thebrandsstory.'}
               </p>
 
               <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-500 pt-1">
@@ -509,6 +631,64 @@ export const BrandDetailView: React.FC = () => {
                 >
                   <Send className="w-4 h-4 text-amber-400" />
                   <span>Submit Pitch Proposal</span>
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+      {/* Inquiry Modal Popup */}
+      {isInquiryModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 relative space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">
+                  Direct Message
+                </span>
+                <h3 className="font-black text-slate-900 text-base sm:text-lg">
+                  Inquire with {brand?.brandName}
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsInquiryModalOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-700 bg-slate-100 rounded-full cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {hasInquired ? (
+              <div className="py-8 text-center space-y-3 animate-fadeIn">
+                <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto" />
+                <h4 className="font-black text-slate-900 text-base">Inquiry Sent Successfully!</h4>
+                <p className="text-xs text-slate-500">
+                  {brand?.brandName} has received your message and will get back to you shortly.
+                </p>
+              </div>
+            ) : (
+              <form onSubmit={submitInquiry} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-700">
+                    Your Message
+                  </label>
+                  <textarea
+                    rows={5}
+                    value={inquiryMessage}
+                    onChange={(e) => setInquiryMessage(e.target.value)}
+                    required
+                    placeholder="Hello! I would love to collaborate or learn more about your brand..."
+                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmittingInquiry}
+                  className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-bold text-xs rounded-2xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Send className="w-4 h-4 text-white" />
+                  <span>{isSubmittingInquiry ? 'Sending...' : 'Send Inquiry'}</span>
                 </button>
               </form>
             )}

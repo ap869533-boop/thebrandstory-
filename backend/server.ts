@@ -25,6 +25,7 @@ import shortlistRoutes from './routes/shortlistRoutes';
 import blogRoutes from './routes/blogRoutes';
 import brandPartnerRoutes from './routes/brandPartnerRoutes';
 import brandRoutes from './routes/brandRoutes';
+import brandInquiryRoutes from './routes/brandInquiryRoutes';
 
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 5000;
@@ -65,6 +66,7 @@ app.use('/api/shortlists', shortlistRoutes);
 app.use('/api/blogs', blogRoutes);
 app.use('/api/partner-brands', brandPartnerRoutes);
 app.use('/api/brands', brandRoutes);
+app.use('/api/brand-inquiries', brandInquiryRoutes);
 app.use('/api', aiRoutes);       // /api/ai-matching, /api/natural-search
 app.use('/api', statsRoutes);    // /api/health, /api/categories, /api/cities, /api/stats
 

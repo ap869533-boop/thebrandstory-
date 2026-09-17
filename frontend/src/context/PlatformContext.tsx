@@ -7,6 +7,7 @@ import {
   AuthUser,
   SavedFolder,
   EnquiryLead,
+  BrandInquiryLead,
   CampaignRequirement,
   PlatformStatsConfig,
   AIMatchingFormInput,
@@ -112,6 +113,11 @@ interface PlatformContextType {
   closeSavedDrawer: () => void;
   clearAllSaved: () => void;
 
+  // Saved Brands
+  savedBrandIds: string[];
+  isBrandSaved: (brandId: string) => boolean;
+  toggleSaveBrand: (brandId: string) => void;
+
   // Compare Creators
   compareList: Creator[];
   addToCompare: (creator: Creator) => void;
@@ -124,6 +130,16 @@ interface PlatformContextType {
   submitEnquiry: (leadData: Omit<EnquiryLead, 'id' | 'createdAt' | 'status' | 'isReadByCreator'>) => string;
   updateEnquiryStatus: (leadId: string, status: EnquiryLead['status'], assignedTeamMember?: string, creatorReply?: string) => void;
   unreadEnquiriesCount: number;
+
+  brandInquiries: BrandInquiryLead[];
+  submitBrandInquiry: (inquiryData: {
+    creatorId: string;
+    creatorName: string;
+    brandId: string;
+    brandName: string;
+    message: string;
+  }) => Promise<boolean>;
+  fetchBrandInquiries: () => Promise<void>;
 
   // Campaigns & Requirements
   campaigns: CampaignRequirement[];
@@ -450,6 +466,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           statsRes,
           brandsRes,
           shortlistsRes,
+          brandInquiriesRes,
         ] = await Promise.all([
           fetch(apiUrl('/api/creators?includePending=true')),
           fetch(apiUrl('/api/campaigns')),
@@ -461,6 +478,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           fetch(apiUrl('/api/stats')),
           fetch(apiUrl('/api/partner-brands')),
           fetch(apiUrl('/api/shortlists')),
+          fetch(apiUrl('/api/brand-inquiries')),
         ]);
 
         if (creatorsRes.ok) {
@@ -481,6 +499,13 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           const enqData = await enquiriesRes.json();
           if (enqData.enquiries && enqData.enquiries.length > 0) {
             setEnquiries(enqData.enquiries);
+          }
+        }
+
+        if (brandInquiriesRes.ok) {
+          const bInqData = await brandInquiriesRes.json();
+          if (bInqData.inquiries && bInqData.inquiries.length > 0) {
+            setBrandInquiries(bInqData.inquiries);
           }
         }
 
@@ -577,6 +602,42 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const target = creators.find((c) => c.id === creatorIdOrUsername || c.username === creatorIdOrUsername);
     if (!target) return false;
     return savedCreatorIds.includes(target.id) || savedCreatorIds.includes(target.username);
+  };
+
+  // Saved Brands
+  const [savedBrandIds, setSavedBrandIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('sc_saved_brand_ids');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('sc_saved_brand_ids', JSON.stringify(savedBrandIds));
+  }, [savedBrandIds]);
+
+  const isBrandSaved = (brandId: string) => {
+    if (!brandId) return false;
+    return savedBrandIds.includes(brandId);
+  };
+
+  const toggleSaveBrand = (brandId: string) => {
+    if (!brandId) return;
+    setSavedBrandIds((prev) => {
+      const alreadySaved = prev.includes(brandId);
+      const isNowSaved = !alreadySaved;
+      const next = alreadySaved ? prev.filter((id) => id !== brandId) : [...prev, brandId];
+
+      addNotification({
+        title: isNowSaved ? '❤️ Brand Saved' : '🤍 Brand Removed',
+        message: isNowSaved ? 'Brand saved to your shortlist.' : 'Brand removed from saved list.',
+        type: 'campaign',
+      });
+
+      return next;
+    });
   };
 
   const toggleSaveCreator = (creatorId: string, folderName = 'My Saved Creators') => {
@@ -726,53 +787,54 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Enquiries & Leads State
   const [enquiries, setEnquiries] = useState<EnquiryLead[]>(() => {
     const saved = localStorage.getItem('sc_enquiries');
-    return saved ? JSON.parse(saved) : [
-      {
-        id: 'SC-ENQ-102938',
-        creatorId: 'c1',
-        creatorName: 'Priya Sharma',
-        creatorUsername: 'priyasharma',
-        creatorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-        brandName: 'Urban Chic Apparel',
-        contactPerson: 'Meera Kapur',
-        email: 'meera@urbanchic.in',
-        phone: '+91 98112 33445',
-        campaignType: 'Sponsored Instagram Reel + Story Set',
-        campaignDescription: 'Launching our Summer Indo-Western collection. Looking for an aesthetic 60s Reel with styling transitions.',
-        city: 'Delhi NCR',
-        budget: '₹25,000',
-        influencersRequired: 1,
-        preferredDate: '2026-03-10',
-        message: 'Hi Priya! We love your feed aesthetics and feel you would be the perfect face for our spring launch.',
-        status: 'New',
-        assignedTeamMember: 'Rajesh K (Growth Lead)',
-        createdAt: '2026-02-27',
-        isReadByCreator: false,
-      },
-      {
-        id: 'SC-ENQ-102939',
-        creatorId: 'c2',
-        creatorName: 'Rahul Verma',
-        creatorUsername: 'rahulverma',
-        creatorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
-        brandName: 'Spice & Sizzle Bistro',
-        contactPerson: 'Karan Bhasin',
-        email: 'karan@spicesizzle.in',
-        phone: '+91 98111 22334',
-        campaignType: 'Restaurant Launch Food Tasting',
-        campaignDescription: 'Invite to new rooftop lounge opening in Noida Sector 104.',
-        city: 'Noida',
-        budget: '₹12,000 + Complimentary Dinner',
-        influencersRequired: 1,
-        preferredDate: '2026-03-05',
-        message: 'Hey Rahul, we would love to host you and your team for the grand tasting.',
-        status: 'Contacted',
-        assignedTeamMember: 'Pooja V',
-        createdAt: '2026-02-26',
-        isReadByCreator: true,
-      }
-    ];
+    return saved ? JSON.parse(saved) : [];
   });
+
+  const [brandInquiries, setBrandInquiries] = useState<BrandInquiryLead[]>([]);
+
+  const fetchBrandInquiries = async () => {
+    try {
+      const res = await fetch(apiUrl('/api/brand-inquiries'));
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.inquiries)) {
+          setBrandInquiries(data.inquiries);
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to fetch brand inquiries', err);
+    }
+  };
+
+  const submitBrandInquiry = async (inquiryData: {
+    creatorId: string;
+    creatorName: string;
+    brandId: string;
+    brandName: string;
+    message: string;
+  }): Promise<boolean> => {
+    try {
+      const res = await fetch(apiUrl('/api/brand-inquiries'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(inquiryData),
+      });
+      const data = await res.json();
+      if (data.success && data.inquiry) {
+        setBrandInquiries((prev) => [data.inquiry, ...prev]);
+        addNotification({
+          title: '💬 Inquiry Sent',
+          message: `Your message to ${inquiryData.brandName} was delivered successfully.`,
+          type: 'enquiry',
+        });
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error('Failed to submit brand inquiry', err);
+      return false;
+    }
+  };
 
   useEffect(() => {
     localStorage.setItem('sc_enquiries', JSON.stringify(enquiries));
@@ -1602,6 +1664,10 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         closeSavedDrawer,
         clearAllSaved,
 
+        savedBrandIds,
+        isBrandSaved,
+        toggleSaveBrand,
+
         compareList,
         addToCompare,
         removeFromCompare,
@@ -1612,6 +1678,10 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         submitEnquiry,
         updateEnquiryStatus,
         unreadEnquiriesCount,
+
+        brandInquiries,
+        submitBrandInquiry,
+        fetchBrandInquiries,
 
         campaigns,
         postCampaignRequirement,
