@@ -40,15 +40,46 @@ export async function getBrandProfile(req: AuthenticatedRequest, res: Response) 
 
     const userId = req.user.id;
 
-    // Try MySQL
+    // Try MySQL brand_profiles table
     const rows = await dbQuery('SELECT * FROM brand_profiles WHERE user_id = ? LIMIT 1', [userId]);
     if (rows && rows.length > 0) {
-      return res.json({ success: true, profile: mapDbRowToBrandProfile(rows[0]) });
+      const profile = mapDbRowToBrandProfile(rows[0]);
+
+      // If brand_profiles has no GST/company, fallback to users table
+      if (!profile.gstNumber || !profile.brandName) {
+        const userRows = await dbQuery('SELECT company_name, gst_number FROM users WHERE id = ? LIMIT 1', [userId]);
+        if (userRows && userRows.length > 0) {
+          profile.gstNumber = profile.gstNumber || userRows[0].gst_number || '';
+          profile.brandName = profile.brandName || userRows[0].company_name || '';
+        }
+      }
+
+      return res.json({ success: true, profile });
     }
 
     // Fallback: memory
     const memProfile = brandProfilesStore.find(p => p.userId === userId);
     if (memProfile) return res.json({ success: true, profile: memProfile });
+
+    // No brand_profile yet — build a prefilled profile from users table
+    const userRows = await dbQuery('SELECT name, company_name, gst_number, approval_status FROM users WHERE id = ? LIMIT 1', [userId]);
+    if (userRows && userRows.length > 0) {
+      const u = userRows[0];
+      return res.json({
+        success: true,
+        profile: {
+          id: null,
+          userId,
+          brandName: u.company_name || '',
+          gstNumber: u.gst_number || '',
+          contactPerson: u.name || '',
+          approvalStatus: u.approval_status || 'pending',
+          logoUrl: '', coverUrl: '', description: '', website: '',
+          facebookUrl: '', instagramUrl: '', youtubeUrl: '', linkedinUrl: '',
+          industry: '', city: '', phone: '', email: '',
+        }
+      });
+    }
 
     return res.json({ success: true, profile: null });
   } catch (error) {
