@@ -212,7 +212,7 @@ export const BrandDashboardView: React.FC = () => {
   }
 
   const brandDisplayName = bpBrandName || authUser?.companyName || authUser?.name || activeBrandName;
-  const [pitchScope, setPitchScope] = useState<'my' | 'all'>('my');
+
   const approvalStatus = authUser?.approvalStatus || (authUser as any)?.status || 'pending';
 
   const [showApprovedBanner, setShowApprovedBanner] = useState(false);
@@ -247,7 +247,7 @@ export const BrandDashboardView: React.FC = () => {
   );
 
   // If brand has no direct briefs yet, or selected 'all', show all campaigns with pitches so nothing is ever missed
-  const myBriefs = (pitchScope === 'all' || myBrandBriefs.length === 0) ? campaigns : myBrandBriefs;
+  const myBriefs = myBrandBriefs;
 
   const myEnquiries = enquiries.filter(
     (e) =>
@@ -609,6 +609,25 @@ export const BrandDashboardView: React.FC = () => {
         {/* Tab 1: Briefs */}
         {activeTab === 'briefs' && (
           <div className="space-y-4 animate-fadeIn">
+            {/* Header / Action Bar for Campaigns */}
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.02)]">
+              <div>
+                <h2 className="text-lg font-black text-slate-800">Your Campaigns</h2>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">Manage and track all your posted requirements.</p>
+              </div>
+              <button
+                onClick={() => navigateTo('post-requirement')}
+                disabled={approvalStatus === 'pending'}
+                className={`w-full sm:w-auto px-5 py-2.5 rounded-xl font-bold text-[11px] sm:text-xs shadow-sm transition-all duration-300 flex items-center justify-center gap-2 ${
+                  approvalStatus === 'pending'
+                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+                    : 'bg-gradient-to-r from-rose-500 via-orange-500 to-[#D4A338] text-white cursor-pointer hover:shadow-lg hover:shadow-orange-500/25 hover:-translate-y-0.5'
+                }`}
+              >
+                <PlusCircle className="w-4 h-4" />
+                <span>{approvalStatus === 'pending' ? 'Approval Required' : 'Create New Campaign'}</span>
+              </button>
+            </div>
             {myBriefs.length === 0 ? (
               <div className="bg-white p-12 text-center rounded-3xl border border-slate-200 space-y-3">
                 <Flame className="w-10 h-10 text-slate-300 mx-auto" />
