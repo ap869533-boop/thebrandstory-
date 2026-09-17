@@ -518,7 +518,7 @@ export async function getMe(req: AuthenticatedRequest, res: Response) {
     return res.status(401).json({ success: false, error: 'Unauthorized' });
   }
 
-  const sqlUser = 'SELECT id, name, email, role, phone, company_name, avatar, approval_status, created_at FROM users WHERE id = ? LIMIT 1';
+  const sqlUser = 'SELECT id, name, email, role, phone, company_name, gst_number, avatar, approval_status, created_at FROM users WHERE id = ? LIMIT 1';
   const dbUsers = await dbQuery(sqlUser, [req.user.id]);
 
   let user = dbUsers?.[0];
@@ -536,6 +536,8 @@ export async function getMe(req: AuthenticatedRequest, res: Response) {
     success: true,
     user: {
       ...effectiveUser,
+      companyName: effectiveUser.company_name || effectiveUser.companyName || '',
+      gstNumber: effectiveUser.gst_number || effectiveUser.gstNumber || '',
       approvalStatus: effectiveUser.approval_status || effectiveUser.approvalStatus || 'pending',
       creatorProfile: creatorProfile || undefined,
     },
@@ -823,7 +825,8 @@ export async function verifyOtp(req: Request, res: Response) {
         name: user.name,
         email: user.email,
         role: responseRole,
-        companyName: user.company_name,
+        companyName: user.company_name || companyName || '',
+        gstNumber: user.gst_number || gstNumber || '',
         avatar: user.avatar,
         approvalStatus: responseRole === 'BRAND' ? 'pending' : 'approved',
         creatorProfile: responseRole === 'CREATOR' ? (user.creatorProfile || undefined) : undefined,
