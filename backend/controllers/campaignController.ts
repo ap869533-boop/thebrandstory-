@@ -183,7 +183,12 @@ export async function createCampaign(req: Request, res: Response) {
       campaignTitle: data.campaignTitle,
       campaignDescription: data.campaignDescription || data.requirements || '',
       city: data.city || 'Pan India',
-      influencersCount: data.influencersCount || '1-5 Creators',
+      influencersCount: data.influencersCount || '1',
+      genderPreference: data.genderPreference || 'Any',
+      maleCount: data.maleCount || 0,
+      femaleCount: data.femaleCount || 0,
+      ageRange: data.ageRange || 'Any',
+      language: data.language || 'Any',
       followerRange: data.followerRange || 'Any',
       budget: data.budget || 'Negotiable',
       category: data.category || 'Lifestyle',
@@ -201,9 +206,9 @@ export async function createCampaign(req: Request, res: Response) {
 
     // MySQL Insert
     dbQuery(
-      `INSERT INTO campaign_requirements (id, company_name, contact_person, email, campaign_title, campaign_description, city, budget, category, collaboration_type, requirements, platforms, approval_status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved')`,
-      [newCampaign.id, newCampaign.companyName, newCampaign.contactPerson, newCampaign.email, newCampaign.campaignTitle, newCampaign.campaignDescription, newCampaign.city, newCampaign.budget, newCampaign.category, newCampaign.collaborationType, newCampaign.requirements, JSON.stringify(newCampaign.platforms)]
+      `INSERT INTO campaign_requirements (id, company_name, contact_person, email, campaign_title, campaign_description, city, budget, category, collaboration_type, requirements, platforms, influencers_count, gender_preference, male_count, female_count, age_range, language, approval_status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved')`,
+      [newCampaign.id, newCampaign.companyName, newCampaign.contactPerson, newCampaign.email, newCampaign.campaignTitle, newCampaign.campaignDescription, newCampaign.city, newCampaign.budget, newCampaign.category, newCampaign.collaborationType, newCampaign.requirements, JSON.stringify(newCampaign.platforms), newCampaign.influencersCount, newCampaign.genderPreference, newCampaign.maleCount, newCampaign.femaleCount, newCampaign.ageRange, newCampaign.language]
     ).catch(err => console.warn('MySQL campaign insert notice:', err));
 
     res.status(201).json({ success: true, campaign: newCampaign });

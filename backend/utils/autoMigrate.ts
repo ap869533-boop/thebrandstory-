@@ -154,7 +154,12 @@ export async function runAutoMigrations() {
       `ALTER TABLE brand_profiles ADD COLUMN facebook_url VARCHAR(255) DEFAULT NULL`,
       `ALTER TABLE brand_profiles ADD COLUMN instagram_url VARCHAR(255) DEFAULT NULL`,
       `ALTER TABLE brand_profiles ADD COLUMN youtube_url VARCHAR(255) DEFAULT NULL`,
-      `ALTER TABLE brand_profiles ADD COLUMN linkedin_url VARCHAR(255) DEFAULT NULL`
+      `ALTER TABLE brand_profiles ADD COLUMN linkedin_url VARCHAR(255) DEFAULT NULL`,
+      `ALTER TABLE campaign_requirements ADD COLUMN gender_preference VARCHAR(50) DEFAULT 'Any'`,
+      `ALTER TABLE campaign_requirements ADD COLUMN male_count INT DEFAULT 0`,
+      `ALTER TABLE campaign_requirements ADD COLUMN female_count INT DEFAULT 0`,
+      `ALTER TABLE campaign_requirements ADD COLUMN age_range VARCHAR(50) DEFAULT 'Any'`,
+      `ALTER TABLE campaign_requirements ADD COLUMN language VARCHAR(50) DEFAULT 'Any'`
     ];
 
     for (const query of alterQueries) {

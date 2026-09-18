@@ -171,11 +171,29 @@ export const OpportunitiesView: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between text-[11px] text-slate-500">
-                    <span>Followers: <strong>{camp.followerRange}</strong></span>
-                    <span className="text-[#D4A338] font-semibold">
-                      {Array.isArray(camp.applicants) ? camp.applicants.length : (camp.applicantsCount || 0)} Pitches
-                    </span>
+                  <div className="flex flex-col gap-1.5 text-[11px] text-slate-500">
+                    <div className="flex items-center justify-between">
+                      <span>Followers: <strong>{camp.followerRange}</strong></span>
+                      <span className="text-[#D4A338] font-semibold">
+                        {Array.isArray(camp.applicants) ? camp.applicants.length : (camp.applicantsCount || 0)} Pitches
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Influencers Needed: <strong>{camp.influencersCount || 1}</strong></span>
+                      {camp.language && camp.language !== 'Any' && (
+                        <span>Lang: <strong>{camp.language}</strong></span>
+                      )}
+                    </div>
+                    {(camp.genderPreference || camp.ageRange) && (
+                      <div className="flex items-center justify-between">
+                        {camp.genderPreference && (
+                          <span>Gender: <strong>{camp.genderPreference === 'Custom Mix' ? `${camp.maleCount}M, ${camp.femaleCount}F` : camp.genderPreference}</strong></span>
+                        )}
+                        {camp.ageRange && camp.ageRange !== 'Any' && (
+                          <span>Age: <strong>{camp.ageRange}</strong></span>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {isAlreadyPitched(camp) ? (

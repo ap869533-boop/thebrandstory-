@@ -95,85 +95,82 @@ export const FeaturedBrandsSection: React.FC = () => {
           </p>
         </div>
 
-        {/* Brand Cards Grid - Matching reference image design exactly */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {displayBrands.map((brand, idx) => (
-            <div
-              key={brand.id || idx}
-              className={`group bg-white rounded-[24px] border ${
-                brand.brandName === 'Reliance Retail' ? 'border-red-50 hover:border-red-100 bg-gradient-to-b from-white to-red-50/10' : 'border-slate-100'
-              } p-5 shadow-[0_2px_20px_-8px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_30px_-8px_rgba(0,0,0,0.1)] hover:-translate-y-2 transition-all duration-500 flex flex-col items-center text-center`}
-            >
-              {/* Logo Area with glow */}
-              <div className="relative flex items-center justify-center">
-                <div className={`absolute inset-0 rounded-full blur-xl opacity-20 group-hover:opacity-40 transition-opacity duration-500 ${
-                  brand.brandName === 'Infosys BPM' ? 'bg-blue-500' :
-                  brand.brandName === 'Reliance Retail' ? 'bg-red-500' : 'bg-slate-500'
-                }`}></div>
-                <div className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center p-3 bg-white border ${
-                  brand.brandName === 'Infosys BPM' ? 'border-blue-100 shadow-[0_0_15px_rgba(59,130,246,0.15)]' :
-                  brand.brandName === 'Reliance Retail' ? 'border-red-100 shadow-[0_0_15px_rgba(239,68,68,0.15)]' : 'border-slate-100 shadow-[0_0_15px_rgba(100,116,139,0.15)]'
-                } group-hover:scale-105 transition-transform duration-500`}>
-                  {brand.logoUrl ? (
-                    <img
-                      src={brand.logoUrl}
-                      alt={brand.brandName}
-                      className="max-h-full max-w-full object-contain"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).onerror = null;
-                        (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(brand.brandName || 'Brand')}&background=f1f5f9&color=0f172a&bold=true`;
-                      }}
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                      <Building2 className="w-6 h-6" />
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Title */}
-              <h3 className="font-bold text-slate-800 text-base sm:text-lg mt-4 mb-1">
-                {brand.brandName}
-              </h3>
-              
-              {/* Subtitle */}
-              <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-[0.12em] line-clamp-1">
-                {brand.industry || 'Verified Brand'}
-              </p>
-
-              {/* Divider */}
-              <div className={`w-6 h-[2px] mt-3 mb-3 rounded-full ${
-                brand.brandName === 'Infosys BPM' ? 'bg-blue-300' :
-                brand.brandName === 'Reliance Retail' ? 'bg-red-200' : 'bg-slate-300'
-              }`}></div>
-
-              {/* Description Text */}
-              <p className="text-xs text-slate-500 leading-relaxed line-clamp-2 px-1 flex-1 mb-4">
-                {brand.description || `Join ${brand.brandName} for active influencer campaigns.`}
-              </p>
-
-              {/* Action Button - visible only on hover */}
-              <button
-                onClick={() => {
-                  navigateTo('brand-detail', {
-                    id: brand.id,
-                    brandName: brand.brandName,
-                    companyName: brand.brandName,
-                    logoUrl: brand.logoUrl,
-                    description: brand.description,
-                    industry: brand.industry,
-                    city: brand.city,
-                    website: brand.website
-                  });
-                }}
-                className="px-6 py-2 rounded-full bg-[#1a202c] hover:bg-black text-white font-medium text-xs transition-all duration-300 flex items-center justify-center gap-1.5 shadow-lg w-auto"
+        {/* Auto-Sliding Brand Cards - Marquee Style */}
+        <div className="relative w-full overflow-hidden py-10 -mx-4 px-4 sm:mx-0 sm:px-0 mask-image-fade">
+          {/* We use animate-marquee which translates from 0 to -50% and we duplicate the items so it loops seamlessly */}
+          <div className="animate-marquee gap-6 items-stretch">
+            {[...displayBrands, ...displayBrands, ...displayBrands, ...displayBrands].map((brand, idx) => (
+              <div
+                key={`${brand.id || 'brand'}-${idx}`}
+                className={`group bg-white rounded-[24px] border ${
+                  brand.brandName === 'Reliance Retail' ? 'border-red-50 hover:border-red-100 bg-gradient-to-b from-white to-red-50/10' : 'border-slate-100'
+                } p-5 shadow-[0_8px_30px_rgba(0,0,0,0.08)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.14)] hover:-translate-y-2 cursor-pointer transition-all duration-500 flex flex-col items-center text-center w-[280px] sm:w-[320px] shrink-0`}
               >
-                <span>View Brand</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </button>
-            </div>
-          ))}
+                {/* Logo Area with glow */}
+                <div className="relative flex items-center justify-center">
+                  <div className={`absolute inset-0 rounded-full blur-xl opacity-20 group-hover:opacity-40 transition-opacity duration-500 ${
+                    brand.brandName === 'Infosys BPM' ? 'bg-blue-500' :
+                    brand.brandName === 'Reliance Retail' ? 'bg-red-500' : 'bg-slate-500'
+                  }`}></div>
+                  <div className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center bg-white border overflow-hidden ${
+                    brand.brandName === 'Infosys BPM' ? 'border-blue-100 shadow-[0_0_15px_rgba(59,130,246,0.15)]' :
+                    brand.brandName === 'Reliance Retail' ? 'border-red-100 shadow-[0_0_15px_rgba(239,68,68,0.15)]' : 'border-slate-100 shadow-[0_0_15px_rgba(100,116,139,0.15)]'
+                  } group-hover:scale-105 transition-transform duration-500`}>
+                    {brand.logoUrl ? (
+                      <img
+                        src={brand.logoUrl}
+                        alt={brand.brandName}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).onerror = null;
+                          (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(brand.brandName || 'Brand')}&background=f1f5f9&color=0f172a&bold=true`;
+                        }}
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                        <Building2 className="w-6 h-6" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Title */}
+                <h3 className="font-bold text-slate-800 text-base sm:text-lg mt-4 mb-1">
+                  {brand.brandName}
+                </h3>
+                
+                {/* Subtitle */}
+                <p className="text-[10px] font-bold tracking-widest uppercase text-slate-400 mb-4 line-clamp-1">
+                  {brand.industry}
+                </p>
+                
+                {/* Description */}
+                <p className="text-xs text-slate-500 leading-relaxed mb-6 flex-1 px-2 line-clamp-3">
+                  {brand.description || 'Verified enterprise brand hiring creators for multiple campaigns.'}
+                </p>
+
+                {/* Action */}
+                <button
+                  onClick={() => {
+                    navigateTo('brand-detail', {
+                      id: brand.id,
+                      brandName: brand.brandName,
+                      companyName: brand.brandName,
+                      logoUrl: brand.logoUrl,
+                      description: brand.description,
+                      industry: brand.industry,
+                      city: brand.city,
+                      website: brand.website
+                    });
+                  }}
+                  className="mt-auto px-5 py-2.5 bg-[#0f172a] hover:bg-black text-white text-xs font-bold rounded-full transition flex items-center gap-1.5 shadow-md shadow-slate-900/10 group-hover:shadow-lg group-hover:-translate-y-0.5"
+                >
+                  View Brand
+                  <ArrowRight className="w-3.5 h-3.5 opacity-70 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
