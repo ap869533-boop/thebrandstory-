@@ -1,26 +1,16 @@
 import React, { useRef } from 'react';
-import { Award, ChevronLeft, ChevronRight, ArrowRight, Sparkles } from 'lucide-react';
+import { Award, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import { usePlatform } from '../../context/PlatformContext';
 import { CreatorCard } from '../common/CreatorCard';
-import { matchesCityLocation } from '../../utils/location';
 
 export const TopCreatorsSection: React.FC = () => {
-  const { creators, navigateTo, setFilters, filters } = usePlatform();
+  const { creators, navigateTo, setFilters } = usePlatform();
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const cityActive = filters.city && filters.city !== 'all';
-
-  // Top 20 creators ranked by followers and Featured status — filtered by selected city
   const topCreators = creators
     .filter((c) => {
       if (c.status !== 'active') return false;
-      const baseMatch = c.isTop20 || c.followers >= 50000 || c.isFeatured;
-      if (!baseMatch) return false;
-      // Apply city filter from hero dropdown strictly by actual location
-      if (cityActive) {
-        if (!matchesCityLocation(c.currentCity || '', filters.city)) return false;
-      }
-      return true;
+      return c.isTop20 || c.followers >= 50000 || c.isFeatured;
     })
     .sort((a, b) => b.followers - a.followers)
     .slice(0, 10);
@@ -37,7 +27,7 @@ export const TopCreatorsSection: React.FC = () => {
       ...prev,
       sortBy: 'followers',
       category: 'all',
-      city: filters.city || 'all',
+      city: 'all',
     }));
     navigateTo('explore');
   };
@@ -49,15 +39,13 @@ export const TopCreatorsSection: React.FC = () => {
           <div>
             <div className="flex items-center gap-1.5 text-[#D4A338] text-xs font-extrabold uppercase tracking-wider mb-1">
               <Award className="w-3.5 h-3.5" />
-              <span>{cityActive ? `${filters.city} Creator Rankings` : "India's Premier Creator Rankings"}</span>
+              <span>India's Premier Creator Rankings</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-              {cityActive ? `Top Influencers in ${filters.city}` : 'Top 20 Influencers in India'}
+              Top 20 Influencers in India
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              {cityActive
-                ? `Curated creators from ${filters.city} with verified engagement`
-                : 'Curated leaders with verified engagement & proven campaign ROI'}
+              Curated leaders with verified engagement & proven campaign ROI
             </p>
           </div>
 
@@ -89,7 +77,6 @@ export const TopCreatorsSection: React.FC = () => {
           </div>
         </div>
 
-        {/* Carousel Row */}
         <div
           ref={scrollRef}
           className="flex gap-3 sm:gap-5 overflow-x-auto pb-4 pt-1 snap-x scrollbar-none no-scrollbar w-full max-w-full"
@@ -100,7 +87,7 @@ export const TopCreatorsSection: React.FC = () => {
             </div>
           )) : (
             <div className="w-full text-center py-8">
-              <p className="text-sm text-slate-400 font-medium">No top creators found in {filters.city}. Try selecting a different city.</p>
+              <p className="text-sm text-slate-400 font-medium">No top creators found yet.</p>
             </div>
           )}
         </div>

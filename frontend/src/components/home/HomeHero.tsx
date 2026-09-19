@@ -1,4 +1,3 @@
-import { apiUrl } from '../../config/api';
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Search,
@@ -9,8 +8,6 @@ import {
   Flame,
   ChevronDown,
   Check,
-  Navigation,
-  Loader2
 } from 'lucide-react';
 import { usePlatform } from '../../context/PlatformContext';
 import { CATEGORIES_LIST, CITIES_LIST } from '../../data/initialData';
@@ -27,120 +24,19 @@ export const HomeHero: React.FC = () => {
 
   const [keyword, setKeyword] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(filters.category || 'all');
-  const [selectedCity, setSelectedCity] = useState(() => {
-    const manual = sessionStorage.getItem('sc_manual_city');
-    if (manual) return manual;
-    const detected = sessionStorage.getItem('sc_detected_city');
-    if (detected) return detected;
-    return filters.city && filters.city !== 'all' ? filters.city : 'all';
-  });
+  const [selectedCity, setSelectedCity] = useState(
+    filters.city && filters.city !== 'all' ? filters.city : 'all'
+  );
 
-  const syncCitySelection = (city: string, source: 'auto' | 'manual') => {
+  const syncCitySelection = (city: string) => {
     setSelectedCity(city);
-    setDetectedCityBadge(city === 'all' ? null : city);
-    setFilters((prev) => ({ ...prev, city }));
-    if (source === 'manual') {
-      sessionStorage.setItem('sc_manual_city', city);
-      if (city === 'all') sessionStorage.removeItem('sc_home_coords');
-    } else if (city !== 'all') {
-      sessionStorage.setItem('sc_detected_city', city);
-    }
   };
 
-  const applyDetectedLocation = async (city: string | null) => {
-    if (!city || city === 'all') return;
-    if (sessionStorage.getItem('sc_manual_city')) return;
-    syncCitySelection(city, 'auto');
-  };
-
-  // Geolocation states
-  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
-  const [detectedCityBadge, setDetectedCityBadge] = useState<string | null>(null);
-
-  // Custom Dropdown Open States
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
 
   const categoryRef = useRef<HTMLDivElement>(null);
   const cityRef = useRef<HTMLDivElement>(null);
-
-  // Detect location once unless the user already chose a city or previously denied permission.
-  useEffect(() => {
-    if (sessionStorage.getItem('sc_manual_city')) return;
-    if (sessionStorage.getItem('sc_geo_denied') === '1') return;
-    if (!('geolocation' in navigator)) return;
-    if (sessionStorage.getItem('sc_detected_city')) {
-      const saved = sessionStorage.getItem('sc_detected_city');
-      if (saved) syncCitySelection(saved, 'auto');
-      return;
-    }
-
-    setIsDetectingLocation(true);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        sessionStorage.setItem(
-          'sc_home_coords',
-          JSON.stringify({ lat: position.coords.latitude, lng: position.coords.longitude })
-        );
-        void fetchCityFromCoordinates(position.coords.latitude, position.coords.longitude);
-      },
-      (error) => {
-        setIsDetectingLocation(false);
-        if (error.code === error.PERMISSION_DENIED) {
-          sessionStorage.setItem('sc_geo_denied', '1');
-        }
-      },
-      { timeout: 15000, maximumAge: 300000, enableHighAccuracy: false }
-    );
-  }, []);
-
-  // Reverse Geocoding API handler for GPS
-  const fetchCityFromCoordinates = async (lat: number, lng: number) => {
-    setIsDetectingLocation(true);
-    try {
-      const res = await fetch(apiUrl(`/api/detect-location?lat=${lat}&lng=${lng}`));
-      if (!res.ok) {
-        throw new Error(`Location lookup failed with status ${res.status}`);
-      }
-      const data = await res.json();
-      if (!data.success || !data.displayName) {
-        throw new Error('Location lookup did not return a valid location');
-      }
-      await applyDetectedLocation(data.displayName);
-    } catch {
-      sessionStorage.removeItem('sc_detected_city');
-      setSelectedCity('all');
-      setDetectedCityBadge(null);
-    } finally {
-      setIsDetectingLocation(false);
-    }
-  };
-
-  // Manual Trigger to re-detect location
-  const handleManualLocationDetect = () => {
-    setCityDropdownOpen(false);
-
-    if (!('geolocation' in navigator)) {
-      alert('Geolocation is not supported by your browser. Please select your city manually.');
-      return;
-    }
-
-    setIsDetectingLocation(true);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        void fetchCityFromCoordinates(position.coords.latitude, position.coords.longitude);
-      },
-      async (error) => {
-        setIsDetectingLocation(false);
-        if (error.code === error.PERMISSION_DENIED) {
-          alert('Location permission was denied. Please allow location access and try again.');
-          return;
-        }
-        alert('We could not detect your location. Please select your city manually.');
-      },
-      { timeout: 15000, maximumAge: 0, enableHighAccuracy: true }
-    );
-  };
 
   // Close dropdowns on click outside
   useEffect(() => {
@@ -323,27 +219,8 @@ export const HomeHero: React.FC = () => {
                   />
                 </button>
 
-                {/* Popover Menu with GPS Location option */}
                 {cityDropdownOpen && (
                   <div className="absolute top-full right-0 sm:left-0 mt-2 w-56 sm:w-72 bg-black text-white rounded-2xl shadow-2xl border border-zinc-800 p-2 z-50 max-h-64 sm:max-h-80 overflow-y-auto text-left space-y-1 animate-fadeIn">
-                    {/* GPS Detect Location Option */}
-                    <button
-                      type="button"
-                      onClick={handleManualLocationDetect}
-                      disabled={isDetectingLocation}
-                      className="w-full px-2.5 py-1.5 sm:py-2 bg-[#D4A338]/15 hover:bg-[#D4A338]/25 text-[#D4A338] border border-[#D4A338]/30 rounded-xl text-[11px] sm:text-xs font-bold flex items-center justify-between transition cursor-pointer mb-1"
-                    >
-                      <div className="flex items-center gap-1.5">
-                        {isDetectingLocation ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin text-[#D4A338]" />
-                        ) : (
-                          <Navigation className="w-3.5 h-3.5 text-[#D4A338]" />
-                        )}
-                        <span>{isDetectingLocation ? 'Detecting GPS...' : 'Detect Location'}</span>
-                      </div>
-                      <span className="text-[9px] bg-[#D4A338] text-black px-1 py-0.2 rounded-md font-black">GPS</span>
-                    </button>
-
                     <div className="px-3 py-1 text-[10px] font-bold text-zinc-400 uppercase tracking-wider border-b border-zinc-800 mb-1">
                       Select City
                     </div>
@@ -351,7 +228,7 @@ export const HomeHero: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => {
-                        syncCitySelection('all', 'manual');
+                        syncCitySelection('all');
                         setCityDropdownOpen(false);
                       }}
                       className={`w-full px-3 py-1.5 sm:py-2 rounded-xl text-xs font-medium flex items-center justify-between transition cursor-pointer ${
@@ -369,7 +246,7 @@ export const HomeHero: React.FC = () => {
                         key={idx}
                         type="button"
                         onClick={() => {
-                          syncCitySelection(c.name, 'manual');
+                          syncCitySelection(c.name);
                           setCityDropdownOpen(false);
                         }}
                         className={`w-full px-3 py-1.5 sm:py-2 rounded-xl text-xs font-medium flex items-center justify-between transition cursor-pointer ${
