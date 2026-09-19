@@ -159,8 +159,8 @@ const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false);
     }
 
     setIsSubmitting(true);
-    setTimeout(() => {
-      const campId = postCampaignRequirement({
+    setTimeout(async () => {
+      const campId = await postCampaignRequirement({
         companyName: finalBrandName,
         contactPerson: formData.contactPerson || finalBrandName,
         email: formData.email,

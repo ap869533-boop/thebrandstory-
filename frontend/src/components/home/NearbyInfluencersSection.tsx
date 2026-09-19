@@ -63,7 +63,7 @@ export const NearbyInfluencersSection: React.FC = () => {
                bio: '',
                languages: [],
                platforms: { instagram: { handle: c.username, followers: c.followers || 0 } }
-             } as Creator;
+             } as unknown as Creator;
           });
           setNearby(fullCreators);
         } else if (!cancelled) {
