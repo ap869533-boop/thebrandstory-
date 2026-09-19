@@ -252,13 +252,19 @@ export async function detectLocation(req: Request, res: Response) {
         const address = geoData.address || {};
         const detectedCityName = address.city || address.town || address.municipality || address.state_district || address.county || '';
         const detectedState = address.state || '';
+        const detectedCountry = address.country || '';
         const matchedCity = mapIndianCity(detectedCityName, detectedState);
 
+        const displayParts = [detectedCityName, detectedState, detectedCountry].filter(Boolean);
+        const uniqueParts = Array.from(new Set(displayParts));
+
         return res.json({
-          success: !!matchedCity,
+          success: true,
           source: 'gps',
           rawCity: detectedCityName,
           rawState: detectedState,
+          rawCountry: detectedCountry,
+          displayName: uniqueParts.join(', ') || null,
           matchedCity: matchedCity,
           latitude,
           longitude,

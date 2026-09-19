@@ -4,6 +4,8 @@ import { INITIAL_CREATORS } from '../data/initialData';
 import { Creator } from '../types';
 import { sendApprovalEmail } from '../utils/mailer';
 import { cleanInstagramHandle } from '../utils/sanitize';
+import { AuthenticatedRequest } from '../middleware/authMiddleware';
+import { validateOptionalUrl } from '../utils/validation';
 
 // In-Memory store initialized with seed data as resilient fallback
 export let creatorsStore: Creator[] = [...INITIAL_CREATORS];
@@ -293,6 +295,24 @@ export async function getCreatorByIdOrUsername(req: Request, res: Response) {
         verifiedCollaboration: Boolean(r.verified_collaboration),
       }));
     }
+    try {
+      const posts: any = await dbQuery(
+        'SELECT id, image_url, caption, created_at FROM creator_posts WHERE creator_id = ? ORDER BY created_at DESC LIMIT 50',
+        [creator.id]
+      );
+      if (Array.isArray(posts) && posts.length > 0) {
+        const photoItems = posts.map((p: any) => ({
+          id: p.id,
+          type: 'post' as const,
+          title: p.caption || 'Photo post',
+          thumbnail: p.image_url,
+          url: p.image_url,
+        }));
+        creator.portfolio = [...photoItems, ...(creator.portfolio || [])];
+      }
+    } catch {
+      // posts table may not exist yet on first boot
+    }
     return res.json({ success: true, creator });
   }
 
@@ -451,8 +471,31 @@ export async function createCreator(req: Request, res: Response) {
   }
 }
 
-export async function updateCreator(req: Request, res: Response) {
+export async function updateCreator(req: AuthenticatedRequest, res: Response) {
   const { id } = req.params;
+  if (!req.user) {
+    return res.status(401).json({ success: false, error: 'Authentication required' });
+  }
+
+  const dbOwner: any = await dbQuery('SELECT id, user_id FROM creators WHERE id = ? LIMIT 1', [id]);
+  const ownerRow = Array.isArray(dbOwner) && dbOwner[0] ? dbOwner[0] : null;
+  const isAdmin = req.user.role === 'ADMIN' || req.user.role === 'SALES';
+  const isOwner =
+    ownerRow &&
+    (ownerRow.id === req.user.id || ownerRow.user_id === req.user.id);
+  if (!isAdmin && !isOwner) {
+    return res.status(403).json({ success: false, error: 'Not authorized to update this profile' });
+  }
+
+  if (Array.isArray(req.body.socialPlatforms)) {
+    for (const p of req.body.socialPlatforms) {
+      if (p?.url) {
+        const check = validateOptionalUrl(p.url, `${p.platform || 'Social'} URL`);
+        if (!check.ok) return res.status(400).json({ success: false, error: check.error });
+      }
+    }
+  }
+
   let index = creatorsStore.findIndex((c) => c.id === id);
   if (index === -1) {
     const dbRows = await dbQuery('SELECT * FROM creators WHERE id = ? LIMIT 1', [id]);
@@ -544,7 +587,9 @@ export async function updateCreator(req: Request, res: Response) {
         status = COALESCE(?, status),
         social_platforms = COALESCE(?, social_platforms),
         collaboration_types = COALESCE(?, collaboration_types),
-        audience = COALESCE(?, audience)
+        audience = COALESCE(?, audience),
+        latitude = COALESCE(?, latitude),
+        longitude = COALESCE(?, longitude)
        WHERE id = ?`,
       [
         body.name !== undefined ? body.name : null,
@@ -582,6 +627,8 @@ export async function updateCreator(req: Request, res: Response) {
         body.socialPlatforms !== undefined ? JSON.stringify(body.socialPlatforms) : null,
         body.collaborationTypes !== undefined ? JSON.stringify(body.collaborationTypes) : null,
         body.audience !== undefined ? JSON.stringify(body.audience) : null,
+        body.latitude !== undefined ? body.latitude : null,
+        body.longitude !== undefined ? body.longitude : null,
         id,
       ]
     );

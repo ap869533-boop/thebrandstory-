@@ -7,14 +7,15 @@ import {
   deleteCreator,
   addCreatorReview
 } from '../controllers/creatorController';
+import { authMiddleware, optionalAuthMiddleware } from '../middleware/authMiddleware';
 
 const router = Router();
 
 router.get('/', getCreators);
 router.get('/:idOrUsername', getCreatorByIdOrUsername);
 router.post('/', createCreator);
-router.put('/:id', updateCreator);
-router.delete('/:id', deleteCreator);
-router.post('/:id/reviews', addCreatorReview);
+router.put('/:id', authMiddleware, updateCreator);
+router.delete('/:id', authMiddleware, deleteCreator);
+router.post('/:id/reviews', authMiddleware, addCreatorReview);
 
 export default router;

@@ -1,7 +1,6 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { PredictiveArcCanvas } from '@designcodeio/threeui';
 import { HomeHero } from '../components/home/HomeHero';
-import { usePlatform } from '../context/PlatformContext';
 import { TrustProofStrip } from '../components/home/TrustProofStrip';
 import { BrandPartnersSlider } from '../components/home/BrandPartnersSlider';
 import { TopCreatorsSection } from '../components/home/TopCreatorsSection';
@@ -11,14 +10,9 @@ import { LiveOpportunitiesBoard } from '../components/home/LiveOpportunitiesBoar
 import { CTABanners } from '../components/home/CTABanners';
 import { TestimonialsAndFAQ } from '../components/home/TestimonialsAndFAQ';
 import { FeaturedBrandsSection } from '../components/home/FeaturedBrandsSection';
+import { NearbyInfluencersSection } from '../components/home/NearbyInfluencersSection';
 
 export const HomeView: React.FC = () => {
-  const { setFilters } = usePlatform();
-
-  useEffect(() => {
-    setFilters((prev) => ({ ...prev, city: 'all' }));
-  }, [setFilters]);
-
   return (
     <div className="min-h-screen bg-white w-full max-w-full overflow-x-hidden">
       {/* 1 & 2. Hero Section + Trust Proof Strip: Exactly fills mobile screen height with TrustProofStrip as the last element */}
@@ -56,10 +50,13 @@ export const HomeView: React.FC = () => {
       <div className="relative z-10">
         <BrandPartnersSlider />
 
-        {/* 4. Top Influencers in India */}
+        {/* 4. Nearby Influencers (Dynamic based on location) */}
+        <NearbyInfluencersSection />
+
+        {/* 4.5 Top Influencers in India */}
         <TopCreatorsSection />
 
-        {/* 4.5 Featured Brands Showcase */}
+        {/* 4.7 Featured Brands Showcase */}
         <FeaturedBrandsSection />
 
         {/* 5. Regional & Tier Highlights */}

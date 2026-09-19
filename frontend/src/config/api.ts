@@ -49,3 +49,41 @@ export async function readApiResponse(response: Response): Promise<any> {
     };
   }
 }
+
+/** Bearer auth headers from the persisted JWT. */
+export function authHeaders(extra?: Record<string, string>): HeadersInit {
+  const token = localStorage.getItem('sc_auth_token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(extra || {}),
+  };
+}
+
+/** Basic WhatsApp / mobile validation (mirrors backend). */
+export function validateWhatsAppNumber(raw: string): { ok: boolean; error?: string } {
+  const digits = String(raw || '').replace(/[^\d]/g, '');
+  if (digits.length < 10 || digits.length > 15) {
+    return { ok: false, error: 'Enter a valid WhatsApp number (10–15 digits)' };
+  }
+  if (digits.length === 10 && !/^[6-9]\d{9}$/.test(digits)) {
+    return { ok: false, error: 'Enter a valid 10-digit Indian mobile number' };
+  }
+  if (digits.length === 12 && digits.startsWith('91') && !/^91[6-9]\d{9}$/.test(digits)) {
+    return { ok: false, error: 'Enter a valid Indian WhatsApp number' };
+  }
+  return { ok: true };
+}
+
+export function validateOptionalUrl(raw: string): { ok: boolean; error?: string } {
+  if (!raw || !String(raw).trim()) return { ok: true };
+  try {
+    const u = new URL(String(raw).trim());
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') {
+      return { ok: false, error: 'URL must start with http:// or https://' };
+    }
+    return { ok: true };
+  } catch {
+    return { ok: false, error: 'Enter a valid URL' };
+  }
+}

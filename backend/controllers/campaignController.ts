@@ -1,112 +1,70 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { dbQuery } from '../config/db';
 import { CampaignRequirement } from '../types';
 import { creatorsStore } from './creatorController';
+import { AuthenticatedRequest } from '../middleware/authMiddleware';
+import { parseNonNegInt, validateWhatsAppNumber } from '../utils/validation';
 
-let campaignsStore: CampaignRequirement[] = [
-  {
-    id: 'camp-1',
-    companyName: 'Aura Indo-Western',
-    contactPerson: 'Aditi Rao',
-    email: 'aditi@aurafashion.in',
-    phone: '+91 98101 23456',
-    industry: 'Fashion & Apparel',
-    campaignTitle: 'Festive Festive Lookbook & Store Walk-In Campaign',
-    campaignDescription: 'Looking for 5 verified fashion creators in Delhi NCR & Mumbai for festive collection try-on reels and store visit reels.',
-    city: 'Delhi NCR',
-    influencersCount: '5 Creators',
-    followerRange: '50k-200k',
-    budget: '₹40,000 - ₹1,00,000',
-    category: 'Fashion',
-    collaborationType: 'Paid',
-    campaignDate: 'Next 2 Weeks',
-    platforms: ['instagram'],
-    requirements: '1 Reel with audio trending + 2 Stories with swipe-up product link.',
-    status: 'Open',
-    applicantsCount: 0,
-    applicants: [],
-    createdAt: '2 days ago',
-  },
-  {
-    id: 'camp-2',
-    companyName: 'Bakehouse 101 Cafes',
-    contactPerson: 'Karan Mehra',
-    email: 'karan@bakehouse101.com',
-    phone: '+91 98200 87654',
-    industry: 'Restaurants & Cafes',
-    campaignTitle: 'New Artisanal Dessert Menu Launch',
-    campaignDescription: 'Invite local foodie creators in Mumbai & Pune for an exclusive tasting session & aesthetic cafe aesthetic reels.',
-    city: 'Mumbai',
-    influencersCount: '8 Creators',
-    followerRange: '10k-50k',
-    budget: '₹20,000 - ₹50,000 + Complimentary Feast',
-    category: 'Food',
-    collaborationType: 'Barter',
-    campaignDate: 'This Weekend',
-    platforms: ['instagram'],
-    requirements: 'Reel review of top 3 signature desserts + location geo-tag.',
-    status: 'Open',
-    applicantsCount: 0,
-    applicants: [],
-    createdAt: '1 day ago',
-  },
-  {
-    id: 'camp-3',
-    companyName: 'Zenith Fitness Gear',
-    contactPerson: 'Vikram Singh',
-    email: 'collabs@zenithfit.in',
-    phone: '+91 99300 45678',
-    industry: 'Gyms & Wellness',
-    campaignTitle: 'Resistance Bands & Smart Shaker UGC Ad Campaign',
-    campaignDescription: 'Seeking fitness athletes & trainers for raw UGC workout videos to be used in meta ads.',
-    city: 'Bangalore',
-    influencersCount: '4 Creators',
-    followerRange: '25k-100k',
-    budget: '₹35,000 - ₹75,000',
-    category: 'Fitness',
-    collaborationType: 'UGC',
-    campaignDate: 'Immediate',
-    platforms: ['instagram', 'youtube'],
-    requirements: 'Raw 4K 9:16 vertical workout clip + 3 hook variations for meta advertising whitelist.',
-    status: 'Open',
-    applicantsCount: 0,
-    applicants: [],
-    createdAt: '3 days ago',
-  }
-];
+let campaignsStore: CampaignRequirement[] = [];
 
-export async function getCampaigns(req: Request, res: Response) {
+function mapCampaignRow(r: any, campApplicants: any[] = []) {
+  const maleCount = Number(r.male_count) || 0;
+  const femaleCount = Number(r.female_count) || 0;
+  const totalCount = maleCount + femaleCount;
+  return {
+    id: r.id,
+    userId: r.user_id || null,
+    companyName: r.company_name,
+    contactPerson: r.contact_person,
+    email: r.email,
+    phone: r.phone || '',
+    industry: r.industry || 'General',
+    campaignTitle: r.campaign_title,
+    campaignDescription: r.campaign_description,
+    city: r.city,
+    influencersCount: totalCount > 0 ? String(totalCount) : (r.influencers_count || '0'),
+    maleCount,
+    femaleCount,
+    totalCount,
+    followerRange: r.follower_range,
+    budget: r.budget,
+    category: r.category,
+    collaborationType: r.collaboration_type,
+    campaignDate: r.campaign_date || 'Upcoming',
+    platforms: typeof r.platforms === 'string' ? JSON.parse(r.platforms) : (r.platforms || ['instagram']),
+    requirements: r.requirements || r.campaign_description,
+    status: r.status || 'Open',
+    approvalStatus: r.approval_status || 'pending',
+    applicantsCount: campApplicants.length || Number(r.applicants_count) || 0,
+    applicants: campApplicants,
+    createdAt: r.created_at ? new Date(r.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short' }) : 'Recently',
+  };
+}
+
+async function fetchApplicantsByCampaign(): Promise<Record<string, any[]>> {
+  const applicantsByCampaign: Record<string, any[]> = {};
   try {
-    const dbRows: any = await dbQuery('SELECT * FROM campaign_requirements ORDER BY created_at DESC');
+    const applicantsRows = (await dbQuery(`
+      SELECT 
+        ca.id,
+        ca.campaign_id,
+        ca.creator_id,
+        ca.pitch,
+        ca.status,
+        ca.applied_at,
+        COALESCE(c.name, ca.creator_name, u.name, 'Creator') as creator_name,
+        COALESCE(c.username, '') as creator_username,
+        COALESCE(c.avatar, ca.creator_avatar, u.avatar, '') as creator_avatar,
+        COALESCE(c.primary_category, 'Influencer') as creator_category,
+        COALESCE(c.current_city, 'India') as creator_city,
+        COALESCE(c.followers, 0) as creator_followers,
+        COALESCE(c.avg_views, 0) as creator_avg_views
+      FROM campaign_applicants ca
+      LEFT JOIN creators c ON (c.id = ca.creator_id OR c.user_id = ca.creator_id)
+      LEFT JOIN users u ON u.id = ca.creator_id
+      ORDER BY ca.applied_at DESC
+    `)) as any[];
 
-    // Relational Fetch: Join campaign_applicants with creators and users
-    let applicantsRows: any[] = [];
-    try {
-      applicantsRows = (await dbQuery(`
-        SELECT 
-          ca.id,
-          ca.campaign_id,
-          ca.creator_id,
-          ca.pitch,
-          ca.status,
-          ca.applied_at,
-          COALESCE(c.name, ca.creator_name, u.name, 'Creator') as creator_name,
-          COALESCE(c.username, '') as creator_username,
-          COALESCE(c.avatar, ca.creator_avatar, u.avatar, '') as creator_avatar,
-          COALESCE(c.primary_category, 'Influencer') as creator_category,
-          COALESCE(c.current_city, 'India') as creator_city,
-          COALESCE(c.followers, 0) as creator_followers,
-          COALESCE(c.avg_views, 0) as creator_avg_views
-        FROM campaign_applicants ca
-        LEFT JOIN creators c ON (c.id = ca.creator_id OR c.user_id = ca.creator_id)
-        LEFT JOIN users u ON u.id = ca.creator_id
-        ORDER BY ca.applied_at DESC
-      `)) as any[];
-    } catch (e) {
-      console.warn('campaign_applicants fetch notice:', e);
-    }
-
-    const applicantsByCampaign: Record<string, any[]> = {};
     if (Array.isArray(applicantsRows)) {
       for (const a of applicantsRows) {
         if (!applicantsByCampaign[a.campaign_id]) {
@@ -122,68 +80,100 @@ export async function getCampaigns(req: Request, res: Response) {
           creatorFollowers: Number(a.creator_followers) || 0,
           creatorAvgViews: Number(a.creator_avg_views) || 0,
           pitch: a.pitch,
-          appliedAt: a.applied_at ? new Date(a.applied_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Recently',
+          appliedAt: a.applied_at
+            ? new Date(a.applied_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+            : 'Recently',
           status: a.status || 'Pending',
         });
       }
     }
+  } catch (e) {
+    console.warn('campaign_applicants fetch notice:', e);
+  }
+  return applicantsByCampaign;
+}
 
-    const mapped = (dbRows || []).map((r: any) => {
-      const campApplicants = applicantsByCampaign[r.id] || [];
-      return {
-        id: r.id,
-        companyName: r.company_name,
-        contactPerson: r.contact_person,
-        email: r.email,
-        phone: r.phone || '',
-        industry: r.industry || 'General',
-        campaignTitle: r.campaign_title,
-        campaignDescription: r.campaign_description,
-        city: r.city,
-        influencersCount: r.influencers_count,
-        followerRange: r.follower_range,
-        budget: r.budget,
-        category: r.category,
-        collaborationType: r.collaboration_type,
-        campaignDate: r.campaign_date || 'Upcoming',
-        platforms: typeof r.platforms === 'string' ? JSON.parse(r.platforms) : (r.platforms || ['instagram']),
-        requirements: r.requirements || r.campaign_description,
-        status: r.status || 'Open',
-        applicantsCount: campApplicants.length || Number(r.applicants_count) || 0,
-        applicants: campApplicants,
-        createdAt: 'Recently',
-      };
-    });
+/** Public listing: only approved + Open/In Review/Filled campaigns. */
+export async function getCampaigns(req: AuthenticatedRequest, res: Response) {
+  try {
+    const scope = String(req.query.scope || 'public');
+    const userId = req.user?.id;
+    const role = req.user?.role;
+
+    let sql = 'SELECT * FROM campaign_requirements';
+    const params: any[] = [];
+
+    if (scope === 'mine' && userId && role === 'BRAND') {
+      sql += ' WHERE user_id = ? OR email = ?';
+      params.push(userId, req.user?.email || '');
+    } else if (scope === 'admin' && (role === 'ADMIN' || role === 'SALES')) {
+      // all campaigns for admin
+    } else {
+      // Public: approved only, not rejected/pending
+      sql += ` WHERE approval_status = 'approved' AND status IN ('Open', 'In Review', 'Filled')`;
+    }
+
+    sql += ' ORDER BY created_at DESC';
+
+    const dbRows: any = await dbQuery(sql, params);
+    const applicantsByCampaign = await fetchApplicantsByCampaign();
+
+    const mapped = (dbRows || []).map((r: any) => mapCampaignRow(r, applicantsByCampaign[r.id] || []));
+    campaignsStore = mapped;
     return res.json({ success: true, total: mapped.length, campaigns: mapped });
   } catch (err) {
     console.warn('MySQL getCampaigns notice:', err);
   }
 
+  // Fallback: filter memory store for public
+  const publicOnly = campaignsStore.filter(
+    (c: any) => (c.approvalStatus || 'approved') === 'approved' && ['Open', 'In Review', 'Filled'].includes(c.status)
+  );
   res.json({
     success: true,
-    total: campaignsStore.length,
-    campaigns: campaignsStore,
+    total: publicOnly.length,
+    campaigns: publicOnly,
   });
 }
 
-export async function createCampaign(req: Request, res: Response) {
+export async function createCampaign(req: AuthenticatedRequest, res: Response) {
   try {
+    if (!req.user || req.user.role !== 'BRAND') {
+      return res.status(401).json({ success: false, error: 'Brand authentication required to create campaigns' });
+    }
+
     const data = req.body;
     if (!data.companyName || !data.campaignTitle) {
       return res.status(400).json({ success: false, error: 'Company Name and Campaign Title are required' });
     }
 
-    const newCampaign: CampaignRequirement = {
+    const phoneCheck = validateWhatsAppNumber(data.phone);
+    if (!phoneCheck.ok) {
+      return res.status(400).json({ success: false, error: phoneCheck.error });
+    }
+
+    const maleCount = parseNonNegInt(data.maleCount, 0);
+    const femaleCount = parseNonNegInt(data.femaleCount, 0);
+    if (maleCount + femaleCount < 1) {
+      return res.status(400).json({ success: false, error: 'Provide at least one male or female influencer count' });
+    }
+    const totalCount = maleCount + femaleCount;
+
+    const newCampaign: any = {
       id: `camp_${Date.now()}`,
+      userId: req.user.id,
       companyName: data.companyName,
       contactPerson: data.contactPerson || data.companyName,
-      email: data.email,
-      phone: data.phone || '',
+      email: data.email || req.user.email,
+      phone: phoneCheck.normalized,
       industry: data.industry || 'General',
       campaignTitle: data.campaignTitle,
       campaignDescription: data.campaignDescription || data.requirements || '',
       city: data.city || 'Pan India',
-      influencersCount: data.influencersCount || '1-5 Creators',
+      influencersCount: String(totalCount),
+      maleCount,
+      femaleCount,
+      totalCount,
       followerRange: data.followerRange || 'Any',
       budget: data.budget || 'Negotiable',
       category: data.category || 'Lifestyle',
@@ -191,7 +181,8 @@ export async function createCampaign(req: Request, res: Response) {
       campaignDate: data.campaignDate || 'Upcoming',
       platforms: data.platforms || ['instagram'],
       requirements: data.requirements || data.campaignDescription || '',
-      status: 'Open',
+      status: 'In Review',
+      approvalStatus: 'pending',
       applicantsCount: 0,
       applicants: [],
       createdAt: 'Just now',
@@ -199,23 +190,170 @@ export async function createCampaign(req: Request, res: Response) {
 
     campaignsStore.unshift(newCampaign);
 
-    // MySQL Insert
-    dbQuery(
-      `INSERT INTO campaign_requirements (id, company_name, contact_person, email, campaign_title, campaign_description, city, budget, category, collaboration_type, requirements, platforms, approval_status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved')`,
-      [newCampaign.id, newCampaign.companyName, newCampaign.contactPerson, newCampaign.email, newCampaign.campaignTitle, newCampaign.campaignDescription, newCampaign.city, newCampaign.budget, newCampaign.category, newCampaign.collaborationType, newCampaign.requirements, JSON.stringify(newCampaign.platforms)]
-    ).catch(err => console.warn('MySQL campaign insert notice:', err));
+    try {
+      await dbQuery(
+        `INSERT INTO campaign_requirements (
+          id, user_id, company_name, contact_person, email, phone, industry,
+          campaign_title, campaign_description, city, influencers_count, male_count, female_count,
+          follower_range, budget, category, collaboration_type, campaign_date, requirements, platforms,
+          status, approval_status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'In Review', 'pending')`,
+        [
+          newCampaign.id,
+          req.user.id,
+          newCampaign.companyName,
+          newCampaign.contactPerson,
+          newCampaign.email,
+          newCampaign.phone,
+          newCampaign.industry,
+          newCampaign.campaignTitle,
+          newCampaign.campaignDescription,
+          newCampaign.city,
+          String(totalCount),
+          maleCount,
+          femaleCount,
+          newCampaign.followerRange,
+          newCampaign.budget,
+          newCampaign.category,
+          newCampaign.collaborationType,
+          newCampaign.campaignDate,
+          newCampaign.requirements,
+          JSON.stringify(newCampaign.platforms),
+        ]
+      );
+    } catch (err) {
+      console.warn('MySQL campaign insert notice:', err);
+      return res.status(500).json({ success: false, error: 'Failed to save campaign to database' });
+    }
 
-    res.status(201).json({ success: true, campaign: newCampaign });
+    res.status(201).json({
+      success: true,
+      campaign: newCampaign,
+      message: 'Campaign submitted for admin approval',
+    });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Failed to post campaign brief' });
   }
 }
 
-export async function deleteCampaign(req: Request, res: Response) {
+export async function updateCampaign(req: AuthenticatedRequest, res: Response) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
+
+    const { id } = req.params;
+    const rows: any = await dbQuery('SELECT * FROM campaign_requirements WHERE id = ? LIMIT 1', [id]);
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Campaign not found' });
+    }
+    const existing = rows[0];
+
+    const isOwner =
+      existing.user_id === req.user.id ||
+      (existing.email && req.user.email && existing.email.toLowerCase() === req.user.email.toLowerCase());
+    const isAdmin = req.user.role === 'ADMIN' || req.user.role === 'SALES';
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ success: false, error: 'Not authorized to update this campaign' });
+    }
+
+    const data = req.body;
+    let phone = existing.phone;
+    if (data.phone !== undefined) {
+      const phoneCheck = validateWhatsAppNumber(data.phone);
+      if (!phoneCheck.ok) return res.status(400).json({ success: false, error: phoneCheck.error });
+      phone = phoneCheck.normalized;
+    }
+
+    const maleCount = data.maleCount !== undefined ? parseNonNegInt(data.maleCount, 0) : Number(existing.male_count) || 0;
+    const femaleCount = data.femaleCount !== undefined ? parseNonNegInt(data.femaleCount, 0) : Number(existing.female_count) || 0;
+    const totalCount = maleCount + femaleCount;
+
+    // Brand edits re-submit for approval unless admin is editing
+    const nextApproval = isAdmin && data.approvalStatus
+      ? data.approvalStatus
+      : isOwner
+        ? 'pending'
+        : existing.approval_status;
+    const nextStatus = nextApproval === 'pending' ? 'In Review' : (data.status || existing.status);
+
+    await dbQuery(
+      `UPDATE campaign_requirements SET
+        company_name = COALESCE(?, company_name),
+        contact_person = COALESCE(?, contact_person),
+        email = COALESCE(?, email),
+        phone = ?,
+        campaign_title = COALESCE(?, campaign_title),
+        campaign_description = COALESCE(?, campaign_description),
+        city = COALESCE(?, city),
+        influencers_count = ?,
+        male_count = ?,
+        female_count = ?,
+        follower_range = COALESCE(?, follower_range),
+        budget = COALESCE(?, budget),
+        category = COALESCE(?, category),
+        collaboration_type = COALESCE(?, collaboration_type),
+        requirements = COALESCE(?, requirements),
+        platforms = COALESCE(?, platforms),
+        status = ?,
+        approval_status = ?
+       WHERE id = ?`,
+      [
+        data.companyName ?? null,
+        data.contactPerson ?? null,
+        data.email ?? null,
+        phone,
+        data.campaignTitle ?? null,
+        data.campaignDescription ?? null,
+        data.city ?? null,
+        String(totalCount),
+        maleCount,
+        femaleCount,
+        data.followerRange ?? null,
+        data.budget ?? null,
+        data.category ?? null,
+        data.collaborationType ?? null,
+        data.requirements ?? null,
+        data.platforms ? JSON.stringify(data.platforms) : null,
+        nextStatus,
+        nextApproval,
+        id,
+      ]
+    );
+
+    return res.json({
+      success: true,
+      id,
+      maleCount,
+      femaleCount,
+      totalCount,
+      approvalStatus: nextApproval,
+      status: nextStatus,
+    });
+  } catch (error) {
+    console.error('updateCampaign error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to update campaign' });
+  }
+}
+
+export async function deleteCampaign(req: AuthenticatedRequest, res: Response) {
   try {
     const { id } = req.params;
     if (!id) return res.status(400).json({ success: false, error: 'Campaign id is required' });
+    if (!req.user) return res.status(401).json({ success: false, error: 'Authentication required' });
+
+    const rows: any = await dbQuery('SELECT * FROM campaign_requirements WHERE id = ? LIMIT 1', [id]);
+    if (Array.isArray(rows) && rows.length > 0) {
+      const existing = rows[0];
+      const isOwner =
+        existing.user_id === req.user.id ||
+        (existing.email && req.user.email && existing.email.toLowerCase() === req.user.email.toLowerCase());
+      const isAdmin = req.user.role === 'ADMIN' || req.user.role === 'SALES';
+      if (!isOwner && !isAdmin) {
+        return res.status(403).json({ success: false, error: 'Not authorized to delete this campaign' });
+      }
+    }
 
     await dbQuery('DELETE FROM campaign_applicants WHERE campaign_id = ?', [id]);
     await dbQuery('DELETE FROM campaign_requirements WHERE id = ?', [id]);
@@ -228,47 +366,56 @@ export async function deleteCampaign(req: Request, res: Response) {
   }
 }
 
-export async function applyToCampaign(req: Request, res: Response) {
+export async function applyToCampaign(req: AuthenticatedRequest, res: Response) {
   try {
     const { id } = req.params;
     const { creatorId, pitch } = req.body;
+    const effectiveCreatorId = req.user?.role === 'CREATOR' ? (creatorId || req.user.id) : creatorId;
 
-    if (!creatorId) {
+    if (!effectiveCreatorId) {
       return res.status(400).json({ success: false, error: 'creatorId is required' });
     }
 
-    // Check in database first
     let campaignExists = false;
+    let approvalStatus = 'pending';
     try {
-      const rows: any = await dbQuery('SELECT id FROM campaign_requirements WHERE id = ?', [id]);
+      const rows: any = await dbQuery(
+        'SELECT id, approval_status, status FROM campaign_requirements WHERE id = ?',
+        [id]
+      );
       if (Array.isArray(rows) && rows.length > 0) {
         campaignExists = true;
+        approvalStatus = rows[0].approval_status || 'pending';
+        if (approvalStatus !== 'approved') {
+          return res.status(403).json({ success: false, error: 'Campaign is not open for applications yet' });
+        }
       }
     } catch (e) {
       console.warn('Check campaign error:', e);
     }
 
-    // Check in memory store fallback
     const campaignInMemory = campaignsStore.find((c) => c.id === id);
     if (campaignInMemory) {
       campaignExists = true;
+      if ((campaignInMemory as any).approvalStatus && (campaignInMemory as any).approvalStatus !== 'approved') {
+        return res.status(403).json({ success: false, error: 'Campaign is not open for applications yet' });
+      }
     }
 
     if (!campaignExists) {
       return res.status(404).json({ success: false, error: 'Campaign not found' });
     }
 
-    // Relational Lookup: query creators/users table using creatorId
     let creatorRecord: any = null;
     try {
       const cRows: any = await dbQuery(
         'SELECT id, name, username, avatar, primary_category, current_city, followers, avg_views FROM creators WHERE id = ? OR user_id = ? LIMIT 1',
-        [creatorId, creatorId]
+        [effectiveCreatorId, effectiveCreatorId]
       );
       if (Array.isArray(cRows) && cRows.length > 0) {
         creatorRecord = cRows[0];
       } else {
-        const uRows: any = await dbQuery('SELECT id, name, avatar FROM users WHERE id = ? LIMIT 1', [creatorId]);
+        const uRows: any = await dbQuery('SELECT id, name, avatar FROM users WHERE id = ? LIMIT 1', [effectiveCreatorId]);
         if (Array.isArray(uRows) && uRows.length > 0) {
           creatorRecord = uRows[0];
         }
@@ -278,14 +425,17 @@ export async function applyToCampaign(req: Request, res: Response) {
     }
 
     if (!creatorRecord) {
-      creatorRecord = creatorsStore.find((c) => c.id === creatorId) || creatorsStore[0];
+      creatorRecord = creatorsStore.find((c) => c.id === effectiveCreatorId);
     }
 
-    const finalCreatorId = creatorRecord?.id || creatorId;
+    if (!creatorRecord) {
+      return res.status(404).json({ success: false, error: 'Creator profile not found' });
+    }
+
+    const finalCreatorId = creatorRecord?.id || effectiveCreatorId;
     const finalCreatorName = creatorRecord?.name || 'Creator';
     const finalCreatorAvatar = creatorRecord?.avatar || '';
 
-    // Check if creator has already pitched for this campaign
     try {
       const existingApp: any = await dbQuery(
         'SELECT id FROM campaign_applicants WHERE campaign_id = ? AND creator_id = ? LIMIT 1',
@@ -296,10 +446,6 @@ export async function applyToCampaign(req: Request, res: Response) {
       }
     } catch (e) {
       console.warn('Check duplicate applicant error:', e);
-    }
-
-    if (campaignInMemory && campaignInMemory.applicants?.some(a => a.creatorId === finalCreatorId)) {
-      return res.status(400).json({ success: false, error: 'Already pitched for this campaign brief' });
     }
 
     const application = {
@@ -322,7 +468,6 @@ export async function applyToCampaign(req: Request, res: Response) {
       campaignInMemory.applicantsCount = campaignInMemory.applicants.length;
     }
 
-    // MySQL Insert Applicant with creator_id relation
     try {
       await dbQuery(
         `INSERT INTO campaign_applicants (id, campaign_id, creator_id, creator_name, creator_avatar, pitch, status)
@@ -332,6 +477,7 @@ export async function applyToCampaign(req: Request, res: Response) {
       await dbQuery('UPDATE campaign_requirements SET applicants_count = applicants_count + 1 WHERE id = ?', [id]);
     } catch (err) {
       console.warn('MySQL applicant insert notice:', err);
+      return res.status(500).json({ success: false, error: 'Failed to save application' });
     }
 
     return res.status(201).json({ success: true, application });
@@ -341,32 +487,84 @@ export async function applyToCampaign(req: Request, res: Response) {
   }
 }
 
-export async function updateApplicantStatus(req: Request, res: Response) {
+export async function updateApplicantStatus(req: AuthenticatedRequest, res: Response) {
   try {
+    if (!req.user || (req.user.role !== 'BRAND' && req.user.role !== 'ADMIN' && req.user.role !== 'SALES')) {
+      return res.status(403).json({ success: false, error: 'Brand authentication required' });
+    }
+
     const { id, creatorId } = req.params;
     const { status } = req.body;
 
+    if (!['Pending', 'Shortlisted', 'Accepted', 'Declined'].includes(status)) {
+      return res.status(400).json({ success: false, error: 'Invalid applicant status' });
+    }
+
+    // Ownership check for brands
+    if (req.user.role === 'BRAND') {
+      const camps: any = await dbQuery('SELECT user_id, email FROM campaign_requirements WHERE id = ? LIMIT 1', [id]);
+      if (!Array.isArray(camps) || camps.length === 0) {
+        return res.status(404).json({ success: false, error: 'Campaign not found' });
+      }
+      const camp = camps[0];
+      const isOwner =
+        camp.user_id === req.user.id ||
+        (camp.email && req.user.email && camp.email.toLowerCase() === req.user.email.toLowerCase());
+      if (!isOwner) {
+        return res.status(403).json({ success: false, error: 'Not authorized for this campaign' });
+      }
+    }
+
     const campaign = campaignsStore.find((c) => c.id === id);
     if (campaign && campaign.applicants) {
-      const applicant = campaign.applicants.find(a => a.creatorId === creatorId);
+      const applicant = campaign.applicants.find((a) => a.creatorId === creatorId);
       if (applicant) {
         applicant.status = status;
       }
     }
 
-    // MySQL Update
-    try {
-      await dbQuery(
-        `UPDATE campaign_applicants SET status = ? WHERE campaign_id = ? AND creator_id = ?`,
-        [status, id, creatorId]
-      );
-    } catch (err) {
-      console.warn('MySQL applicant status update notice:', err);
-    }
+    await dbQuery(
+      `UPDATE campaign_applicants SET status = ? WHERE campaign_id = ? AND creator_id = ?`,
+      [status, id, creatorId]
+    );
 
     return res.json({ success: true, status });
   } catch (error) {
     console.error('updateApplicantStatus error:', error);
     return res.status(500).json({ success: false, error: 'Failed to update applicant status' });
+  }
+}
+
+/** Admin approve a pending campaign */
+export async function approveCampaign(req: AuthenticatedRequest, res: Response) {
+  try {
+    if (!req.user || req.user.role !== 'ADMIN') {
+      return res.status(403).json({ success: false, error: 'Admin authentication required' });
+    }
+    const { id } = req.params;
+    await dbQuery(`UPDATE campaign_requirements SET approval_status = 'approved', status = 'Open' WHERE id = ?`, [id]);
+    const rows: any = await dbQuery('SELECT * FROM campaign_requirements WHERE id = ? LIMIT 1', [id]);
+    const campaign = rows[0] ? mapCampaignRow(rows[0]) : null;
+    return res.json({ success: true, campaign });
+  } catch (error) {
+    console.error('approveCampaign error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to approve campaign' });
+  }
+}
+
+/** Admin reject a pending campaign */
+export async function rejectCampaign(req: AuthenticatedRequest, res: Response) {
+  try {
+    if (!req.user || req.user.role !== 'ADMIN') {
+      return res.status(403).json({ success: false, error: 'Admin authentication required' });
+    }
+    const { id } = req.params;
+    await dbQuery(`UPDATE campaign_requirements SET approval_status = 'rejected', status = 'Closed' WHERE id = ?`, [id]);
+    const rows: any = await dbQuery('SELECT * FROM campaign_requirements WHERE id = ? LIMIT 1', [id]);
+    const campaign = rows[0] ? mapCampaignRow(rows[0]) : null;
+    return res.json({ success: true, campaign });
+  } catch (error) {
+    console.error('rejectCampaign error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to reject campaign' });
   }
 }

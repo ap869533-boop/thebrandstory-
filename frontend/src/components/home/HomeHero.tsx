@@ -27,17 +27,30 @@ export const HomeHero: React.FC = () => {
 
   const [keyword, setKeyword] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(filters.category || 'all');
-  const [selectedCity, setSelectedCity] = useState('all');
+  const [selectedCity, setSelectedCity] = useState(() => {
+    const manual = sessionStorage.getItem('sc_manual_city');
+    if (manual) return manual;
+    const detected = sessionStorage.getItem('sc_detected_city');
+    if (detected) return detected;
+    return filters.city && filters.city !== 'all' ? filters.city : 'all';
+  });
 
-  const syncCitySelection = (city: string) => {
+  const syncCitySelection = (city: string, source: 'auto' | 'manual') => {
     setSelectedCity(city);
     setDetectedCityBadge(city === 'all' ? null : city);
+    setFilters((prev) => ({ ...prev, city }));
+    if (source === 'manual') {
+      sessionStorage.setItem('sc_manual_city', city);
+      if (city === 'all') sessionStorage.removeItem('sc_home_coords');
+    } else if (city !== 'all') {
+      sessionStorage.setItem('sc_detected_city', city);
+    }
   };
 
   const applyDetectedLocation = async (city: string | null) => {
     if (!city || city === 'all') return;
-    syncCitySelection(city);
-    sessionStorage.setItem('sc_detected_city', city);
+    if (sessionStorage.getItem('sc_manual_city')) return;
+    syncCitySelection(city, 'auto');
   };
 
   // Geolocation states
@@ -51,19 +64,33 @@ export const HomeHero: React.FC = () => {
   const categoryRef = useRef<HTMLDivElement>(null);
   const cityRef = useRef<HTMLDivElement>(null);
 
-  // Detect the current location on entry for the search control only.
+  // Detect location once unless the user already chose a city or previously denied permission.
   useEffect(() => {
+    if (sessionStorage.getItem('sc_manual_city')) return;
+    if (sessionStorage.getItem('sc_geo_denied') === '1') return;
     if (!('geolocation' in navigator)) return;
+    if (sessionStorage.getItem('sc_detected_city')) {
+      const saved = sessionStorage.getItem('sc_detected_city');
+      if (saved) syncCitySelection(saved, 'auto');
+      return;
+    }
 
     setIsDetectingLocation(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        sessionStorage.setItem(
+          'sc_home_coords',
+          JSON.stringify({ lat: position.coords.latitude, lng: position.coords.longitude })
+        );
         void fetchCityFromCoordinates(position.coords.latitude, position.coords.longitude);
       },
-      () => {
+      (error) => {
         setIsDetectingLocation(false);
+        if (error.code === error.PERMISSION_DENIED) {
+          sessionStorage.setItem('sc_geo_denied', '1');
+        }
       },
-      { timeout: 15000, maximumAge: 0, enableHighAccuracy: true }
+      { timeout: 15000, maximumAge: 300000, enableHighAccuracy: false }
     );
   }, []);
 
@@ -76,10 +103,10 @@ export const HomeHero: React.FC = () => {
         throw new Error(`Location lookup failed with status ${res.status}`);
       }
       const data = await res.json();
-      if (!data.success || !data.matchedCity) {
-        throw new Error('Location lookup did not return a supported city');
+      if (!data.success || !data.displayName) {
+        throw new Error('Location lookup did not return a valid location');
       }
-      await applyDetectedLocation(data.matchedCity);
+      await applyDetectedLocation(data.displayName);
     } catch {
       sessionStorage.removeItem('sc_detected_city');
       setSelectedCity('all');
@@ -324,7 +351,7 @@ export const HomeHero: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => {
-                        syncCitySelection('all');
+                        syncCitySelection('all', 'manual');
                         setCityDropdownOpen(false);
                       }}
                       className={`w-full px-3 py-1.5 sm:py-2 rounded-xl text-xs font-medium flex items-center justify-between transition cursor-pointer ${
@@ -342,7 +369,7 @@ export const HomeHero: React.FC = () => {
                         key={idx}
                         type="button"
                         onClick={() => {
-                          syncCitySelection(c.name);
+                          syncCitySelection(c.name, 'manual');
                           setCityDropdownOpen(false);
                         }}
                         className={`w-full px-3 py-1.5 sm:py-2 rounded-xl text-xs font-medium flex items-center justify-between transition cursor-pointer ${

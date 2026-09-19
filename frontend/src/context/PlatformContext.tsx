@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { apiUrl } from '../config/api';
+import { apiUrl, authHeaders } from '../config/api';
 import {
   Creator,
   UserRole,
@@ -140,10 +140,11 @@ interface PlatformContextType {
     message: string;
   }) => Promise<boolean>;
   fetchBrandInquiries: () => Promise<void>;
+  updateBrandInquiryStatus: (inquiryId: string, status: BrandInquiryLead['status']) => Promise<{ conversationId?: string | null } | null>;
 
   // Campaigns & Requirements
   campaigns: CampaignRequirement[];
-  postCampaignRequirement: (campaign: Omit<CampaignRequirement, 'id' | 'applicantsCount' | 'applicants' | 'createdAt' | 'status'>) => string;
+  postCampaignRequirement: (campaign: Omit<CampaignRequirement, 'id' | 'applicantsCount' | 'applicants' | 'createdAt' | 'status'>) => Promise<string>;
   deleteCampaign: (campaignId: string) => Promise<void>;
   applyToCampaign: (campaignId: string, creatorId: string, pitch: string) => void;
   updateApplicantStatus: (campaignId: string, creatorId: string, status: 'Pending' | 'Shortlisted' | 'Accepted' | 'Declined') => void;
@@ -470,7 +471,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         ] = await Promise.all([
           fetch(apiUrl('/api/creators?includePending=true')),
           fetch(apiUrl('/api/campaigns')),
-          fetch(apiUrl('/api/enquiries')),
+          fetch(apiUrl('/api/enquiries'), { headers: authHeaders() }),
           fetch(apiUrl('/api/categories')),
           fetch(apiUrl('/api/cities')),
           fetch(apiUrl('/api/industries')),
@@ -478,7 +479,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           fetch(apiUrl('/api/stats')),
           fetch(apiUrl('/api/partner-brands')),
           fetch(apiUrl('/api/shortlists')),
-          fetch(apiUrl('/api/brand-inquiries')),
+          fetch(apiUrl('/api/brand-inquiries'), { headers: authHeaders() }),
         ]);
 
         if (creatorsRes.ok) {
@@ -492,6 +493,29 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           const campData = await campaignsRes.json();
           if (Array.isArray(campData.campaigns)) {
             setCampaigns(campData.campaigns);
+          }
+        }
+
+        const token = localStorage.getItem('sc_auth_token');
+        const savedUser = localStorage.getItem('sc_auth_user');
+        if (token && savedUser) {
+          try {
+            const u = JSON.parse(savedUser);
+            if (u.role === 'BRAND') {
+              const mineRes = await fetch(apiUrl('/api/campaigns?scope=mine'), { headers: authHeaders() });
+              if (mineRes.ok) {
+                const mineData = await mineRes.json();
+                if (Array.isArray(mineData.campaigns)) {
+                  setCampaigns((prev) => {
+                    const byId = new Map(prev.map((c) => [c.id, c]));
+                    for (const c of mineData.campaigns) byId.set(c.id, c);
+                    return Array.from(byId.values());
+                  });
+                }
+              }
+            }
+          } catch {
+            // ignore
           }
         }
 
@@ -794,7 +818,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const fetchBrandInquiries = async () => {
     try {
-      const res = await fetch(apiUrl('/api/brand-inquiries'));
+      const res = await fetch(apiUrl('/api/brand-inquiries'), { headers: authHeaders() });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data.inquiries)) {
@@ -812,27 +836,51 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     brandId: string;
     brandName: string;
     message: string;
+    campaignId?: string;
   }): Promise<boolean> => {
     try {
       const res = await fetch(apiUrl('/api/brand-inquiries'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify(inquiryData),
       });
       const data = await res.json();
       if (data.success && data.inquiry) {
         setBrandInquiries((prev) => [data.inquiry, ...prev]);
         addNotification({
-          title: '💬 Inquiry Sent',
+          title: 'Inquiry Sent',
           message: `Your message to ${inquiryData.brandName} was delivered successfully.`,
           type: 'enquiry',
         });
         return true;
       }
+      addNotification({
+        title: 'Inquiry not sent',
+        message: data.error || 'Could not submit inquiry',
+        type: 'system',
+      });
       return false;
     } catch (err) {
       console.error('Failed to submit brand inquiry', err);
       return false;
+    }
+  };
+
+  const updateBrandInquiryStatus = async (inquiryId: string, status: BrandInquiryLead['status']) => {
+    try {
+      const res = await fetch(apiUrl(`/api/brand-inquiries/${inquiryId}`), {
+        method: 'PATCH',
+        headers: authHeaders(),
+        body: JSON.stringify({ status }),
+      });
+      const data = await res.json();
+      if (data.success && data.inquiry) {
+        setBrandInquiries((prev) => prev.map((i) => (i.id === inquiryId ? { ...i, ...data.inquiry } : i)));
+        return { conversationId: data.conversationId || data.inquiry.conversationId || null };
+      }
+      return null;
+    } catch {
+      return null;
     }
   };
 
@@ -855,7 +903,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // Background sync with Backend REST API
     fetch(apiUrl('/api/enquiries'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify(leadData),
     }).catch(err => console.warn('Backend enquiry sync notice:', err));
 
@@ -885,9 +933,9 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }));
 
     // Background sync with Backend REST API
-    fetch(`/api/enquiries/${leadId}`, {
+    fetch(apiUrl(`/api/enquiries/${leadId}`), {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify({ status, creatorReply }),
     }).catch(err => console.warn('Backend enquiry update notice:', err));
   };
@@ -916,35 +964,37 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     localStorage.setItem('sc_campaigns', JSON.stringify(campaigns));
   }, [campaigns]);
 
-  const postCampaignRequirement = (campaign: Omit<CampaignRequirement, 'id' | 'applicantsCount' | 'applicants' | 'createdAt' | 'status'>) => {
-    const newId = `req-${Date.now()}`;
-    const newCamp: CampaignRequirement = {
-      ...campaign,
-      id: newId,
-      status: 'Open',
-      applicantsCount: 0,
-      applicants: [],
-      createdAt: new Date().toISOString().split('T')[0],
-    };
-    setCampaigns(prev => [newCamp, ...prev]);
-
-    // Background sync with Backend REST API
-    fetch(apiUrl('/api/campaigns'), {
+  const postCampaignRequirement = async (campaign: Omit<CampaignRequirement, 'id' | 'applicantsCount' | 'applicants' | 'createdAt' | 'status'>) => {
+    const res = await fetch(apiUrl('/api/campaigns'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify(campaign),
-    }).catch(err => console.warn('Backend campaign sync notice:', err));
-
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success || !data.campaign) {
+      throw new Error(data.error || 'Failed to submit campaign for approval');
+    }
+    const saved: CampaignRequirement = {
+      ...data.campaign,
+      status: data.campaign.status || 'In Review',
+      approvalStatus: data.campaign.approvalStatus || 'pending',
+      applicants: data.campaign.applicants || [],
+      applicantsCount: data.campaign.applicantsCount || 0,
+    };
+    setCampaigns(prev => [saved, ...prev.filter((c) => c.id !== saved.id)]);
     addNotification({
-      title: 'New Campaign Requirement Published',
-      message: `${campaign.companyName} posted "${campaign.campaignTitle}" in ${campaign.city}`,
+      title: 'Campaign submitted for approval',
+      message: `"${campaign.campaignTitle}" is pending admin review and will go live after approval.`,
       type: 'campaign',
     });
-    return newId;
+    return saved.id;
   };
 
   const deleteCampaign = async (campaignId: string) => {
-    const response = await fetch(apiUrl(`/api/campaigns/${campaignId}`), { method: 'DELETE' });
+    const response = await fetch(apiUrl(`/api/campaigns/${campaignId}`), {
+      method: 'DELETE',
+      headers: authHeaders(),
+    });
     const data = await response.json();
     if (!response.ok || !data.success) {
       throw new Error(data.error || 'Failed to delete campaign');
@@ -1000,7 +1050,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // Background sync with Backend REST API (relational via creatorId)
     fetch(apiUrl(`/api/campaigns/${campaignId}/apply`), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify({ 
         creatorId: creator.id, 
         pitch 
@@ -1033,7 +1083,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     fetch(apiUrl(`/api/campaigns/${campaignId}/applicants/${creatorId}/status`), {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify({ status }),
     }).catch(err => console.warn('Backend applicant status update notice:', err));
 
@@ -1207,7 +1257,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       const res = await fetch(apiUrl(`/api/creators/${creatorId}`), {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify(updates),
       });
 
@@ -1682,6 +1732,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         brandInquiries,
         submitBrandInquiry,
         fetchBrandInquiries,
+        updateBrandInquiryStatus,
 
         campaigns,
         postCampaignRequirement,

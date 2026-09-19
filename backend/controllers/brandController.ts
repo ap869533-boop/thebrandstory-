@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { dbQuery } from '../config/db';
 import { AuthenticatedRequest } from '../middleware/authMiddleware';
+import { validateOptionalUrl } from '../utils/validation';
 
 // In-memory fallback store for brand profiles
 let brandProfilesStore: any[] = [];
@@ -19,6 +20,7 @@ function mapDbRowToBrandProfile(row: any) {
     instagramUrl: row.instagram_url || '',
     youtubeUrl: row.youtube_url || '',
     linkedinUrl: row.linkedin_url || '',
+    twitterUrl: row.twitter_url || '',
     industry: row.industry || '',
     city: row.city || '',
     contactPerson: row.contact_person || '',
@@ -117,6 +119,17 @@ export async function createBrandProfile(req: AuthenticatedRequest, res: Respons
 
     if (!brandName) return res.status(400).json({ success: false, error: 'Brand name is required' });
 
+    for (const [label, value] of [
+      ['Website', website],
+      ['Facebook', facebookUrl],
+      ['Instagram', instagramUrl],
+      ['YouTube', youtubeUrl],
+      ['LinkedIn', linkedinUrl],
+    ] as Array<[string, string | undefined]>) {
+      const check = validateOptionalUrl(value, label);
+      if (!check.ok) return res.status(400).json({ success: false, error: check.error });
+    }
+
     // Check if profile already exists
     const existing = await dbQuery('SELECT id FROM brand_profiles WHERE user_id = ? LIMIT 1', [userId]);
     if (existing && existing.length > 0) {
@@ -195,6 +208,17 @@ export async function updateBrandProfile(req: AuthenticatedRequest, res: Respons
     } = req.body;
 
     if (!brandName) return res.status(400).json({ success: false, error: 'Brand name is required' });
+
+    for (const [label, value] of [
+      ['Website', website],
+      ['Facebook', facebookUrl],
+      ['Instagram', instagramUrl],
+      ['YouTube', youtubeUrl],
+      ['LinkedIn', linkedinUrl],
+    ] as Array<[string, string | undefined]>) {
+      const check = validateOptionalUrl(value, label);
+      if (!check.ok) return res.status(400).json({ success: false, error: check.error });
+    }
 
     // Check if profile exists
     const existing = await dbQuery('SELECT * FROM brand_profiles WHERE user_id = ? LIMIT 1', [userId]);
@@ -418,6 +442,11 @@ export async function getFeaturedBrands(req: Request, res: Response) {
         bp.cover_url,
         COALESCE(bp.description, CONCAT('Verified partner brand hiring creators on thebrandsstory.')) as description,
         bp.website,
+        bp.facebook_url,
+        bp.instagram_url,
+        bp.youtube_url,
+        bp.linkedin_url,
+        bp.twitter_url,
         COALESCE(bp.industry, 'Brand Partner') as industry,
         COALESCE(bp.city, 'Pan India') as city,
         bp.contact_person,

@@ -228,15 +228,56 @@ export interface BrandInquiryLead {
   id: string; // e.g. SC-BRAND-INQ-1234
   creatorId: string;
   creatorName: string;
+  creatorAvatar?: string;
   brandId: string;
   brandName: string;
+  campaignId?: string | null;
   message: string;
-  status: 'New' | 'Read' | 'Replied' | 'Archived';
+  status: 'New' | 'Read' | 'Confirmed' | 'Replied' | 'Archived' | 'Declined';
+  conversationId?: string | null;
+  createdAt: string;
+}
+
+export interface ConversationThread {
+  id: string;
+  brandUserId: string;
+  creatorId: string;
+  creatorUserId?: string | null;
+  campaignId?: string | null;
+  inquiryId?: string | null;
+  brandName: string;
+  creatorName: string;
+  creatorUsername?: string;
+  peerName: string;
+  peerAvatar: string;
+  lastMessage: string;
+  lastMessageAt?: string | null;
+  unreadCount: number;
+  online: boolean;
+  createdAt?: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  senderRole: string;
+  body: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export interface CreatorPost {
+  id: string;
+  creatorId: string;
+  imageUrl: string;
+  caption?: string;
   createdAt: string;
 }
 
 export interface CampaignRequirement {
   id: string;
+  userId?: string | null;
   companyName: string;
   contactPerson: string;
   email: string;
@@ -246,6 +287,9 @@ export interface CampaignRequirement {
   campaignDescription?: string;
   city: string;
   influencersCount: string | number;
+  maleCount?: number;
+  femaleCount?: number;
+  totalCount?: number;
   followerRange: string;
   budget: string;
   category: string;
@@ -258,6 +302,7 @@ export interface CampaignRequirement {
   platforms?: string[];
   requirements?: string;
   status: 'Open' | 'In Review' | 'Filled' | 'Completed';
+  approvalStatus?: 'pending' | 'approved' | 'rejected';
   applicantsCount: number;
   applicants: {
     creatorId: string;
@@ -367,6 +412,11 @@ export interface BrandProfile {
   coverUrl?: string;
   description?: string;
   website?: string;
+  facebookUrl?: string;
+  instagramUrl?: string;
+  youtubeUrl?: string;
+  linkedinUrl?: string;
+  twitterUrl?: string;
   industry?: string;
   city?: string;
   contactPerson?: string;
