@@ -102,7 +102,7 @@ export const NearbyInfluencersSection: React.FC = () => {
               <MapPin className="w-3.5 h-3.5" />
               <span>NEARBY INFLUENCERS</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Creators near {city}</h2>
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Nearby Influencers</h2>
             <p className="text-xs sm:text-sm text-slate-500 mt-1">Real profiles from the database matching your selected location.</p>
           </div>
 
