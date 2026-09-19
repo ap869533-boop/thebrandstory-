@@ -136,17 +136,31 @@ export const LiveOpportunitiesBoard: React.FC = () => {
                     <Tag className="w-2.5 h-2.5 text-[#b88628]" />
                     {camp.category}
                   </span>
+                  
                   {camp.isBarter ? (
                     <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200/60">
                       Barter
                     </span>
-                  ) : camp.followerRange && camp.followerRange !== 'Any Tier' ? (
+                  ) : camp.followerRange && camp.followerRange !== 'Any Tier' && camp.followerRange !== 'Any' ? (
                     <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
-                      {camp.followerRange}
+                      Followers: {camp.followerRange}
                     </span>
                   ) : null}
+
+                  {camp.language && camp.language !== 'Any' && camp.language !== 'Any Language' && (
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-blue-50 text-blue-600 border border-blue-200/60">
+                      Lang: {camp.language}
+                    </span>
+                  )}
+
+                  {camp.genderPreference && camp.genderPreference !== 'Any' && camp.genderPreference !== 'Any / Both' && (
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-pink-50 text-pink-600 border border-pink-200/60">
+                      Gender: {camp.genderPreference === 'Custom Mix' ? `${camp.maleCount}M, ${camp.femaleCount}F` : camp.genderPreference}
+                    </span>
+                  )}
+
                   {camp.createdAt && (
-                    <span className="text-[10px] text-slate-400 font-medium ml-auto flex items-center gap-1">
+                    <span className="text-[10px] text-slate-400 font-medium ml-auto flex items-center gap-1 mt-1 lg:mt-0">
                       <Clock className="w-2.5 h-2.5" />
                       {camp.createdAt}
                     </span>

@@ -170,10 +170,19 @@ export async function createCampaign(req: AuthenticatedRequest, res: Response) {
       campaignTitle: data.campaignTitle,
       campaignDescription: data.campaignDescription || data.requirements || '',
       city: data.city || 'Pan India',
+<<<<<<< HEAD
       influencersCount: String(totalCount),
       maleCount,
       femaleCount,
       totalCount,
+=======
+      influencersCount: data.influencersCount || '1',
+      genderPreference: data.genderPreference || 'Any',
+      maleCount: data.maleCount || 0,
+      femaleCount: data.femaleCount || 0,
+      ageRange: data.ageRange || 'Any',
+      language: data.language || 'Any',
+>>>>>>> e81cd8b4df958da5bef8f8a08155d530e3baf007
       followerRange: data.followerRange || 'Any',
       budget: data.budget || 'Negotiable',
       category: data.category || 'Lifestyle',
@@ -190,6 +199,7 @@ export async function createCampaign(req: AuthenticatedRequest, res: Response) {
 
     campaignsStore.unshift(newCampaign);
 
+<<<<<<< HEAD
     try {
       await dbQuery(
         `INSERT INTO campaign_requirements (
@@ -225,6 +235,14 @@ export async function createCampaign(req: AuthenticatedRequest, res: Response) {
       console.warn('MySQL campaign insert notice:', err);
       return res.status(500).json({ success: false, error: 'Failed to save campaign to database' });
     }
+=======
+    // MySQL Insert
+    dbQuery(
+      `INSERT INTO campaign_requirements (id, company_name, contact_person, email, campaign_title, campaign_description, city, budget, category, collaboration_type, requirements, platforms, influencers_count, gender_preference, male_count, female_count, age_range, language, approval_status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved')`,
+      [newCampaign.id, newCampaign.companyName, newCampaign.contactPerson, newCampaign.email, newCampaign.campaignTitle, newCampaign.campaignDescription, newCampaign.city, newCampaign.budget, newCampaign.category, newCampaign.collaborationType, newCampaign.requirements, JSON.stringify(newCampaign.platforms), newCampaign.influencersCount, newCampaign.genderPreference, newCampaign.maleCount, newCampaign.femaleCount, newCampaign.ageRange, newCampaign.language]
+    ).catch(err => console.warn('MySQL campaign insert notice:', err));
+>>>>>>> e81cd8b4df958da5bef8f8a08155d530e3baf007
 
     res.status(201).json({
       success: true,

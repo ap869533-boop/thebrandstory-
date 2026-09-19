@@ -245,6 +245,7 @@ export async function runAutoMigrations() {
       `ALTER TABLE brand_profiles ADD COLUMN instagram_url VARCHAR(255) DEFAULT NULL`,
       `ALTER TABLE brand_profiles ADD COLUMN youtube_url VARCHAR(255) DEFAULT NULL`,
       `ALTER TABLE brand_profiles ADD COLUMN linkedin_url VARCHAR(255) DEFAULT NULL`,
+<<<<<<< HEAD
       `ALTER TABLE brand_profiles ADD COLUMN twitter_url VARCHAR(255) DEFAULT NULL`,
       `ALTER TABLE creators ADD COLUMN latitude DECIMAL(10,7) DEFAULT NULL`,
       `ALTER TABLE creators ADD COLUMN longitude DECIMAL(10,7) DEFAULT NULL`,
@@ -260,6 +261,13 @@ export async function runAutoMigrations() {
       `ALTER TABLE creator_reviews ADD COLUMN brand_user_id VARCHAR(64) DEFAULT NULL`,
       `ALTER TABLE creator_reviews ADD COLUMN campaign_id VARCHAR(64) DEFAULT NULL`,
       `ALTER TABLE creator_reviews ADD COLUMN conversation_id VARCHAR(64) DEFAULT NULL`,
+=======
+      `ALTER TABLE campaign_requirements ADD COLUMN gender_preference VARCHAR(50) DEFAULT 'Any'`,
+      `ALTER TABLE campaign_requirements ADD COLUMN male_count INT DEFAULT 0`,
+      `ALTER TABLE campaign_requirements ADD COLUMN female_count INT DEFAULT 0`,
+      `ALTER TABLE campaign_requirements ADD COLUMN age_range VARCHAR(50) DEFAULT 'Any'`,
+      `ALTER TABLE campaign_requirements ADD COLUMN language VARCHAR(50) DEFAULT 'Any'`
+>>>>>>> e81cd8b4df958da5bef8f8a08155d530e3baf007
     ];
 
     for (const query of alterQueries) {

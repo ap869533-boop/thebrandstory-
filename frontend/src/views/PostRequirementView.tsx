@@ -48,7 +48,12 @@ export const PostRequirementView: React.FC = () => {
     city: 'Delhi NCR',
     deliverablesNeeded: '1x Instagram Reel (30s) with brand product tagging + 2x Stories with link',
     budget: '₹25,000 - ₹50,000',
-    influencersCount: 2,
+    influencersCount: 2 as number | string,
+    genderPreference: 'Any / Both',
+    maleCount: 0 as number | string,
+    femaleCount: 0 as number | string,
+    ageRange: '',
+    language: 'Hindi',
     followerRange: '10k-100k',
     isBarter: false,
     campaignStartDate: '',
@@ -145,7 +150,10 @@ const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.companyName || !formData.campaignTitle || !formData.email || !formData.phone) {
+    const finalBrandName = authUser?.companyName || activeBrandName || 'Verified Brand';
+    const finalIndustry = authUser?.industry || 'Fashion & Lifestyle';
+
+    if (!formData.campaignTitle || !formData.email || !formData.phone) {
       alert('Please fill out all required fields');
       return;
     }
@@ -153,17 +161,22 @@ const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false);
     setIsSubmitting(true);
     setTimeout(() => {
       const campId = postCampaignRequirement({
-        companyName: formData.companyName,
-        contactPerson: formData.contactPerson || formData.companyName,
+        companyName: finalBrandName,
+        contactPerson: formData.contactPerson || finalBrandName,
         email: formData.email,
         phone: `${formData.countryCode} ${formData.phone}`.trim(),
         campaignTitle: formData.campaignTitle,
-        industry: selectedIndustries.join(', '),
+        industry: finalIndustry,
         category: formData.categories.join(', '),
         city: selectedCities.join(', '),
         deliverablesNeeded: formData.deliverablesNeeded,
         budget: formData.isBarter ? 'Barter / Product Exchange' : formData.budget,
         influencersCount: Number(formData.influencersCount) || 1,
+        genderPreference: formData.genderPreference,
+        maleCount: Number(formData.maleCount) || 0,
+        femaleCount: Number(formData.femaleCount) || 0,
+        ageRange: formData.ageRange || 'Any',
+        language: formData.language || 'Any',
         followerRange: formData.followerRange,
         isBarter: formData.isBarter,
         campaignStartDate: formData.campaignStartDate || 'Immediate',
@@ -283,72 +296,6 @@ const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false);
                 1. Campaign Details
               </h3>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-bold text-slate-800 text-xs mb-1.5">Company / Brand Name *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Zomato, Fastrack"
-                    value={formData.companyName}
-                    onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] font-medium"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-800 text-xs mb-1.5">Brand Industry *</label>
-                  <div ref={industryDropdownRef} className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setIndustryDropdownOpen(open => !open)}
-                      className="w-full min-h-[46px] px-4 py-3 pr-10 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none text-left flex items-center justify-between gap-2 transition cursor-pointer"
-                      style={{ borderColor: industryDropdownOpen ? '#D4A338' : undefined }}
-                    >
-                      <span className="truncate text-slate-800 font-medium">
-                        {selectedIndustries.length === 0 ? 'Select industries…' : selectedIndustries.join(', ')}
-                      </span>
-                      <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${industryDropdownOpen ? 'rotate-180' : ''}`} />
-                    </button>
-                    {industryDropdownOpen && (
-                      <div className="absolute z-50 mt-1.5 w-full bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden">
-                        <div className="px-3 py-2 border-b border-slate-100 bg-slate-50/80 text-[10px] text-slate-500">
-                          Select one or more industries
-                        </div>
-                        <ul className="max-h-48 overflow-y-auto py-1">
-                          {(industries && industries.length > 0 ? industries : INDUSTRIES_LIST).map(ind => {
-                            const selected = selectedIndustries.includes(ind.name);
-                            return (
-                              <li
-                                key={ind.id}
-                                onClick={() => toggleIndustry(ind.name)}
-                                className={`flex items-center gap-2 px-3 py-2 cursor-pointer select-none ${selected ? 'bg-amber-50 font-semibold' : 'hover:bg-slate-50'}`}
-                              >
-                                <span className={`w-4 h-4 rounded border flex items-center justify-center ${selected ? 'bg-[#D4A338] border-[#D4A338]' : 'border-slate-300'}`}>
-                                  {selected && <Check className="w-3 h-3 text-white stroke-[3]" />}
-                                </span>
-                                <span>{ind.name}</span>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                  {selectedIndustries.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-1.5">
-                      {selectedIndustries.map(industry => (
-                        <span key={industry} className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-900 rounded-md text-[10px] font-semibold">
-                          {industry}
-                          <button type="button" onClick={() => toggleIndustry(industry)} className="hover:text-red-500">
-                            <X className="w-2.5 h-2.5" />
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
 
               <div>
                 <label className="block font-bold text-slate-800 text-xs mb-1.5">Campaign Headline / Title *</label>
@@ -587,12 +534,12 @@ const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false);
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block font-bold text-slate-800 text-xs mb-1.5">Influencers Needed</label>
+                  <label className="block font-bold text-slate-800 text-xs mb-1.5">Total Influencer Need</label>
                   <input
                     type="number"
                     min="1"
-                    value={formData.influencersCount}
-                    onChange={(e) => setFormData({ ...formData, influencersCount: Number(e.target.value) })}
+                    value={formData.influencersCount || ''}
+                    onChange={(e) => setFormData({ ...formData, influencersCount: e.target.value === '' ? '' : Number(e.target.value) })}
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] font-medium"
                   />
                 </div>
@@ -624,6 +571,102 @@ const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false);
                     onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] font-medium"
                   />
+                </div>
+              </div>
+
+              {/* Gender and Age Details */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-2">
+                <div className="sm:col-span-1 lg:col-span-1">
+                  <label className="block font-bold text-slate-800 text-xs mb-1.5">Gender Preference</label>
+                  <div className="relative">
+                    <select
+                      value={formData.genderPreference}
+                      onChange={(e) => setFormData({ ...formData, genderPreference: e.target.value })}
+                      className="w-full appearance-none px-4 py-3 pr-10 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] text-xs font-medium text-slate-800 transition cursor-pointer"
+                    >
+                      <option value="Any / Both">Any / Both</option>
+                      <option value="Only Male">Only Male</option>
+                      <option value="Only Female">Only Female</option>
+                      <option value="Custom Mix">Custom Mix</option>
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
+                </div>
+
+                {(formData.genderPreference === 'Custom Mix' || formData.genderPreference === 'Any / Both') && (
+                  <>
+                    <div className="sm:col-span-1 lg:col-span-1">
+                      <label className="block font-bold text-slate-800 text-xs mb-1.5">Male Count</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={formData.maleCount === 0 ? '' : formData.maleCount}
+                        onChange={(e) => setFormData({ ...formData, maleCount: e.target.value === '' ? 0 : Number(e.target.value) })}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] font-medium"
+                        placeholder="e.g. 5"
+                      />
+                    </div>
+                    <div className="sm:col-span-1 lg:col-span-1">
+                      <label className="block font-bold text-slate-800 text-xs mb-1.5">Female Count</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={formData.femaleCount === 0 ? '' : formData.femaleCount}
+                        onChange={(e) => setFormData({ ...formData, femaleCount: e.target.value === '' ? 0 : Number(e.target.value) })}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] font-medium"
+                        placeholder="e.g. 5"
+                      />
+                    </div>
+                  </>
+                )}
+
+                <div className="sm:col-span-1 lg:col-span-1">
+                  <label className="block font-bold text-slate-800 text-xs mb-1.5">Age Criteria</label>
+                  <input
+                    type="text"
+                    value={formData.ageRange}
+                    onChange={(e) => setFormData({ ...formData, ageRange: e.target.value })}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] font-medium text-xs"
+                    placeholder="e.g. 18-25 (Optional)"
+                  />
+                </div>
+              </div>
+
+              {/* Language Details */}
+              <div className="mt-4">
+                <label className="block font-bold text-slate-800 text-xs mb-1.5">Language Preference</label>
+                <div className="relative">
+                  <select
+                    value={formData.language}
+                    onChange={(e) => setFormData({ ...formData, language: e.target.value })}
+                    className="w-full appearance-none px-4 py-3 pr-10 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] text-xs font-medium text-slate-800 transition cursor-pointer"
+                  >
+                    <option value="Any">Any Language</option>
+                    <option value="Hindi">Hindi</option>
+                    <option value="English">English</option>
+                    <option value="Hinglish (Hindi + English)">Hinglish (Hindi + English)</option>
+                    <option value="Assamese">Assamese (অসমীয়া)</option>
+                    <option value="Bengali">Bengali (বাংলা)</option>
+                    <option value="Bhojpuri">Bhojpuri (भोजपुरी)</option>
+                    <option value="Gujarati">Gujarati (ગુજરાતી)</option>
+                    <option value="Kannada">Kannada (ಕನ್ನಡ)</option>
+                    <option value="Kashmiri">Kashmiri (कॉशुर / كأشُر)</option>
+                    <option value="Konkani">Konkani (कोंकणी)</option>
+                    <option value="Maithili">Maithili (मैथिली)</option>
+                    <option value="Malayalam">Malayalam (മലയാളം)</option>
+                    <option value="Manipuri">Manipuri (Meitei / মৈতৈ)</option>
+                    <option value="Marathi">Marathi (मराठी)</option>
+                    <option value="Nepali">Nepali (नेपाली)</option>
+                    <option value="Odia">Odia (ଓଡ଼ିଆ)</option>
+                    <option value="Punjabi">Punjabi (ਪੰਜਾਬੀ)</option>
+                    <option value="Sanskrit">Sanskrit (संस्कृतम्)</option>
+                    <option value="Sindhi">Sindhi (सिंधी / سنڌي)</option>
+                    <option value="Tamil">Tamil (தமிழ்)</option>
+                    <option value="Telugu">Telugu (తెలుగు)</option>
+                    <option value="Urdu">Urdu (اردو)</option>
+                    <option value="Other">Other (Please specify in instructions)</option>
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
               </div>
             </div>
@@ -705,7 +748,7 @@ const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false);
                       required
                       placeholder="98112 00000"
                       value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '') })}
                       className="flex-1 px-3 py-3 bg-transparent focus:outline-none text-xs font-medium text-slate-800 placeholder:text-slate-400 rounded-r-xl"
                     />
                   </div>

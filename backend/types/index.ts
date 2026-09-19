@@ -227,6 +227,11 @@ export interface CampaignRequirement {
   influencersCount: string;
   followerRange: string;
   budget: string;
+  genderPreference?: string;
+  maleCount?: number;
+  femaleCount?: number;
+  ageRange?: string;
+  language?: string;
   category: string;
   collaborationType: string;
   campaignDate: string;
