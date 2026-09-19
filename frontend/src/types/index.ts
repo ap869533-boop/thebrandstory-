@@ -288,17 +288,12 @@ export interface CampaignRequirement {
   campaignDescription?: string;
   city: string;
   influencersCount: string | number;
-<<<<<<< HEAD
   maleCount?: number;
   femaleCount?: number;
   totalCount?: number;
-=======
   genderPreference?: string;
-  maleCount?: number;
-  femaleCount?: number;
   ageRange?: string;
   language?: string;
->>>>>>> e81cd8b4df958da5bef8f8a08155d530e3baf007
   followerRange: string;
   budget: string;
   category: string;
