@@ -1,4 +1,4 @@
-import { apiUrl } from '../config/api';
+import { apiUrl, authHeaders } from '../config/api';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   User,
@@ -246,30 +246,36 @@ export const CreatorDashboardView: React.FC = () => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onloadend = async () => {
-        const base64Data = reader.result;
-        const res = await fetch(apiUrl('/api/upload'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            image: base64Data,
-            creatorId: creator.id,
-            type: type === 'video' ? 'reel_video' : 'reel_thumbnail',
-          }),
-        });
-        const data = await res.json();
-        if (data.success && data.url) {
-          if (type === 'video') {
-            setUploadedReelUrl(apiUrl(data.url));
-            setUploadNotice('Video uploaded successfully!');
+        try {
+          const base64Data = reader.result;
+          const res = await fetch(apiUrl('/api/upload'), {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({
+              image: base64Data,
+              creatorId: creator.id,
+              type: type === 'video' ? 'reel_video' : 'reel_thumbnail',
+            }),
+          });
+          const data = await res.json();
+          if (data.success && data.url) {
+            if (type === 'video') {
+              setUploadedReelUrl(apiUrl(data.url));
+              setUploadNotice('Video uploaded successfully!');
+            } else {
+              setUploadedThumbnailUrl(apiUrl(data.url));
+              setUploadNotice('Thumbnail uploaded successfully!');
+            }
+            setTimeout(() => setUploadNotice(null), 3000);
           } else {
-            setUploadedThumbnailUrl(apiUrl(data.url));
-            setUploadNotice('Thumbnail uploaded successfully!');
+            throw new Error(data.error || 'Upload failed');
           }
-          setTimeout(() => setUploadNotice(null), 3000);
-        } else {
-          throw new Error(data.error || 'Upload failed');
+        } catch (err: any) {
+          console.error('Reel upload error:', err);
+          setUploadNotice(err?.message || 'Upload failed. Please try again.');
+        } finally {
+          setIsUploadingReel(false);
         }
-        setIsUploadingReel(false);
       };
     } catch (err: any) {
       console.error('Reel upload error:', err);
@@ -318,27 +324,32 @@ export const CreatorDashboardView: React.FC = () => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onloadend = async () => {
-        const base64Data = reader.result;
-        const res = await fetch(apiUrl('/api/upload'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            image: base64Data,
-            creatorId: creator.id,
-            type: 'reel_video',
-          }),
-        });
-        const data = await res.json();
-        if (data.success && data.url) {
-          // Save to reelVideoUrl - this shows on creator card homepage
-          updateCreatorProfile(creator.id, { reelVideoUrl: data.url });
-          setReelVideoUrl(apiUrl(data.url));
-          setUploadNotice('🎬 Card reel uploaded! It will now autoplay on your profile card on the home page.');
-          setTimeout(() => setUploadNotice(null), 5000);
-        } else {
-          throw new Error(data.error || 'Upload failed');
+        try {
+          const base64Data = reader.result;
+          const res = await fetch(apiUrl('/api/upload'), {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({
+              image: base64Data,
+              creatorId: creator.id,
+              type: 'reel_video',
+            }),
+          });
+          const data = await res.json();
+          if (data.success && data.url) {
+            updateCreatorProfile(creator.id, { reelVideoUrl: data.url });
+            setReelVideoUrl(apiUrl(data.url));
+            setUploadNotice('🎬 Card reel uploaded! It will now autoplay on your profile card on the home page.');
+            setTimeout(() => setUploadNotice(null), 5000);
+          } else {
+            throw new Error(data.error || 'Upload failed');
+          }
+        } catch (err: any) {
+          console.error('Card reel upload error:', err);
+          setUploadNotice(err?.message || 'Upload failed. Please try again.');
+        } finally {
+          setIsUploadingCardReel(false);
         }
-        setIsUploadingCardReel(false);
       };
     } catch (err: any) {
       console.error('Card reel upload error:', err);
@@ -357,37 +368,43 @@ export const CreatorDashboardView: React.FC = () => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onloadend = async () => {
-        const base64Image = reader.result;
-        const res = await fetch(apiUrl('/api/upload'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            image: base64Image,
-            creatorId: creator.id,
-            type,
-          }),
-        });
+        try {
+          const base64Image = reader.result;
+          const res = await fetch(apiUrl('/api/upload'), {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({
+              image: base64Image,
+              creatorId: creator.id,
+              type,
+            }),
+          });
 
-        const data = await res.json();
-        if (data.success && data.url) {
-          const uploadedUrl = apiUrl(data.url);
-          if (type === 'avatar') {
-            updateCreatorProfile(creator.id, { avatar: uploadedUrl });
-            setUploadNotice('Profile avatar saved locally and updated in database!');
+          const data = await res.json();
+          if (data.success && data.url) {
+            const uploadedUrl = apiUrl(data.url);
+            if (type === 'avatar') {
+              updateCreatorProfile(creator.id, { avatar: uploadedUrl });
+              setUploadNotice('Profile photo uploaded successfully.');
+            } else {
+              updateCreatorProfile(creator.id, { coverImage: uploadedUrl });
+              setUploadNotice('Cover banner uploaded successfully.');
+            }
+            setTimeout(() => setUploadNotice(null), 3000);
           } else {
-            updateCreatorProfile(creator.id, { coverImage: uploadedUrl });
-            setUploadNotice('Cover banner saved locally and updated in database!');
+            throw new Error(data.error || 'Upload failed');
           }
-          setTimeout(() => setUploadNotice(null), 3000);
-        } else {
-          throw new Error(data.error || 'Upload failed');
+        } catch (err: any) {
+          console.error('Photo upload error:', err);
+          setUploadNotice(err?.message || 'Failed to upload photo. Please sign in again and try.');
+        } finally {
+          if (type === 'avatar') setIsUploadingAvatar(false);
+          else setIsUploadingCover(false);
         }
       };
-
     } catch (err: any) {
       console.error('Photo upload error:', err);
       setUploadNotice('Failed to upload photo. Please try again.');
-    } finally {
       if (type === 'avatar') setIsUploadingAvatar(false);
       else setIsUploadingCover(false);
     }
@@ -397,7 +414,7 @@ export const CreatorDashboardView: React.FC = () => {
     try {
       const res = await fetch(apiUrl(`/api/upload/${creator.id}`), {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify({ type }),
       });
       const data = await res.json();

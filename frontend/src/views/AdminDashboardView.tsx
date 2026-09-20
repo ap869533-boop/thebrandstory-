@@ -1,4 +1,4 @@
-import { apiUrl } from '../config/api';
+import { apiUrl, authHeaders } from '../config/api';
 import React, { useEffect, useState } from 'react';
 import {
   ShieldCheck,
@@ -64,7 +64,7 @@ export const AdminDashboardView: React.FC = () => {
   // Fetch admin brands & pending campaigns
   useEffect(() => {
     const token = localStorage.getItem('sc_auth_token');
-    if (!token || authUser?.role !== 'ADMIN') return;
+    if (!token || (authUser?.role !== 'ADMIN' && authUser?.role !== 'SALES')) return;
 
     fetch(apiUrl('/api/brands/admin/list'), { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
@@ -329,8 +329,8 @@ export const AdminDashboardView: React.FC = () => {
       try {
         const res = await fetch(apiUrl('/api/upload'), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: base64, folder: 'brand_logos' }),
+          headers: authHeaders(),
+          body: JSON.stringify({ image: base64, type: 'avatar' }),
         });
         const data = await res.json();
         if (data.success && data.url) {

@@ -33,6 +33,89 @@ function mapDbRowToBrandProfile(row: any) {
   };
 }
 
+function resolveBrandApprovalStatus(profileStatus?: string | null, userStatus?: string | null) {
+  if (profileStatus === 'pending' || userStatus === 'pending' || (!profileStatus && !userStatus)) {
+    return 'pending';
+  }
+  return profileStatus || userStatus || 'pending';
+}
+
+function mapAdminBrandRow(r: any) {
+  return {
+    id: r.bp_id || `temp_${r.user_id}`,
+    userId: r.user_id,
+    brandName: r.brand_name || r.company_name || r.user_name,
+    gstNumber: r.gst_number || '',
+    logoUrl: r.logo_url || '',
+    coverUrl: r.cover_url || '',
+    description: r.description || '',
+    website: r.website || '',
+    industry: r.industry || '',
+    city: r.city || '',
+    contactPerson: r.contact_person || r.user_name,
+    phone: r.user_phone || r.phone || '',
+    email: r.user_email || r.email || '',
+    approvalStatus: resolveBrandApprovalStatus(r.bp_approval_status, r.user_approval_status),
+    rejectionReason: r.rejection_reason || '',
+    isFeatured: Boolean(r.is_featured),
+    createdAt: r.created_at || new Date().toISOString(),
+    userName: r.user_name,
+    userEmail: r.user_email,
+    userPhone: r.user_phone,
+    companyName: r.company_name,
+  };
+}
+
+export async function ensurePendingBrandProfile(opts: {
+  userId: string;
+  brandName?: string;
+  gstNumber?: string;
+  contactPerson?: string;
+  phone?: string;
+  email?: string;
+}) {
+  const existing = await dbQuery('SELECT id FROM brand_profiles WHERE user_id = ? LIMIT 1', [opts.userId]);
+  if (existing && existing.length > 0) return existing[0].id;
+
+  const id = `bp_${Date.now()}`;
+  const brandName = (opts.brandName || opts.contactPerson || 'New Brand').trim();
+  const profile = {
+    id,
+    userId: opts.userId,
+    brandName,
+    gstNumber: opts.gstNumber || '',
+    logoUrl: '',
+    coverUrl: '',
+    description: '',
+    website: '',
+    facebookUrl: '',
+    instagramUrl: '',
+    youtubeUrl: '',
+    linkedinUrl: '',
+    industry: '',
+    city: '',
+    contactPerson: opts.contactPerson || '',
+    phone: opts.phone || '',
+    email: opts.email || '',
+    approvalStatus: 'pending' as const,
+    rejectionReason: '',
+    isFeatured: false,
+    createdAt: new Date().toISOString(),
+  };
+  brandProfilesStore.unshift(profile);
+
+  await dbQuery(
+    `INSERT INTO brand_profiles (id, user_id, brand_name, gst_number, contact_person, phone, email, approval_status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`,
+    [id, opts.userId, brandName, opts.gstNumber || null, opts.contactPerson || null, opts.phone || null, opts.email || null]
+  );
+  await dbQuery(
+    `UPDATE users SET approval_status = 'pending' WHERE id = ? AND (approval_status IS NULL OR approval_status = '')`,
+    [opts.userId]
+  );
+  return id;
+}
+
 // =============================================
 // GET /api/brands/profile  (authenticated brand)
 // =============================================
@@ -136,11 +219,7 @@ export async function createBrandProfile(req: AuthenticatedRequest, res: Respons
       return res.status(409).json({ success: false, error: 'Brand profile already exists. Use PUT to update.' });
     }
 
-    // Fetch the user's existing approval status from the users table
-    const userRow = await dbQuery('SELECT approval_status FROM users WHERE id = ?', [userId]);
-    const currentApprovalStatus = userRow && userRow.length > 0 ? userRow[0].approval_status || 'pending' : 'pending';
-
-    const id = `bp_${Date.now()}`;
+    const approvalStatus = 'pending';
     const profile = {
       id,
       userId,
@@ -159,7 +238,7 @@ export async function createBrandProfile(req: AuthenticatedRequest, res: Respons
       contactPerson: contactPerson || '',
       phone: phone || '',
       email: email || req.user.email || '',
-      approvalStatus: currentApprovalStatus as any,
+      approvalStatus,
       rejectionReason: '',
       isFeatured: false,
       createdAt: new Date().toISOString(),
@@ -170,8 +249,9 @@ export async function createBrandProfile(req: AuthenticatedRequest, res: Respons
     await dbQuery(
       `INSERT INTO brand_profiles (id, user_id, brand_name, gst_number, logo_url, cover_url, description, website, facebook_url, instagram_url, youtube_url, linkedin_url, industry, city, contact_person, phone, email, approval_status)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, userId, brandName, gstNumber || null, logoUrl || null, coverUrl || null, description || null, website || null, facebookUrl || null, instagramUrl || null, youtubeUrl || null, linkedinUrl || null, industry || null, city || null, contactPerson || null, phone || null, email || null, currentApprovalStatus]
-    ).catch(err => console.warn('MySQL brand profile insert notice:', err));
+      [id, userId, brandName, gstNumber || null, logoUrl || null, coverUrl || null, description || null, website || null, facebookUrl || null, instagramUrl || null, youtubeUrl || null, linkedinUrl || null, industry || null, city || null, contactPerson || null, phone || null, email || null, approvalStatus]
+    );
+    await dbQuery(`UPDATE users SET approval_status = 'pending' WHERE id = ?`, [userId]);
 
     res.status(201).json({ success: true, profile });
   } catch (error) {
@@ -280,8 +360,8 @@ export async function adminListBrands(req: AuthenticatedRequest, res: Response) 
     const statusFilter = (req.query.status as string) || 'all';
     let sql = `
       SELECT 
-        u.id as user_id, u.name as user_name, u.email as user_email, u.phone as user_phone, u.company_name, u.approval_status as user_approval_status,
-        bp.id as bp_id, bp.brand_name, bp.gst_number, bp.logo_url, bp.cover_url, bp.description, bp.website, bp.industry, bp.city, bp.contact_person, bp.approval_status as bp_approval_status, bp.rejection_reason, bp.is_featured, bp.created_at
+        u.id as user_id, u.name as user_name, u.email as user_email, u.phone as user_phone, u.company_name, u.approval_status as user_approval_status, u.created_at as user_created_at,
+        bp.id as bp_id, bp.brand_name, bp.gst_number, bp.logo_url, bp.cover_url, bp.description, bp.website, bp.industry, bp.city, bp.contact_person, bp.approval_status as bp_approval_status, bp.rejection_reason, bp.is_featured, COALESCE(bp.created_at, u.created_at) as created_at
       FROM users u
       LEFT JOIN brand_profiles bp ON u.id = bp.user_id
       WHERE u.role = 'BRAND'
@@ -289,42 +369,42 @@ export async function adminListBrands(req: AuthenticatedRequest, res: Response) 
     const params: any[] = [];
 
     if (statusFilter !== 'all') {
-      sql += ' AND (bp.approval_status = ? OR (bp.approval_status IS NULL AND u.approval_status = ?))';
-      params.push(statusFilter, statusFilter);
+      sql += ' AND (bp.approval_status = ? OR u.approval_status = ? OR (bp.id IS NULL AND COALESCE(u.approval_status, ?) = ?))';
+      params.push(statusFilter, statusFilter, statusFilter, statusFilter);
     }
 
-    sql += ' ORDER BY u.created_at DESC';
+    sql += ` ORDER BY CASE
+      WHEN COALESCE(bp.approval_status, u.approval_status, 'pending') = 'pending' THEN 0
+      ELSE 1
+    END, COALESCE(bp.created_at, u.created_at) DESC`;
 
-    const rows = await dbQuery(sql, params);
+    let rows = await dbQuery(sql, params);
+    if (!rows) {
+      rows = await dbQuery(
+        `SELECT id as user_id, name as user_name, email as user_email, phone as user_phone, company_name,
+                approval_status as user_approval_status, created_at, created_at as user_created_at
+         FROM users WHERE role = 'BRAND' ORDER BY created_at DESC`
+      );
+    }
 
-    if (rows) {
-      const profiles = rows.map((r: any) => ({
-        id: r.bp_id || `temp_${r.user_id}`,
-        userId: r.user_id,
-        brandName: r.brand_name || r.company_name || r.user_name,
-        gstNumber: r.gst_number || '',
-        logoUrl: r.logo_url || '',
-        coverUrl: r.cover_url || '',
-        description: r.description || '',
-        website: r.website || '',
-        industry: r.industry || '',
-        city: r.city || '',
-        contactPerson: r.contact_person || r.user_name,
-        phone: r.user_phone || '',
-        email: r.user_email || '',
-        approvalStatus: r.bp_approval_status || r.user_approval_status || 'pending',
-        rejectionReason: r.rejection_reason || '',
-        isFeatured: Boolean(r.is_featured),
-        createdAt: r.created_at || new Date().toISOString(),
-        userName: r.user_name,
-        userEmail: r.user_email,
-        userPhone: r.user_phone,
-        companyName: r.company_name,
-      }));
+    if (rows && rows.length >= 0) {
+      const profiles = rows.map(mapAdminBrandRow);
+      const seen = new Set(profiles.map((p: any) => p.userId));
+      for (const mem of brandProfilesStore) {
+        if (!seen.has(mem.userId)) {
+          profiles.push(mem);
+          seen.add(mem.userId);
+        }
+      }
+      profiles.sort((a: any, b: any) => {
+        const ap = a.approvalStatus === 'pending' ? 0 : 1;
+        const bp = b.approvalStatus === 'pending' ? 0 : 1;
+        if (ap !== bp) return ap - bp;
+        return String(b.createdAt || '').localeCompare(String(a.createdAt || ''));
+      });
       return res.json({ success: true, brands: profiles });
     }
 
-    // Fallback: memory
     const filtered = statusFilter === 'all'
       ? brandProfilesStore
       : brandProfilesStore.filter(p => p.approvalStatus === statusFilter);

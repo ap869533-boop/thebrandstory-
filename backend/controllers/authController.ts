@@ -1,12 +1,13 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { dbQuery } from '../config/db';
+import { dbQuery, isDbConnected } from '../config/db';
 import { AuthenticatedRequest } from '../middleware/authMiddleware';
 import { creatorsStore, mapDbRowToCreator } from './creatorController';
 import { Creator } from '../types';
 import { sendOtpEmail, sendWelcomeEmail } from '../utils/mailer';
 import { cleanInstagramHandle } from '../utils/sanitize';
+import { ensurePendingBrandProfile } from './brandController';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'social_cults_super_secret_jwt_key_2026';
 

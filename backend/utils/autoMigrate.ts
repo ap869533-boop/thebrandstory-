@@ -22,12 +22,40 @@ export async function runAutoMigrations() {
         \`gst_number\` VARCHAR(50) DEFAULT NULL,
         \`avatar\` VARCHAR(500) DEFAULT NULL,
         \`is_verified\` BOOLEAN DEFAULT FALSE,
-        \`approval_status\` VARCHAR(20) DEFAULT 'approved',
+        \`approval_status\` VARCHAR(20) DEFAULT 'pending',
         \`last_seen_at\` TIMESTAMP NULL DEFAULT NULL,
         \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         \`updated_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX \`idx_users_email\` (\`email\`),
         INDEX \`idx_users_role\` (\`role\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+      `CREATE TABLE IF NOT EXISTS \`brand_profiles\` (
+        \`id\` VARCHAR(64) PRIMARY KEY,
+        \`user_id\` VARCHAR(64) NOT NULL UNIQUE,
+        \`brand_name\` VARCHAR(150) NOT NULL,
+        \`gst_number\` VARCHAR(50) DEFAULT NULL,
+        \`logo_url\` VARCHAR(500) DEFAULT NULL,
+        \`cover_url\` VARCHAR(500) DEFAULT NULL,
+        \`description\` TEXT DEFAULT NULL,
+        \`website\` VARCHAR(255) DEFAULT NULL,
+        \`facebook_url\` VARCHAR(255) DEFAULT NULL,
+        \`instagram_url\` VARCHAR(255) DEFAULT NULL,
+        \`youtube_url\` VARCHAR(255) DEFAULT NULL,
+        \`linkedin_url\` VARCHAR(255) DEFAULT NULL,
+        \`twitter_url\` VARCHAR(255) DEFAULT NULL,
+        \`industry\` VARCHAR(100) DEFAULT NULL,
+        \`city\` VARCHAR(80) DEFAULT NULL,
+        \`contact_person\` VARCHAR(120) DEFAULT NULL,
+        \`phone\` VARCHAR(20) DEFAULT NULL,
+        \`email\` VARCHAR(150) DEFAULT NULL,
+        \`approval_status\` VARCHAR(20) DEFAULT 'pending',
+        \`rejection_reason\` TEXT DEFAULT NULL,
+        \`is_featured\` BOOLEAN DEFAULT FALSE,
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        \`updated_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX \`idx_brand_profiles_user\` (\`user_id\`),
+        INDEX \`idx_brand_profiles_status\` (\`approval_status\`)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
       `CREATE TABLE IF NOT EXISTS \`creators\` (
@@ -193,6 +221,34 @@ export async function runAutoMigrations() {
         \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         INDEX \`idx_creator_posts_creator\` (\`creator_id\`),
         INDEX \`idx_creator_posts_created\` (\`created_at\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+      `CREATE TABLE IF NOT EXISTS \`brand_profiles\` (
+        \`id\` VARCHAR(64) PRIMARY KEY,
+        \`user_id\` VARCHAR(64) NOT NULL UNIQUE,
+        \`brand_name\` VARCHAR(150) NOT NULL,
+        \`gst_number\` VARCHAR(50) DEFAULT NULL,
+        \`logo_url\` VARCHAR(500) DEFAULT NULL,
+        \`cover_url\` VARCHAR(500) DEFAULT NULL,
+        \`description\` TEXT DEFAULT NULL,
+        \`website\` VARCHAR(255) DEFAULT NULL,
+        \`facebook_url\` VARCHAR(255) DEFAULT NULL,
+        \`instagram_url\` VARCHAR(255) DEFAULT NULL,
+        \`youtube_url\` VARCHAR(255) DEFAULT NULL,
+        \`linkedin_url\` VARCHAR(255) DEFAULT NULL,
+        \`twitter_url\` VARCHAR(255) DEFAULT NULL,
+        \`industry\` VARCHAR(100) DEFAULT NULL,
+        \`city\` VARCHAR(80) DEFAULT NULL,
+        \`contact_person\` VARCHAR(120) DEFAULT NULL,
+        \`phone\` VARCHAR(20) DEFAULT NULL,
+        \`email\` VARCHAR(150) DEFAULT NULL,
+        \`approval_status\` VARCHAR(20) DEFAULT 'pending',
+        \`rejection_reason\` TEXT DEFAULT NULL,
+        \`is_featured\` BOOLEAN DEFAULT FALSE,
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        \`updated_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX \`idx_brand_profiles_user\` (\`user_id\`),
+        INDEX \`idx_brand_profiles_status\` (\`approval_status\`)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
     ];
 
@@ -231,7 +287,7 @@ export async function runAutoMigrations() {
     // 3. Add missing columns / update columns safely on live database
     const alterQueries = [
       `ALTER TABLE users ADD COLUMN gst_number VARCHAR(50) DEFAULT NULL`,
-      `ALTER TABLE users ADD COLUMN approval_status VARCHAR(20) DEFAULT 'approved'`,
+      `ALTER TABLE users ADD COLUMN approval_status VARCHAR(20) DEFAULT 'pending'`,
       `ALTER TABLE users ADD COLUMN last_seen_at TIMESTAMP NULL DEFAULT NULL`,
       `ALTER TABLE campaign_requirements ADD COLUMN approval_status VARCHAR(20) DEFAULT 'pending'`,
       `ALTER TABLE campaign_requirements ADD COLUMN user_id VARCHAR(64) DEFAULT NULL`,

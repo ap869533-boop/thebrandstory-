@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `gst_number` VARCHAR(20) DEFAULT NULL,
   `avatar` VARCHAR(500) DEFAULT NULL,
   `is_verified` BOOLEAN DEFAULT FALSE,
-  `approval_status` ENUM('pending', 'approved', 'rejected') DEFAULT 'approved',
+  `approval_status` ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX `idx_users_email` (`email`),
