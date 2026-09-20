@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { randomUUID } from 'crypto';
 import { dbQuery } from '../config/db';
 import { AuthenticatedRequest } from '../middleware/authMiddleware';
 import { validateOptionalUrl } from '../utils/validation';
@@ -219,6 +220,7 @@ export async function createBrandProfile(req: AuthenticatedRequest, res: Respons
       return res.status(409).json({ success: false, error: 'Brand profile already exists. Use PUT to update.' });
     }
 
+    const id = `bp_${randomUUID().replace(/-/g, '').slice(0, 12)}`;
     const approvalStatus = 'pending';
     const profile = {
       id,
