@@ -24,6 +24,12 @@ import { usePlatform } from '../../context/PlatformContext';
 import { UserRole } from '../../types';
 import { CATEGORIES_LIST, CITIES_LIST } from '../../data/initialData';
 
+const COUNTRY_CODES = [
+  { code: '+91', label: 'IN +91' }, { code: '+1', label: 'US +1' },
+  { code: '+44', label: 'UK +44' }, { code: '+971', label: 'UAE +971' },
+  { code: '+61', label: 'AU +61' }, { code: '+65', label: 'SG +65' },
+];
+
 async function readApiResponse(response: Response): Promise<any> {
   const body = await response.text();
   if (!body) {
@@ -65,6 +71,7 @@ export const AuthModal: React.FC = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [phone, setPhone] = useState('');
+  const [countryCode, setCountryCode] = useState('+91');
   const [companyName, setCompanyName] = useState('');
   const [category, setCategory] = useState('');
   const [city, setCity] = useState('');
@@ -85,6 +92,7 @@ export const AuthModal: React.FC = () => {
       setName('');
       setUsername('');
       setPhone('');
+      setCountryCode('+91');
       setCompanyName('');
       setCategory('');
       setCity('');
@@ -153,16 +161,26 @@ export const AuthModal: React.FC = () => {
             errors.username = 'Please enter a valid Instagram profile URL (e.g., https://instagram.com/username)';
           }
         }
-        // Phone validation (Optional but if provided, must be valid 10 digits)
-        if (phone.trim()) {
-          const cleanPhone = phone.replace(/[^0-9]/g, '');
-          if (cleanPhone.length < 10) {
-            errors.phone = 'Please enter a valid 10-digit mobile number';
-          }
+        // Phone validation
+        const cleanPhone = phone.replace(/\D/g, '');
+        if (!phone.trim()) {
+          errors.phone = 'Mobile number is required';
+        } else if (countryCode === '+91' && !/^[6-9]\d{9}$/.test(cleanPhone)) {
+          errors.phone = 'Please enter a valid 10-digit Indian mobile number';
+        } else if (countryCode !== '+91' && (cleanPhone.length < 6 || cleanPhone.length > 15)) {
+          errors.phone = 'Please enter a valid mobile number';
         }
       } else if (role === 'BRAND') {
         if (!companyName.trim()) {
           errors.companyName = 'Company or brand name is required';
+        }
+        const cleanPhone = phone.replace(/\D/g, '');
+        if (!phone.trim()) {
+          errors.phone = 'Mobile number is required';
+        } else if (countryCode === '+91' && !/^[6-9]\d{9}$/.test(cleanPhone)) {
+          errors.phone = 'Please enter a valid 10-digit Indian mobile number';
+        } else if (countryCode !== '+91' && (cleanPhone.length < 6 || cleanPhone.length > 15)) {
+          errors.phone = 'Please enter a valid mobile number';
         }
       }
     }
@@ -320,6 +338,7 @@ export const AuthModal: React.FC = () => {
             name: name.trim(),
             role,
             phone: phone.trim(),
+            countryCode,
             companyName: companyName.trim(),
             username: parsedUsername,
             instagramUrl: role === 'CREATOR' ? username.trim() : '',
@@ -661,12 +680,18 @@ export const AuthModal: React.FC = () => {
 
                   {/* Phone */}
                   <div>
-                    <label className="block text-slate-800 text-xs font-bold mb-1.5">WhatsApp / Contact Number</label>
-                    <div className="relative">
-                      <Phone className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5" />
-                      <input
+                    <label className="block text-slate-800 text-xs font-bold mb-1.5">WhatsApp / Contact Number *</label>
+                    <div className="flex gap-2">
+                      <select value={countryCode} onChange={(e) => setCountryCode(e.target.value)} aria-label="Country code" className="w-24 shrink-0 px-2 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 font-medium cursor-pointer">
+                        {COUNTRY_CODES.map(({ code, label }) => <option key={code} value={code}>{label}</option>)}
+                      </select>
+                      <div className="relative flex-1">
+                        <Phone className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5" />
+                        <input
                         type="tel"
-                        placeholder="+91 98765 43210"
+                        inputMode="numeric"
+                        autoComplete="tel"
+                        placeholder="98765 43210"
                         value={phone}
                         onChange={(e) => {
                           setPhone(e.target.value);
@@ -678,7 +703,8 @@ export const AuthModal: React.FC = () => {
                             ? 'border-rose-400 focus:border-rose-500 bg-rose-50/30'
                             : 'border-slate-200 focus:border-blue-500'
                         }`}
-                      />
+                        />
+                      </div>
                     </div>
                     {touched.phone && fieldErrors.phone && (
                       <span className="text-[11px] text-rose-600 font-semibold mt-1 block">

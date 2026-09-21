@@ -1021,6 +1021,16 @@ export const CreatorDashboardView: React.FC = () => {
                   </div>
                 </div>
                 <div>
+                  <label className="block text-slate-600 font-bold mb-1">WhatsApp / Contact Number</label>
+                  <input
+                    type="tel"
+                    value={creator.phone || authUser?.phone || ''}
+                    readOnly
+                    title="Saved during signup"
+                    className="w-full px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 font-medium outline-none cursor-not-allowed"
+                  />
+                </div>
+                <div>
                   <label className="block text-slate-600 font-bold mb-1">Primary Category *</label>
                   <select
                     value={profileCategory}

@@ -71,7 +71,7 @@ export const BrandDashboardView: React.FC = () => {
   const [bpIndustry, setBpIndustry] = useState('');
   const [bpCity, setBpCity] = useState('');
   const [bpContactPerson, setBpContactPerson] = useState(authUser?.name || '');
-  const [bpPhone, setBpPhone] = useState('');
+  const [bpPhone, setBpPhone] = useState(authUser?.phone || '');
   const [bpLogoUrl, setBpLogoUrl] = useState('');
   const [bpFacebookUrl, setBpFacebookUrl] = useState('');
   const [bpInstagramUrl, setBpInstagramUrl] = useState('');
@@ -98,7 +98,7 @@ export const BrandDashboardView: React.FC = () => {
           setBpIndustry(data.profile.industry || '');
           setBpCity(data.profile.city || '');
           setBpContactPerson(data.profile.contactPerson || authUser?.name || '');
-          setBpPhone(data.profile.phone || '');
+          setBpPhone(data.profile.phone || authUser?.phone || '');
           setBpLogoUrl(data.profile.logoUrl || '');
           setBpFacebookUrl(data.profile.facebookUrl || '');
           setBpInstagramUrl(data.profile.instagramUrl || '');
@@ -1006,11 +1006,13 @@ export const BrandDashboardView: React.FC = () => {
                           </div>
                           <input
                             type="tel"
-                            maxLength={10}
+                            inputMode="numeric"
+                            maxLength={16}
                             value={bpPhone}
                             onChange={e => {
                               const val = e.target.value;
-                              if (val === '' || (/^[0-9]+$/.test(val) && val.length <= 10)) {
+                              const digits = val.replace(/\D/g, '');
+                              if (val === '' || digits.length <= 12) {
                                 setBpPhone(val);
                               }
                             }}

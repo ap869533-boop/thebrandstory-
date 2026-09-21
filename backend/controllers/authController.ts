@@ -11,6 +11,14 @@ import { ensurePendingBrandProfile } from './brandController';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'social_cults_super_secret_jwt_key_2026';
 
+function normalizeMobile(phone: unknown, countryCode: unknown = '+91'): string | null {
+  const code = String(countryCode || '+91').trim();
+  const digits = String(phone || '').replace(/\D/g, '');
+  if (!/^\+\d{1,3}$/.test(code)) return null;
+  if (code === '+91') return /^[6-9]\d{9}$/.test(digits) ? `${code}${digits}` : null;
+  return /^\d{6,15}$/.test(digits) ? `${code}${digits}` : null;
+}
+
 // OTP Cache
 const otpCache = new Map<string, { otp: string; expires: number }>();
 
@@ -84,6 +92,10 @@ export async function signup(req: Request, res: Response) {
     }
 
     const cleanEmail = email.toLowerCase().trim();
+    const normalizedPhone = normalizeMobile(phone, req.body.countryCode);
+    if (!normalizedPhone) {
+      return res.status(400).json({ success: false, error: 'A valid 10-digit Indian mobile number is required' });
+    }
     const cleanUsername = cleanInstagramHandle(username || (req.body as any).instagramUrl || '');
     const instagramUrl = cleanUsername ? `https://instagram.com/${cleanUsername}` : '';
 
@@ -113,7 +125,7 @@ export async function signup(req: Request, res: Response) {
         cleanEmail,
         hashedPassword,
         role,
-        phone || null,
+        normalizedPhone,
         companyName || null,
         userAvatar,
         1,
@@ -128,7 +140,7 @@ export async function signup(req: Request, res: Response) {
       email: cleanEmail,
       password_hash: hashedPassword,
       role: role as any,
-      phone,
+      phone: normalizedPhone,
       company_name: companyName,
       avatar: userAvatar,
       created_at: new Date().toISOString(),
@@ -136,7 +148,7 @@ export async function signup(req: Request, res: Response) {
     memoryUsers.push(newUser);
 
     if (role === 'BRAND') {
-      await ensurePendingBrandProfile({ userId, brandName: companyName, gstNumber, contactPerson: name, phone, email: cleanEmail });
+      await ensurePendingBrandProfile({ userId, brandName: companyName, gstNumber, contactPerson: name, phone: normalizedPhone, email: cleanEmail });
     }
 
     // 2. If Creator, automatically insert full creator profile into MySQL `creators` table
@@ -166,7 +178,7 @@ export async function signup(req: Request, res: Response) {
         trustScore: 0,
         trustSignals: {
           profileCompleteness: 0,
-          phoneVerified: Boolean(phone),
+          phoneVerified: true,
           emailVerified: true,
           socialVerified: false,
           engagementQuality: 0,
@@ -218,7 +230,7 @@ export async function signup(req: Request, res: Response) {
         portfolio: [],
         previousCollaborations: [],
         reviews: [],
-        phone: phone || '',
+        phone: normalizedPhone,
         email: cleanEmail,
         profileViews: 0,
         savedCount: 0,
@@ -504,6 +516,7 @@ export async function login(req: Request, res: Response) {
         name: user.name,
         email: user.email,
         role: user.role,
+        phone: user.phone || '',
         companyName: user.company_name,
         approvalStatus: user.approval_status || (user.role === 'BRAND' ? 'pending' : 'approved'),
         avatar: user.avatar,
@@ -579,13 +592,14 @@ export async function requestOtp(req: Request, res: Response) {
 
 export async function verifyOtp(req: Request, res: Response) {
   try {
-    const { email, otp, name, role, phone, companyName, gstNumber, username, category, city, password } = req.body;
+    const { email, otp, name, role, phone, companyName, gstNumber, username, category, city, password, countryCode } = req.body;
 
     if (!email || !otp) {
       return res.status(400).json({ success: false, error: 'Email and OTP are required' });
     }
 
     const cleanEmail = email.toLowerCase().trim();
+    const normalizedPhone = normalizeMobile(phone, countryCode);
     const cachedData = otpCache.get(cleanEmail);
 
     if (!cachedData) {
@@ -637,6 +651,9 @@ export async function verifyOtp(req: Request, res: Response) {
       if (!name || !role) {
         return res.status(400).json({ success: false, error: 'Name and role are required for new registration.' });
       }
+      if (!normalizedPhone) {
+        return res.status(400).json({ success: false, error: 'A valid 10-digit Indian mobile number is required' });
+      }
 
       isNewUser = true;
       const cleanUsername = cleanInstagramHandle(req.body.instagramUrl || username || '');
@@ -652,7 +669,7 @@ export async function verifyOtp(req: Request, res: Response) {
       await dbQuery(
         `INSERT INTO users (id, name, email, password_hash, role, phone, company_name, avatar, approval_status)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [userId, name, cleanEmail, hashedPassword, role, phone || null, companyName || null, userAvatar || null, role === 'BRAND' ? 'pending' : 'approved']
+        [userId, name, cleanEmail, hashedPassword, role, normalizedPhone, companyName || null, userAvatar || null, role === 'BRAND' ? 'pending' : 'approved']
       ).catch(err => console.warn('MySQL user insert notice:', err));
 
       const newUser: UserRecord = {
@@ -661,7 +678,7 @@ export async function verifyOtp(req: Request, res: Response) {
         email: cleanEmail,
         password_hash: hashedPassword,
         role: role as any,
-        phone,
+        phone: normalizedPhone,
         company_name: companyName,
         avatar: userAvatar,
         created_at: new Date().toISOString(),
@@ -670,7 +687,7 @@ export async function verifyOtp(req: Request, res: Response) {
       user = newUser;
 
       if (role === 'BRAND') {
-        await ensurePendingBrandProfile({ userId, brandName: companyName, gstNumber, contactPerson: name, phone, email: cleanEmail });
+        await ensurePendingBrandProfile({ userId, brandName: companyName, gstNumber, contactPerson: name, phone: normalizedPhone, email: cleanEmail });
       }
 
       // Auto Creator Profile setup if CREATOR
@@ -699,7 +716,7 @@ export async function verifyOtp(req: Request, res: Response) {
           trustScore: 0,
           trustSignals: {
             profileCompleteness: 0,
-            phoneVerified: Boolean(phone),
+            phoneVerified: true,
             emailVerified: true,
             socialVerified: false,
             engagementQuality: 0,
@@ -751,7 +768,7 @@ export async function verifyOtp(req: Request, res: Response) {
           portfolio: [],
           previousCollaborations: [],
           reviews: [],
-          phone: phone || '',
+          phone: normalizedPhone,
           email: cleanEmail,
           profileViews: 0,
           savedCount: 0,
@@ -831,6 +848,7 @@ export async function verifyOtp(req: Request, res: Response) {
         name: user.name,
         email: user.email,
         role: responseRole,
+        phone: user.phone || normalizedPhone || '',
         companyName: user.company_name || companyName || '',
         avatar: user.avatar,
         approvalStatus: responseRole === 'BRAND' ? 'pending' : 'approved',

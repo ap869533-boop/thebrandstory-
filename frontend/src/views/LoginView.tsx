@@ -21,6 +21,12 @@ import { usePlatform } from '../context/PlatformContext';
 import { UserRole } from '../types';
 import { apiUrl, readApiResponse } from '../config/api';
 
+const COUNTRY_CODES = [
+  { code: '+91', label: 'IN +91' }, { code: '+1', label: 'US +1' },
+  { code: '+44', label: 'UK +44' }, { code: '+971', label: 'UAE +971' },
+  { code: '+61', label: 'AU +61' }, { code: '+65', label: 'SG +65' },
+];
+
 export const LoginView: React.FC = () => {
   const {
     viewParams,
@@ -43,6 +49,7 @@ export const LoginView: React.FC = () => {
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
   const [phone, setPhone] = useState('');
+  const [countryCode, setCountryCode] = useState('+91');
   const [companyName, setCompanyName] = useState('');
   const [gstNumber, setGstNumber] = useState('');
   const [category, setCategory] = useState('Fashion');
@@ -94,6 +101,14 @@ export const LoginView: React.FC = () => {
     if (mode === 'signup' && !otpSent) {
       if (!name.trim()) {
         errors.name = 'Full name is required';
+      }
+      const cleanPhone = phone.replace(/\D/g, '');
+      if (!phone.trim()) {
+        errors.phone = 'Mobile number is required';
+      } else if (countryCode === '+91' && !/^[6-9]\d{9}$/.test(cleanPhone)) {
+        errors.phone = 'Please enter a valid 10-digit Indian mobile number';
+      } else if (countryCode !== '+91' && (cleanPhone.length < 6 || cleanPhone.length > 15)) {
+        errors.phone = 'Please enter a valid mobile number';
       }
       if (role === 'BRAND' && !companyName.trim()) {
         errors.companyName = 'Company / Brand name is required';
@@ -241,6 +256,7 @@ export const LoginView: React.FC = () => {
             name: name.trim(),
             role,
             phone: phone.trim() || undefined,
+            countryCode,
             companyName: role === 'BRAND' ? companyName.trim() : undefined,
             gstNumber: role === 'BRAND' ? gstNumber.trim() : undefined,
             username: role === 'CREATOR' ? username.trim() : undefined,
@@ -504,6 +520,31 @@ export const LoginView: React.FC = () => {
                     </div>
                   </div>
                 )}
+
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">WhatsApp / Contact Number *</label>
+                  <div className="flex gap-2">
+                    <select value={countryCode} onChange={(e) => setCountryCode(e.target.value)} aria-label="Country code" className="w-24 shrink-0 px-2 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] font-medium cursor-pointer">
+                      {COUNTRY_CODES.map(({ code, label }) => <option key={code} value={code}>{label}</option>)}
+                    </select>
+                    <div className="relative flex-1">
+                      <Phone className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5" />
+                      <input
+                      type="tel"
+                      inputMode="numeric"
+                      autoComplete="tel"
+                      placeholder="98765 43210"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      onBlur={() => handleBlur('phone')}
+                      className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] transition"
+                      />
+                    </div>
+                  </div>
+                  {touched.phone && fieldErrors.phone && (
+                    <span className="text-[11px] text-rose-600 font-semibold mt-1 block">{fieldErrors.phone}</span>
+                  )}
+                </div>
               </>
             )}
 
