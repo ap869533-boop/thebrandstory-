@@ -64,6 +64,7 @@ export const NearbyInfluencersSection: React.FC = () => {
       setGeoStatus('unsupported');
       return;
     }
+    sessionStorage.setItem('sc_nearby_geo_prompted', '1');
     setGeoStatus('loading');
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -107,7 +108,13 @@ export const NearbyInfluencersSection: React.FC = () => {
         // fall through to prompt
       }
     }
-    setGeoStatus('prompt');
+    if (sessionStorage.getItem('sc_nearby_geo_prompted') === '1') {
+      setGeoStatus('prompt');
+      return;
+    }
+
+    // Ask for permission as soon as the home page loads so nearby results can load automatically.
+    requestLocation();
   }, []);
 
   useEffect(() => {
@@ -179,6 +186,7 @@ export const NearbyInfluencersSection: React.FC = () => {
                 type="button"
                 onClick={() => {
                   sessionStorage.removeItem('sc_nearby_geo_denied');
+                  sessionStorage.removeItem('sc_nearby_geo_prompted');
                   requestLocation();
                 }}
                 className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-[#D4A338] hover:bg-[#b88628] text-black text-xs font-bold cursor-pointer shrink-0"

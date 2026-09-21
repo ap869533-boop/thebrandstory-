@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Search,
   Sparkles,
@@ -43,6 +43,26 @@ export const Header: React.FC = () => {
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const notificationRef = useRef<HTMLDivElement>(null);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const closeDropdownsOnOutsideClick = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (notificationRef.current && !notificationRef.current.contains(target)) {
+        setShowNotifDropdown(false);
+      }
+      if (profileMenuRef.current && !profileMenuRef.current.contains(target)) {
+        setShowRoleDropdown(false);
+      }
+      if (target instanceof Element && !target.closest('[data-mobile-menu]')) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', closeDropdownsOnOutsideClick);
+    return () => document.removeEventListener('mousedown', closeDropdownsOnOutsideClick);
+  }, []);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -136,10 +156,13 @@ export const Header: React.FC = () => {
             </button>
 
             {/* Notifications - hidden on mobile */}
-            <div className="relative hidden sm:block">
+            <div ref={notificationRef} className="relative hidden sm:block">
               <button
                 id="header-notif-btn"
-                onClick={() => setShowNotifDropdown(!showNotifDropdown)}
+                onClick={() => {
+                  setShowNotifDropdown(open => !open);
+                  setShowRoleDropdown(false);
+                }}
                 className="p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition relative cursor-pointer"
               >
                 <Bell className="w-4 h-4" />
@@ -186,9 +209,12 @@ export const Header: React.FC = () => {
 
             {/* User Profile / Auth Action */}
             {authUser ? (
-              <div className="relative hidden sm:block">
+              <div ref={profileMenuRef} className="relative hidden sm:block">
                 <button
-                  onClick={() => setShowRoleDropdown(!showRoleDropdown)}
+                  onClick={() => {
+                    setShowRoleDropdown(open => !open);
+                    setShowNotifDropdown(false);
+                  }}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition text-xs font-bold text-slate-700 cursor-pointer"
                 >
                   <div className="w-6 h-6 rounded-full bg-[#D4A338] text-black flex items-center justify-center text-[10px] font-bold">
@@ -268,6 +294,7 @@ export const Header: React.FC = () => {
 
             {/* Mobile Menu Toggle */}
             <button
+              data-mobile-menu
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="md:hidden p-1.5 text-slate-700 hover:bg-slate-100 rounded-lg cursor-pointer shrink-0"
             >
@@ -279,7 +306,7 @@ export const Header: React.FC = () => {
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-white border-b border-slate-200 px-4 py-3 space-y-2 animate-fadeIn text-xs font-medium">
+        <div data-mobile-menu className="md:hidden bg-white border-b border-slate-200 px-4 py-3 space-y-2 animate-fadeIn text-xs font-medium">
           <button
             onClick={() => {
               setMobileMenuOpen(false);
