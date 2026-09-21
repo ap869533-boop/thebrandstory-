@@ -40,7 +40,7 @@ import { usePlatform } from '../context/PlatformContext';
 import { CreatorCard } from '../components/common/CreatorCard';
 import { ChangePasswordForm } from '../components/common/ChangePasswordForm';
 import { ConversationsPanel } from '../components/common/ConversationsPanel';
-import { apiUrl } from '../config/api';
+import { apiUrl, authHeaders } from '../config/api';
 
 export const BrandDashboardView: React.FC = () => {
   const {
@@ -194,6 +194,8 @@ export const BrandDashboardView: React.FC = () => {
   const [msgBudget, setMsgBudget] = useState('');
   const [msgSent, setMsgSent] = useState(false);
   const [activePitchesCampaignId, setActivePitchesCampaignId] = useState<string | null>(null);
+  const [chatConversationId, setChatConversationId] = useState<string | null>(null);
+  const [openingConversationId, setOpeningConversationId] = useState<string | null>(null);
 
   // RBAC Access Guard
   if (!authUser || (authUser.role !== 'BRAND' && authUser.role !== 'ADMIN')) {
@@ -336,6 +338,30 @@ export const BrandDashboardView: React.FC = () => {
     });
     setMsgText(`Hi ${applicant.creatorName}! We loved your pitch for "${applicant.campaignTitle}". We'd love to discuss further collaboration.`);
     setMsgSent(false);
+  };
+
+  const openLiveChat = async (applicant: typeof allPitches[0]) => {
+    if (!applicant.creatorId || !applicant.campaignId) return;
+    setOpeningConversationId(applicant.creatorId);
+    try {
+      const res = await fetch(apiUrl('/api/conversations/open'), {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ creatorId: applicant.creatorId, campaignId: applicant.campaignId }),
+      });
+      const data = await res.json();
+      if (!data.success || !data.conversationId) {
+        window.alert(data.error || 'Could not open the live chat. Please try again.');
+        return;
+      }
+      setChatConversationId(data.conversationId);
+      setActivePitchesCampaignId(null);
+      setActiveTab('chat');
+    } catch {
+      window.alert('Could not open the live chat. Please check your connection and try again.');
+    } finally {
+      setOpeningConversationId(null);
+    }
   };
 
   // Calculate profile completion
@@ -826,7 +852,7 @@ export const BrandDashboardView: React.FC = () => {
               <h2 className="text-lg font-black text-slate-800">Live Chat</h2>
               <p className="text-xs text-slate-500">Chat directly with creators after a collaboration inquiry is confirmed.</p>
             </div>
-            <ConversationsPanel />
+            <ConversationsPanel openConversationId={chatConversationId} />
           </div>
         )}
 
@@ -1394,14 +1420,12 @@ export const BrandDashboardView: React.FC = () => {
                               </span>
 
                               <button
-                                onClick={() => {
-                                  setActivePitchesCampaignId(null);
-                                  openMessageModal({ ...applicant, campaignTitle: campaign.campaignTitle, campaignId: campaign.id, campaignBudget: campaign.budget, campaignCategory: campaign.category, campaignCompany: campaign.companyName });
-                                }}
-                                className="ml-auto px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[11px] rounded-lg transition flex items-center gap-1.5 cursor-pointer"
+                                onClick={() => openLiveChat({ ...applicant, campaignTitle: campaign.campaignTitle, campaignId: campaign.id, campaignBudget: campaign.budget, campaignCategory: campaign.category, campaignCompany: campaign.companyName })}
+                                disabled={openingConversationId === applicant.creatorId}
+                                className="ml-auto px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[11px] rounded-lg transition flex items-center gap-1.5 cursor-pointer disabled:opacity-60"
                               >
                                 <MessageSquare className="w-3.5 h-3.5" />
-                                Message Creator
+                                {openingConversationId === applicant.creatorId ? 'Opening Chat...' : 'Message Creator'}
                               </button>
                             </div>
                           </div>

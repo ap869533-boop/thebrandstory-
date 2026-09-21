@@ -43,7 +43,7 @@ export const ConversationsPanel: React.FC<{ openConversationId?: string | null }
     fetch(apiUrl('/api/presence/heartbeat'), { method: 'POST', headers: authHeaders() }).catch(() => undefined);
     const poll = window.setInterval(() => {
       void loadThreads();
-    }, 8000);
+    }, 2000);
     return () => {
       window.clearInterval(heartbeat);
       window.clearInterval(poll);
@@ -59,7 +59,7 @@ export const ConversationsPanel: React.FC<{ openConversationId?: string | null }
     void loadMessages(activeId);
     const poll = window.setInterval(() => {
       void loadMessages(activeId);
-    }, 3000);
+    }, 2000);
     return () => window.clearInterval(poll);
   }, [activeId, loadMessages]);
 
