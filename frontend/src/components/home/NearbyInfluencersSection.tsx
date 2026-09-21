@@ -207,13 +207,8 @@ export const NearbyInfluencersSection: React.FC = () => {
           className="flex gap-3 sm:gap-5 overflow-x-auto pb-4 pt-1 snap-x scrollbar-none no-scrollbar w-full max-w-full"
         >
           {nearby.map((creator) => (
-            <div key={creator.id} className="snap-start shrink-0 relative">
+            <div key={creator.id} className="snap-start shrink-0">
               <CreatorCard creator={creator} variant="carousel" />
-              {(creator as any).distanceKm != null && (
-                <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded-full border border-white/10 z-10 shadow-lg">
-                  {(creator as any).distanceKm} km away
-                </div>
-              )}
             </div>
           ))}
         </div>

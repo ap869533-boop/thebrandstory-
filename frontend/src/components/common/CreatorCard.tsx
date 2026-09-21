@@ -64,7 +64,7 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({ creator, variant = 'gr
       onClick={handleCardClick}
       className={`group relative rounded-[1.75rem] overflow-hidden cursor-pointer shadow-sm hover:shadow-2xl transition-all duration-300 border border-slate-300/70 flex flex-col justify-between bg-slate-950 ${
         variant === 'carousel'
-          ? 'w-[210px] sm:w-[235px] md:w-[250px] h-[350px] sm:h-[390px] md:h-[420px] shrink-0'
+          ? 'w-[210px] sm:w-[220px] md:w-[230px] h-[350px] sm:h-[390px] md:h-[420px] shrink-0'
           : 'w-full h-[350px] sm:h-[390px] md:h-[420px]'
       }`}
     >

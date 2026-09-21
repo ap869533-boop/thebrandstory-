@@ -64,7 +64,7 @@ export const RegionalShowcases: React.FC = () => {
           </button>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-5">
           {cityCreators.length > 0 ? cityCreators.map((creator) => (
             <CreatorCard key={creator.id} creator={creator} />
           )) : (
@@ -101,7 +101,7 @@ export const RegionalShowcases: React.FC = () => {
             </button>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-5">
             {budgetCreators.length > 0 ? budgetCreators.map((creator) => (
               <CreatorCard key={creator.id} creator={creator} />
             )) : (
@@ -138,7 +138,7 @@ export const RegionalShowcases: React.FC = () => {
           </button>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-5">
           {risingCreators.length > 0 ? risingCreators.map((creator) => (
             <CreatorCard key={creator.id} creator={creator} />
           )) : (
