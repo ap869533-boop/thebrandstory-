@@ -15,8 +15,7 @@ function normalizeMobile(phone: unknown, countryCode: unknown = '+91'): string |
   const code = String(countryCode || '+91').trim();
   const digits = String(phone || '').replace(/\D/g, '');
   if (!/^\+\d{1,3}$/.test(code)) return null;
-  if (code === '+91') return /^[6-9]\d{9}$/.test(digits) ? `${code}${digits}` : null;
-  return /^\d{6,15}$/.test(digits) ? `${code}${digits}` : null;
+  return /^\d{10}$/.test(digits) ? `${code}${digits}` : null;
 }
 
 // OTP Cache
@@ -94,7 +93,7 @@ export async function signup(req: Request, res: Response) {
     const cleanEmail = email.toLowerCase().trim();
     const normalizedPhone = normalizeMobile(phone, req.body.countryCode);
     if (!normalizedPhone) {
-      return res.status(400).json({ success: false, error: 'A valid 10-digit Indian mobile number is required' });
+      return res.status(400).json({ success: false, error: 'A valid 10-digit mobile number is required' });
     }
     const cleanUsername = cleanInstagramHandle(username || (req.body as any).instagramUrl || '');
     const instagramUrl = cleanUsername ? `https://instagram.com/${cleanUsername}` : '';
@@ -652,7 +651,7 @@ export async function verifyOtp(req: Request, res: Response) {
         return res.status(400).json({ success: false, error: 'Name and role are required for new registration.' });
       }
       if (!normalizedPhone) {
-        return res.status(400).json({ success: false, error: 'A valid 10-digit Indian mobile number is required' });
+        return res.status(400).json({ success: false, error: 'A valid 10-digit mobile number is required' });
       }
 
       isNewUser = true;

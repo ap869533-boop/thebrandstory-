@@ -105,10 +105,8 @@ export const LoginView: React.FC = () => {
       const cleanPhone = phone.replace(/\D/g, '');
       if (!phone.trim()) {
         errors.phone = 'Mobile number is required';
-      } else if (countryCode === '+91' && !/^[6-9]\d{9}$/.test(cleanPhone)) {
-        errors.phone = 'Please enter a valid 10-digit Indian mobile number';
-      } else if (countryCode !== '+91' && (cleanPhone.length < 6 || cleanPhone.length > 15)) {
-        errors.phone = 'Please enter a valid mobile number';
+      } else if (!/^\d{10}$/.test(cleanPhone)) {
+        errors.phone = 'Please enter exactly 10 digits';
       }
       if (role === 'BRAND' && !companyName.trim()) {
         errors.companyName = 'Company / Brand name is required';
@@ -533,9 +531,10 @@ export const LoginView: React.FC = () => {
                       type="tel"
                       inputMode="numeric"
                       autoComplete="tel"
+                      maxLength={10}
                       placeholder="98765 43210"
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
+                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                       onBlur={() => handleBlur('phone')}
                       className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] transition"
                       />
