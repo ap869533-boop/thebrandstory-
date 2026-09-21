@@ -1393,24 +1393,27 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return c;
     }));
 
-    fetch(`/api/creators/${creatorId}`, {
+    fetch(apiUrl(`/api/creators/${creatorId}`), {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify({ [badgeType]: nextVal }),
     }).catch(e => console.warn('Admin badge sync notice:', e));
   };
 
   const adminUpdateCreatorStatus = (creatorId: string, status: 'active' | 'pending' | 'suspended') => {
     setCreators(prev => prev.map(c => c.id === creatorId ? { ...c, status } : c));
-    fetch(`/api/creators/${creatorId}`, {
+    fetch(apiUrl(`/api/creators/${creatorId}`), {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify({ status }),
     }).catch(e => console.warn('Admin status sync notice:', e));
   };
 
   const adminDeleteCreator = async (creatorId: string) => {
-    const response = await fetch(apiUrl(`/api/creators/${creatorId}`), { method: 'DELETE' });
+    const response = await fetch(apiUrl(`/api/creators/${creatorId}`), {
+      method: 'DELETE',
+      headers: authHeaders(),
+    });
     const data = await response.json();
     if (!response.ok || !data.success) {
       throw new Error(data.error || 'Failed to delete influencer');

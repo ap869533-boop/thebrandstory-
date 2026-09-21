@@ -197,7 +197,7 @@ export const CreatorDashboardView: React.FC = () => {
   const [profileCategory, setProfileCategory] = useState(creator.primaryCategory || '');
   const [profileSubCats, setProfileSubCats] = useState((creator.subCategories || []).join(', '));
   const [profileFollowers, setProfileFollowers] = useState<number | string>(creator.followers || '');
-  const [profileTotalPosts, setProfileTotalPosts] = useState<number | string>(creator.totalPosts || (creator.portfolio?.length || ''));
+  const [profileTotalPosts, setProfileTotalPosts] = useState<number | string>(creator.totalPosts ?? creator.portfolio?.length ?? '');
   const [profileAvgViews, setProfileAvgViews] = useState<number | string>(creator.avgViews || '');
   const [profileAvgLikes, setProfileAvgLikes] = useState<number | string>(creator.avgLikes || '');
   const [profileAvgComments, setProfileAvgComments] = useState<number | string>(creator.avgComments || '');
@@ -205,6 +205,7 @@ export const CreatorDashboardView: React.FC = () => {
   const [profileEventPrice, setProfileEventPrice] = useState<number | string>(creator.pricing?.eventPrice || '');
   const [profileNegotiable, setProfileNegotiable] = useState(creator.pricing?.isNegotiable ?? true);
   const [profileSaved, setProfileSaved] = useState(false);
+  const [profileSaveNotice, setProfileSaveNotice] = useState<string | null>(null);
 
   // Sync state whenever creator profile updates from database
   useEffect(() => {
@@ -228,7 +229,7 @@ export const CreatorDashboardView: React.FC = () => {
       setProfileCategory(creator.primaryCategory || '');
       setProfileSubCats((creator.subCategories || []).join(', '));
       setProfileFollowers(creator.followers || '');
-      setProfileTotalPosts(creator.totalPosts || (creator.portfolio?.length || ''));
+      setProfileTotalPosts(creator.totalPosts ?? creator.portfolio?.length ?? '');
       setProfileAvgViews(creator.avgViews || '');
       setProfileAvgLikes(creator.avgLikes || '');
       setProfileAvgComments(creator.avgComments || '');
@@ -554,6 +555,20 @@ export const CreatorDashboardView: React.FC = () => {
     const parsedLanguages = profileLanguages.split(',').map(l => l.trim()).filter(Boolean);
     const parsedSubCats = profileSubCats.split(',').map(s => s.trim()).filter(Boolean);
     const cleanUser = cleanInstagramHandle(profileUsername) || cleanInstagramHandle(creator.username);
+    const pendingCompletionFields = [
+      Boolean(creator.avatar && !creator.avatar.includes('unsplash')),
+      Boolean(creator.coverImage && !creator.coverImage.includes('unsplash')),
+      Boolean(profileBio.trim().length > 30),
+      Boolean(profileCity.trim()),
+      Boolean(profileCategory.trim()),
+      Number(profileFollowers) > 0,
+      Number(startingPrice) > 0 || Number(reelPrice) > 0,
+      Boolean(cleanUser),
+      parsedLanguages.length > 0,
+    ];
+    const pendingCompletionPct = Math.round(
+      (pendingCompletionFields.filter(Boolean).length / pendingCompletionFields.length) * 100
+    );
 
     updateCreatorProfile(creator.id, {
       name: profileName.trim(),
@@ -594,8 +609,13 @@ export const CreatorDashboardView: React.FC = () => {
         }
       ],
     });
+    setProfileSaveNotice(
+      pendingCompletionPct < 70
+        ? `Profile saved, but it is only ${pendingCompletionPct}% complete. Please complete at least 70% of your profile; then your account can be sent for approval.`
+        : 'Profile saved. Your profile is 70%+ complete and is ready for the approval review.'
+    );
     setProfileSaved(true);
-    setTimeout(() => setProfileSaved(false), 2500);
+    setTimeout(() => setProfileSaved(false), 5000);
     navigateTo('creator-dashboard');
   };
 
@@ -614,10 +634,26 @@ export const CreatorDashboardView: React.FC = () => {
   const completedCount = profileFields.filter(f => f.done).length;
   const completionPct = Math.round((completedCount / profileFields.length) * 100);
   const incompletedFields = profileFields.filter(f => !f.done).map(f => f.label);
+  const isApprovalEligible = completionPct >= 70;
 
   return (
     <div className="min-h-screen bg-slate-50/60 py-8 font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+        {!creator.isVerified && (
+          <div className={`flex items-start gap-3 p-4 rounded-2xl border ${
+            isApprovalEligible ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-amber-50 border-amber-200 text-amber-900'
+          }`}>
+            <Clock className={`w-5 h-5 shrink-0 mt-0.5 ${isApprovalEligible ? 'text-emerald-500' : 'text-amber-500'}`} />
+            <div>
+              <p className="text-xs font-black">{isApprovalEligible ? 'Profile Ready for Approval Review' : 'Complete 70% Profile for Approval'}</p>
+              <p className="text-xs font-medium mt-0.5">
+                {isApprovalEligible
+                  ? 'Your profile meets the minimum completion requirement and can be reviewed by the admin team.'
+                  : `Your profile is ${completionPct}% complete. Complete at least 70% first; then your account can be sent for approval.`}
+              </p>
+            </div>
+          </div>
+        )}
         {/* Hidden File Inputs */}
         <input type="file" ref={avatarInputRef} accept="image/*" className="hidden"
           onChange={(e) => { if (e.target.files?.[0]) handlePhotoUpload(e.target.files[0], 'avatar'); }} />
@@ -636,21 +672,24 @@ export const CreatorDashboardView: React.FC = () => {
           </div>
         )}
 
+        {/* Brand-style dashboard summary cards */}
+        <div className="flex flex-col lg:flex-row gap-6 items-stretch">
         {/* Top Header Profile Card */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="bg-gradient-to-br from-white via-[#fcfaf5] to-[#f1e6cc] p-6 sm:p-8 rounded-[2.5rem] border border-[#D4A338]/30 shadow-[0_12px_40px_rgba(212,163,56,0.12)] hover:shadow-[0_20px_50px_rgba(212,163,56,0.2)] transition-all duration-500 flex flex-col md:flex-row md:items-center justify-between gap-5 relative overflow-hidden">
+          <div className="absolute -right-16 -top-20 w-64 h-64 bg-[#D4A338]/10 rounded-full blur-3xl pointer-events-none" />
           <div className="flex items-center gap-4">
             {/* Interactive Avatar with Camera Upload Overlay */}
             <div className="relative group">
               <img
                 src={creator.avatar || undefined}
                 alt={creator.name}
-                className="w-18 h-18 rounded-2xl object-cover border-2 border-slate-100 shadow-xs group-hover:opacity-85 transition"
+                className="w-18 h-18 rounded-full object-cover border-[3px] border-white shadow-lg shadow-[#D4A338]/20 group-hover:opacity-85 transition"
               />
               <button
                 type="button"
                 onClick={() => avatarInputRef.current?.click()}
                 disabled={isUploadingAvatar}
-                className="absolute inset-0 rounded-2xl bg-black/50 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center text-white text-[10px] font-bold cursor-pointer"
+                className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center text-white text-[10px] font-bold cursor-pointer"
                 title="Upload photo"
               >
                 {isUploadingAvatar ? (
@@ -666,7 +705,7 @@ export const CreatorDashboardView: React.FC = () => {
 
             <div className="space-y-0.5">
               <div className="flex items-center gap-2">
-                <h1 className="text-xl font-black text-slate-900 tracking-tight">{creator.name}</h1>
+                <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">{creator.name}</h1>
 
               </div>
               <p className="text-xs text-slate-500 font-semibold">@{creator.username} • {creator.primaryCategory}</p>
@@ -684,7 +723,7 @@ export const CreatorDashboardView: React.FC = () => {
 
             <button
               onClick={() => navigateTo('creator-detail', { username: creator.username, id: creator.id })}
-              className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+              className="px-4 py-2.5 bg-gradient-to-r from-[#D4A338] to-[#b88628] hover:from-[#c2912a] hover:to-[#a37521] text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-md shadow-[#D4A338]/20"
             >
               <Eye className="w-3.5 h-3.5" />
               <span>Preview</span>
@@ -692,9 +731,34 @@ export const CreatorDashboardView: React.FC = () => {
           </div>
         </div>
 
+        <div className="bg-gradient-to-br from-amber-50 via-orange-50/50 to-rose-50/50 rounded-[2.5rem] p-5 sm:p-6 shadow-[0_12px_40px_rgba(212,163,56,0.15)] border border-amber-200/60 flex flex-col items-center justify-center text-center relative shrink-0 lg:w-72 overflow-hidden">
+          <div className="absolute -top-8 -right-8 h-28 w-28 rounded-full bg-[#D4A338]/10 blur-2xl" />
+          <div
+            className="relative w-28 h-28 rounded-full p-2 shadow-lg bg-white"
+            style={{ background: `conic-gradient(#D4A338 ${completionPct * 3.6}deg, #e2e8f0 0deg)` }}
+          >
+            <div className="w-full h-full rounded-full bg-white flex flex-col items-center justify-center">
+              <span className="text-3xl font-black text-slate-900">{completionPct}%</span>
+              <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Complete</span>
+            </div>
+          </div>
+          <h2 className="relative mt-4 text-sm font-black text-slate-900">Creator Profile</h2>
+          <p className="relative mt-1 text-[10px] leading-relaxed font-medium text-slate-500 max-w-[210px]">
+            {isApprovalEligible ? 'Your profile is ready for the admin approval review.' : `Complete ${70 - completionPct}% more to submit your account for approval.`}
+          </p>
+          <button
+            onClick={() => setActiveTab('profile')}
+            className="relative mt-4 px-4 py-2 rounded-xl bg-white border border-[#D4A338]/30 text-[#9a6b19] hover:bg-[#fff9eb] text-[10px] font-bold transition cursor-pointer flex items-center gap-1.5"
+          >
+            <Edit3 className="w-3.5 h-3.5" />
+            Complete Profile
+          </button>
+        </div>
+        </div>
+
         {/* === Profile Completion Progress Bar === */}
         {completionPct < 100 && (
-          <div className={`rounded-2xl border px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3 animate-fadeIn ${
+          <div className={`rounded-[2rem] border px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-4 animate-fadeIn shadow-[0_12px_40px_rgba(212,163,56,0.10)] ${
             completionPct >= 80 ? 'bg-emerald-50 border-emerald-200' :
             completionPct >= 50 ? 'bg-amber-50 border-amber-200' :
             'bg-rose-50 border-rose-200'
@@ -734,7 +798,7 @@ export const CreatorDashboardView: React.FC = () => {
         )}
 
         {/* Dashboard Tabs */}
-        <div className="flex border-b border-slate-200 text-xs font-bold gap-1 overflow-x-auto">
+        <div className="flex overflow-x-auto gap-2 p-1.5 bg-white border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] rounded-2xl text-xs font-bold">
           {[
             { key: 'leads', icon: <MessageSquare className="w-3.5 h-3.5" />, label: `Enquiries (${myEnquiries.length})` },
             { key: 'profile', icon: <Edit3 className="w-3.5 h-3.5" />, label: 'Edit Profile' },
@@ -745,8 +809,8 @@ export const CreatorDashboardView: React.FC = () => {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key as any)}
-              className={`pb-3 px-3 flex items-center gap-1.5 transition cursor-pointer border-b-2 whitespace-nowrap ${
-                activeTab === tab.key ? 'border-blue-600 text-[#D4A338]' : 'border-transparent text-slate-500 hover:text-slate-800'
+              className={`px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition-all duration-300 cursor-pointer whitespace-nowrap ${
+                activeTab === tab.key ? 'bg-gradient-to-r from-[#D4A338] to-[#b88628] text-white shadow-md shadow-[#D4A338]/25 -translate-y-0.5' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
               }`}
             >
               {tab.icon}
@@ -764,8 +828,8 @@ export const CreatorDashboardView: React.FC = () => {
                   <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4 border-4 border-emerald-50">
                     <CheckCircle2 className="w-8 h-8" />
                   </div>
-                  <h3 className="text-xl font-black text-slate-900 mb-2">Profile Saved!</h3>
-                  <p className="text-sm text-slate-500 mb-6">Your changes have been successfully updated in the database.</p>
+                  <h3 className="text-xl font-black text-slate-900 mb-2">Profile Saved</h3>
+                  <p className="text-sm text-slate-500 mb-6">{profileSaveNotice || 'Your changes have been successfully updated in the database.'}</p>
                   <button type="button" onClick={() => setProfileSaved(false)} className="w-full py-3 bg-slate-900 hover:bg-black text-white font-bold rounded-xl transition">
                     Continue
                   </button>
@@ -1196,7 +1260,7 @@ export const CreatorDashboardView: React.FC = () => {
             {/* Save Button */}
             <button
               type="submit"
-              className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-black text-sm rounded-2xl shadow-lg shadow-blue-500/25 transition flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-3.5 bg-gradient-to-r from-[#D4A338] to-[#b88628] hover:from-[#c2912a] hover:to-[#a37521] text-white font-black text-sm rounded-2xl shadow-lg shadow-[#D4A338]/25 transition flex items-center justify-center gap-2 cursor-pointer"
             >
               <Save className="w-4 h-4" />
               <span>Save All Profile Changes to Database</span>

@@ -354,6 +354,7 @@ export async function createCreator(req: Request, res: Response) {
       gender: data.gender || undefined,
       ageGroup: data.ageGroup || '',
       followers: Number(data.followers) || 0,
+      totalPosts: Number(data.totalPosts) || 0,
       avgViews: Number(data.avgViews) || 0,
       avgLikes: Number(data.avgLikes) || 0,
       avgComments: Number(data.avgComments) || 0,
@@ -424,10 +425,10 @@ export async function createCreator(req: Request, res: Response) {
     const creatorInsertResult = await dbQuery(
       `INSERT INTO creators (
         id, name, username, avatar, cover_image, bio, current_city, primary_category, email, phone,
-        followers, avg_views, starting_price, reel_price, story_price, post_price,
+        followers, total_posts, avg_views, starting_price, reel_price, story_price, post_price,
         ugc_price, is_barter_available, collaboration_types, preferred_cities, sub_categories,
         languages, is_verified, verification_requested, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
       [
         newCreator.id,
         newCreator.name,
@@ -440,6 +441,7 @@ export async function createCreator(req: Request, res: Response) {
         newCreator.email || null,
         newCreator.phone || null,
         newCreator.followers,
+        newCreator.totalPosts,
         newCreator.avgViews,
         newCreator.startingPrice,
         newCreator.pricing.reelPrice,
@@ -569,6 +571,7 @@ export async function updateCreator(req: AuthenticatedRequest, res: Response) {
         gender = COALESCE(?, gender),
         age_group = COALESCE(?, age_group),
         followers = COALESCE(?, followers),
+        total_posts = COALESCE(?, total_posts),
         avg_views = COALESCE(?, avg_views),
         avg_likes = COALESCE(?, avg_likes),
         avg_comments = COALESCE(?, avg_comments),
@@ -607,6 +610,7 @@ export async function updateCreator(req: AuthenticatedRequest, res: Response) {
         body.gender !== undefined ? body.gender : null,
         body.ageGroup !== undefined ? body.ageGroup : null,
         body.followers !== undefined ? body.followers : null,
+        body.totalPosts !== undefined ? body.totalPosts : null,
         body.avgViews !== undefined ? body.avgViews : null,
         body.avgLikes !== undefined ? body.avgLikes : null,
         body.avgComments !== undefined ? body.avgComments : null,
@@ -648,7 +652,7 @@ export async function updateCreator(req: AuthenticatedRequest, res: Response) {
   res.json({ success: true, creator: creatorsStore[index] });
 }
 
-export async function deleteCreator(req: Request, res: Response) {
+export async function deleteCreator(req: AuthenticatedRequest, res: Response) {
   try {
     const { id } = req.params;
     if (!id) return res.status(400).json({ success: false, error: 'Creator id is required' });

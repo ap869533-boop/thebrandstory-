@@ -7,7 +7,7 @@ import {
   deleteCreator,
   addCreatorReview
 } from '../controllers/creatorController';
-import { authMiddleware, optionalAuthMiddleware } from '../middleware/authMiddleware';
+import { authMiddleware, requireRole } from '../middleware/authMiddleware';
 
 const router = Router();
 
@@ -15,7 +15,7 @@ router.get('/', getCreators);
 router.get('/:idOrUsername', getCreatorByIdOrUsername);
 router.post('/', createCreator);
 router.put('/:id', authMiddleware, updateCreator);
-router.delete('/:id', authMiddleware, deleteCreator);
+router.delete('/:id', authMiddleware, requireRole('ADMIN', 'SALES'), deleteCreator);
 router.post('/:id/reviews', authMiddleware, addCreatorReview);
 
 export default router;

@@ -304,6 +304,7 @@ export async function runAutoMigrations() {
       `ALTER TABLE brand_profiles ADD COLUMN twitter_url VARCHAR(255) DEFAULT NULL`,
       `ALTER TABLE creators ADD COLUMN latitude DECIMAL(10,7) DEFAULT NULL`,
       `ALTER TABLE creators ADD COLUMN longitude DECIMAL(10,7) DEFAULT NULL`,
+      `ALTER TABLE creators ADD COLUMN total_posts INT UNSIGNED DEFAULT 0`,
       `ALTER TABLE creators ADD COLUMN social_platforms JSON DEFAULT NULL`,
       `ALTER TABLE creators ADD COLUMN portfolio JSON DEFAULT NULL`,
       `ALTER TABLE creators ADD COLUMN audience JSON DEFAULT NULL`,
