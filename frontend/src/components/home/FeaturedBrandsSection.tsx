@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Building2, Star, ArrowRight, CheckCircle2 } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Building2, Star, ArrowRight, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { apiUrl } from '../../config/api';
 import { usePlatform } from '../../context/PlatformContext';
 import { BrandProfile } from '../../types';
@@ -56,6 +56,7 @@ export const FeaturedBrandsSection: React.FC = () => {
   const { navigateTo } = usePlatform();
   const [featuredBrands, setFeaturedBrands] = useState<BrandProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const brandScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch(apiUrl('/api/brands/featured'))
@@ -77,12 +78,15 @@ export const FeaturedBrandsSection: React.FC = () => {
   }, []);
 
   const displayBrands = featuredBrands.length > 0 ? featuredBrands : (SAMPLE_APPROVED_BRANDS as BrandProfile[]);
+  const scrollBrands = (direction: 'left' | 'right') => {
+    brandScrollRef.current?.scrollBy({ left: direction === 'left' ? -340 : 340, behavior: 'smooth' });
+  };
 
   return (
     <div className="py-16 md:py-24 bg-white relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Header Title */}
-        <div className="text-center max-w-3xl mx-auto space-y-3 mb-12">
+        <div className="text-center max-w-3xl mx-auto space-y-3 mb-7">
           <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-700 text-xs font-bold tracking-wide uppercase border border-slate-200">
             <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
             <span>Verified Brand Ecosystem</span>
@@ -95,14 +99,22 @@ export const FeaturedBrandsSection: React.FC = () => {
           </p>
         </div>
 
-        {/* Auto-Sliding Brand Cards - Marquee Style */}
-        <div className="relative w-full overflow-hidden py-10 -mx-4 px-4 sm:mx-0 sm:px-0 mask-image-fade">
-          {/* We use animate-marquee which translates from 0 to -50% and we duplicate the items so it loops seamlessly */}
-          <div className="animate-marquee gap-6 items-stretch">
-            {[...displayBrands, ...displayBrands, ...displayBrands, ...displayBrands].map((brand, idx) => (
+        <div className="flex justify-center gap-2 mb-4">
+          <button type="button" onClick={() => scrollBrands('left')} aria-label="Previous brands" className="w-9 h-9 rounded-xl border border-slate-200 hover:bg-slate-100 flex items-center justify-center text-slate-600 transition">
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <button type="button" onClick={() => scrollBrands('right')} aria-label="Next brands" className="w-9 h-9 rounded-xl border border-slate-200 hover:bg-slate-100 flex items-center justify-center text-slate-600 transition">
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Manual carousel: cards stay on screen until the visitor moves them. */}
+        <div ref={brandScrollRef} className="relative w-full overflow-x-auto scroll-smooth py-10 -mx-4 px-4 sm:mx-0 sm:px-0 no-scrollbar">
+          <div className="flex gap-6 items-stretch w-max">
+            {displayBrands.map((brand, idx) => (
               <div
                 key={`${brand.id || 'brand'}-${idx}`}
-                className={`group bg-white rounded-[24px] border ${
+                className={`group snap-start bg-white rounded-[24px] border ${
                   brand.brandName === 'Reliance Retail' ? 'border-red-50 hover:border-red-100 bg-gradient-to-b from-white to-red-50/10' : 'border-slate-100'
                 } p-5 shadow-[0_8px_30px_rgba(0,0,0,0.08)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.14)] hover:-translate-y-2 cursor-pointer transition-all duration-500 flex flex-col items-center text-center w-[280px] sm:w-[320px] shrink-0`}
               >

@@ -1,10 +1,12 @@
-import React from 'react';
-import { MapPin, IndianRupee, Rocket, ArrowRight } from 'lucide-react';
+import React, { useRef } from 'react';
+import { MapPin, IndianRupee, Rocket, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { usePlatform } from '../../context/PlatformContext';
 import { CreatorCard } from '../common/CreatorCard';
 
 export const RegionalShowcases: React.FC = () => {
   const { creators, setFilters, navigateTo } = usePlatform();
+  const cityScrollRef = useRef<HTMLDivElement>(null);
+  const budgetScrollRef = useRef<HTMLDivElement>(null);
 
   const cityCreators = creators
     .filter((c) => {
@@ -12,11 +14,11 @@ export const RegionalShowcases: React.FC = () => {
       const city = (c.currentCity || '').toLowerCase();
       return city.includes('delhi') || city.includes('noida') || city.includes('gurgaon');
     })
-    .slice(0, 4);
+    .slice(0, 10);
 
   const budgetCreators = creators
     .filter((c) => c.status === 'active' && c.startingPrice <= 5000)
-    .slice(0, 4);
+    .slice(0, 10);
 
   const risingCreators = creators
     .filter((c) => c.status === 'active' && c.isRising)
@@ -37,6 +39,10 @@ export const RegionalShowcases: React.FC = () => {
     navigateTo('explore');
   };
 
+  const scrollCards = (ref: React.RefObject<HTMLDivElement | null>, direction: 'left' | 'right') => {
+    ref.current?.scrollBy({ left: direction === 'left' ? -340 : 340, behavior: 'smooth' });
+  };
+
   return (
     <div className="space-y-12 sm:space-y-16 py-8 sm:py-12 bg-white font-sans w-full max-w-full overflow-hidden">
       {/* 1. City Section */}
@@ -55,18 +61,20 @@ export const RegionalShowcases: React.FC = () => {
             </p>
           </div>
 
-          <button
-            onClick={exploreCity}
-            className="text-xs font-bold text-[#b88628] hover:text-[#D4A338] flex items-center gap-1 shrink-0 group cursor-pointer self-start sm:self-auto"
-          >
-            <span>Explore All Delhi NCR Influencers</span>
-            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition" />
-          </button>
+          <div className="flex items-center gap-3 self-start sm:self-auto">
+            <div className="flex gap-1">
+              <button type="button" onClick={() => scrollCards(cityScrollRef, 'left')} aria-label="Previous Delhi NCR influencers" className="w-8 h-8 rounded-xl border border-slate-200 hover:bg-slate-100 flex items-center justify-center text-slate-600"><ChevronLeft className="w-4 h-4" /></button>
+              <button type="button" onClick={() => scrollCards(cityScrollRef, 'right')} aria-label="Next Delhi NCR influencers" className="w-8 h-8 rounded-xl border border-slate-200 hover:bg-slate-100 flex items-center justify-center text-slate-600"><ChevronRight className="w-4 h-4" /></button>
+            </div>
+            <button onClick={exploreCity} className="text-xs font-bold text-[#b88628] hover:text-[#D4A338] flex items-center gap-1 shrink-0 group cursor-pointer">
+              <span>Explore All Delhi NCR Influencers</span><ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition" />
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-5">
+        <div ref={cityScrollRef} className="flex gap-3 sm:gap-5 overflow-x-auto pb-4 pt-1 snap-x no-scrollbar">
           {cityCreators.length > 0 ? cityCreators.map((creator) => (
-            <CreatorCard key={creator.id} creator={creator} />
+            <div key={creator.id} className="shrink-0 snap-start"><CreatorCard creator={creator} variant="carousel" /></div>
           )) : (
             <div className="col-span-full text-center py-6">
               <p className="text-sm text-slate-400 font-medium">No creators found in Delhi NCR.</p>
@@ -92,18 +100,20 @@ export const RegionalShowcases: React.FC = () => {
               </p>
             </div>
 
-            <button
-              onClick={exploreBudget}
-              className="text-xs font-bold text-[#b88628] hover:text-[#D4A338] flex items-center gap-1 shrink-0 group cursor-pointer self-start sm:self-auto"
-            >
-              <span>View All Budget Creators</span>
-              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition" />
-            </button>
+            <div className="flex items-center gap-3 self-start sm:self-auto">
+              <div className="flex gap-1">
+                <button type="button" onClick={() => scrollCards(budgetScrollRef, 'left')} aria-label="Previous budget influencers" className="w-8 h-8 rounded-xl border border-slate-200 hover:bg-white flex items-center justify-center text-slate-600"><ChevronLeft className="w-4 h-4" /></button>
+                <button type="button" onClick={() => scrollCards(budgetScrollRef, 'right')} aria-label="Next budget influencers" className="w-8 h-8 rounded-xl border border-slate-200 hover:bg-white flex items-center justify-center text-slate-600"><ChevronRight className="w-4 h-4" /></button>
+              </div>
+              <button onClick={exploreBudget} className="text-xs font-bold text-[#b88628] hover:text-[#D4A338] flex items-center gap-1 shrink-0 group cursor-pointer">
+                <span>View All Budget Creators</span><ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition" />
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-5">
+          <div ref={budgetScrollRef} className="flex gap-3 sm:gap-5 overflow-x-auto pb-4 pt-1 snap-x no-scrollbar">
             {budgetCreators.length > 0 ? budgetCreators.map((creator) => (
-              <CreatorCard key={creator.id} creator={creator} />
+              <div key={creator.id} className="shrink-0 snap-start"><CreatorCard creator={creator} variant="carousel" /></div>
             )) : (
               <div className="col-span-full text-center py-6">
                 <p className="text-sm text-slate-400 font-medium">No budget-friendly creators found.</p>
