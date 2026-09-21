@@ -638,7 +638,7 @@ export const LoginView: React.FC = () => {
                 <span>{resetOtpSent ? 'Verify & Reset Password' : 'Send Reset Link'}</span>
               ) : mode === 'login' ? (
                 <>
-                  <span>Sign In as {role === 'CREATOR' ? 'Influencer' : 'Brand'}</span>
+                  <span>Sign In</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               ) : otpSent ? (
