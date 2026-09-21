@@ -105,8 +105,8 @@ export async function signup(req: Request, res: Response) {
 
     // 1. Insert in MySQL users table
     await dbQuery(
-      `INSERT INTO users (id, name, email, password_hash, role, phone, company_name, gst_number, avatar, is_verified, approval_status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO users (id, name, email, password_hash, role, phone, company_name, avatar, is_verified, approval_status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         userId,
         name,
@@ -115,7 +115,6 @@ export async function signup(req: Request, res: Response) {
         role,
         phone || null,
         companyName || null,
-        gstNumber || null,
         userAvatar,
         1,
         role === 'BRAND' ? 'pending' : 'approved'
@@ -135,6 +134,10 @@ export async function signup(req: Request, res: Response) {
       created_at: new Date().toISOString(),
     };
     memoryUsers.push(newUser);
+
+    if (role === 'BRAND') {
+      await ensurePendingBrandProfile({ userId, brandName: companyName, gstNumber, contactPerson: name, phone, email: cleanEmail });
+    }
 
     // 2. If Creator, automatically insert full creator profile into MySQL `creators` table
     let createdCreatorProfile: Creator | null = null;
@@ -502,7 +505,6 @@ export async function login(req: Request, res: Response) {
         email: user.email,
         role: user.role,
         companyName: user.company_name,
-        gstNumber: user.gst_number || '',
         approvalStatus: user.approval_status || (user.role === 'BRAND' ? 'pending' : 'approved'),
         avatar: user.avatar,
         creatorProfile: creatorProfile || undefined,
@@ -519,7 +521,7 @@ export async function getMe(req: AuthenticatedRequest, res: Response) {
     return res.status(401).json({ success: false, error: 'Unauthorized' });
   }
 
-  const sqlUser = 'SELECT id, name, email, role, phone, company_name, gst_number, avatar, approval_status, created_at FROM users WHERE id = ? LIMIT 1';
+  const sqlUser = 'SELECT id, name, email, role, phone, company_name, avatar, approval_status, created_at FROM users WHERE id = ? LIMIT 1';
   const dbUsers = await dbQuery(sqlUser, [req.user.id]);
 
   let user = dbUsers?.[0];
@@ -538,7 +540,6 @@ export async function getMe(req: AuthenticatedRequest, res: Response) {
     user: {
       ...effectiveUser,
       companyName: effectiveUser.company_name || effectiveUser.companyName || '',
-      gstNumber: effectiveUser.gst_number || effectiveUser.gstNumber || '',
       approvalStatus: effectiveUser.approval_status || effectiveUser.approvalStatus || 'pending',
       creatorProfile: creatorProfile || undefined,
     },
@@ -649,9 +650,9 @@ export async function verifyOtp(req: Request, res: Response) {
       const hashedPassword = await bcrypt.hash(password, 10);
 
       await dbQuery(
-        `INSERT INTO users (id, name, email, password_hash, role, phone, company_name, gst_number, avatar, approval_status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [userId, name, cleanEmail, hashedPassword, role, phone || null, companyName || null, gstNumber || null, userAvatar || null, role === 'BRAND' ? 'pending' : 'approved']
+        `INSERT INTO users (id, name, email, password_hash, role, phone, company_name, avatar, approval_status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [userId, name, cleanEmail, hashedPassword, role, phone || null, companyName || null, userAvatar || null, role === 'BRAND' ? 'pending' : 'approved']
       ).catch(err => console.warn('MySQL user insert notice:', err));
 
       const newUser: UserRecord = {
@@ -667,6 +668,10 @@ export async function verifyOtp(req: Request, res: Response) {
       };
       memoryUsers.push(newUser);
       user = newUser;
+
+      if (role === 'BRAND') {
+        await ensurePendingBrandProfile({ userId, brandName: companyName, gstNumber, contactPerson: name, phone, email: cleanEmail });
+      }
 
       // Auto Creator Profile setup if CREATOR
       if (role === 'CREATOR') {
@@ -827,7 +832,6 @@ export async function verifyOtp(req: Request, res: Response) {
         email: user.email,
         role: responseRole,
         companyName: user.company_name || companyName || '',
-        gstNumber: user.gst_number || gstNumber || '',
         avatar: user.avatar,
         approvalStatus: responseRole === 'BRAND' ? 'pending' : 'approved',
         creatorProfile: responseRole === 'CREATOR' ? (user.creatorProfile || undefined) : undefined,

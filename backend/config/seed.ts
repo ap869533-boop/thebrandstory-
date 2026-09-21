@@ -195,7 +195,6 @@ async function runSeed() {
         campaign_title VARCHAR(200) NOT NULL,
         campaign_description TEXT NOT NULL,
         city VARCHAR(80) DEFAULT 'Pan India',
-        influencers_count VARCHAR(50) DEFAULT '1-5 Creators',
         follower_range VARCHAR(50) DEFAULT 'Any',
         budget VARCHAR(80) DEFAULT 'Flexible',
         category VARCHAR(80) DEFAULT 'Lifestyle',
@@ -445,9 +444,9 @@ async function runSeed() {
       await connection.query(
         `INSERT INTO campaign_requirements (
           id, company_name, contact_person, email, phone, industry, campaign_title,
-          campaign_description, city, influencers_count, follower_range, budget, category,
+          campaign_description, city, follower_range, budget, category,
           collaboration_type, campaign_date, platforms, requirements, status, applicants_count
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE company_name=VALUES(company_name), campaign_title=VALUES(campaign_title);`,
         [
           camp.id,
@@ -459,7 +458,6 @@ async function runSeed() {
           camp.campaignTitle,
           camp.campaignDescription,
           camp.city,
-          camp.influencersCount,
           camp.followerRange,
           camp.budget,
           camp.category,

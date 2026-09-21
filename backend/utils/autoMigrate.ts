@@ -19,7 +19,6 @@ export async function runAutoMigrations() {
         \`role\` ENUM('GUEST', 'BRAND', 'CREATOR', 'ADMIN', 'SALES') DEFAULT 'BRAND',
         \`phone\` VARCHAR(20) DEFAULT NULL,
         \`company_name\` VARCHAR(150) DEFAULT NULL,
-        \`gst_number\` VARCHAR(50) DEFAULT NULL,
         \`avatar\` VARCHAR(500) DEFAULT NULL,
         \`is_verified\` BOOLEAN DEFAULT FALSE,
         \`approval_status\` VARCHAR(20) DEFAULT 'pending',
@@ -115,7 +114,6 @@ export async function runAutoMigrations() {
         \`campaign_title\` VARCHAR(200) NOT NULL,
         \`campaign_description\` TEXT DEFAULT NULL,
         \`city\` VARCHAR(80) DEFAULT 'Pan India',
-        \`influencers_count\` VARCHAR(50) DEFAULT '1-5 Creators',
         \`male_count\` INT UNSIGNED DEFAULT 0,
         \`female_count\` INT UNSIGNED DEFAULT 0,
         \`follower_range\` VARCHAR(50) DEFAULT 'Any',
@@ -286,7 +284,7 @@ export async function runAutoMigrations() {
 
     // 3. Add missing columns / update columns safely on live database
     const alterQueries = [
-      `ALTER TABLE users ADD COLUMN gst_number VARCHAR(50) DEFAULT NULL`,
+      `ALTER TABLE users DROP COLUMN gst_number`,
       `ALTER TABLE users ADD COLUMN approval_status VARCHAR(20) DEFAULT 'pending'`,
       `ALTER TABLE users ADD COLUMN last_seen_at TIMESTAMP NULL DEFAULT NULL`,
       `ALTER TABLE campaign_requirements ADD COLUMN approval_status VARCHAR(20) DEFAULT 'pending'`,
@@ -321,7 +319,9 @@ export async function runAutoMigrations() {
       `ALTER TABLE campaign_requirements ADD COLUMN male_count INT DEFAULT 0`,
       `ALTER TABLE campaign_requirements ADD COLUMN female_count INT DEFAULT 0`,
       `ALTER TABLE campaign_requirements ADD COLUMN age_range VARCHAR(50) DEFAULT 'Any'`,
-      `ALTER TABLE campaign_requirements ADD COLUMN language VARCHAR(50) DEFAULT 'Any'`
+      `ALTER TABLE campaign_requirements ADD COLUMN language VARCHAR(255) DEFAULT 'Any'`,
+      `ALTER TABLE campaign_requirements MODIFY COLUMN language VARCHAR(255) DEFAULT 'Any'`,
+      `ALTER TABLE campaign_requirements DROP COLUMN influencers_count`
     ];
 
     for (const query of alterQueries) {
@@ -337,24 +337,6 @@ export async function runAutoMigrations() {
           }
         }
       }
-    }
-
-    // Backfill male/female from influencers_count when counts are zero
-    try {
-      await pool.query(`
-        UPDATE campaign_requirements
-        SET male_count = CASE
-          WHEN male_count = 0 AND female_count = 0 AND influencers_count REGEXP '^[0-9]+$' THEN FLOOR(CAST(influencers_count AS UNSIGNED) / 2)
-          ELSE male_count
-        END,
-        female_count = CASE
-          WHEN male_count = 0 AND female_count = 0 AND influencers_count REGEXP '^[0-9]+$' THEN CEIL(CAST(influencers_count AS UNSIGNED) / 2)
-          ELSE female_count
-        END
-        WHERE (male_count = 0 AND female_count = 0)
-      `);
-    } catch {
-      // ignore backfill failures
     }
 
     console.log('✅ Live Database auto-migrations completed successfully');

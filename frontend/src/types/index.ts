@@ -287,7 +287,6 @@ export interface CampaignRequirement {
   campaignTitle: string;
   campaignDescription?: string;
   city: string;
-  influencersCount: string | number;
   maleCount?: number;
   femaleCount?: number;
   totalCount?: number;

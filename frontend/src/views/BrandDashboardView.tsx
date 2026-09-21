@@ -39,6 +39,7 @@ import {
 import { usePlatform } from '../context/PlatformContext';
 import { CreatorCard } from '../components/common/CreatorCard';
 import { ChangePasswordForm } from '../components/common/ChangePasswordForm';
+import { ConversationsPanel } from '../components/common/ConversationsPanel';
 import { apiUrl } from '../config/api';
 
 export const BrandDashboardView: React.FC = () => {
@@ -55,9 +56,12 @@ export const BrandDashboardView: React.FC = () => {
     updateApplicantStatus,
     setAuthUser,
     openAuthModal,
+    brandInquiries,
+    fetchBrandInquiries,
+    updateBrandInquiryStatus,
   } = usePlatform();
 
-  const [activeTab, setActiveTab] = useState<'briefs' | 'enquiries' | 'deals' | 'profile' | 'settings'>('briefs');
+  const [activeTab, setActiveTab] = useState<'briefs' | 'enquiries' | 'chat' | 'deals' | 'profile' | 'settings'>('briefs');
 
   // Brand Profile State
   const [bpBrandName, setBpBrandName] = useState(authUser?.companyName || '');
@@ -119,6 +123,20 @@ export const BrandDashboardView: React.FC = () => {
       })
       .catch(e => console.error('Failed to sync authUser:', e));
   }, [authUser]);
+
+  // Creator-to-brand inquiries are separate from the brand's outgoing creator messages.
+  // Fetch them after the brand session is available so the dashboard always shows new inquiries.
+  useEffect(() => {
+    if (authUser?.role === 'BRAND') {
+      void fetchBrandInquiries();
+    }
+  }, [authUser?.id, authUser?.role]);
+
+  useEffect(() => {
+    if (activeTab === 'enquiries' && authUser?.role === 'BRAND') {
+      void fetchBrandInquiries();
+    }
+  }, [activeTab, authUser?.role]);
 
   const handleSaveBrandProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -255,6 +273,7 @@ export const BrandDashboardView: React.FC = () => {
       e.email?.toLowerCase() === authUser?.email?.toLowerCase() ||
       e.brandName === 'Aura Fashion'
   );
+  const incomingCreatorInquiries = brandInquiries;
 
   // All creator pitches across my campaigns
   const allPitches = myBriefs.flatMap((camp) =>
@@ -563,7 +582,7 @@ export const BrandDashboardView: React.FC = () => {
                   }`}
                 >
                   <MessageSquare className="w-4 h-4" />
-                  <span>Inquiry ({myEnquiries.length})</span>
+                  <span>Inquiry ({myEnquiries.length + incomingCreatorInquiries.length})</span>
                 </button>
 
                 <button
@@ -576,6 +595,18 @@ export const BrandDashboardView: React.FC = () => {
                 >
                   <Handshake className="w-4 h-4" />
                   <span>Deal (0)</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('chat')}
+                  className={`snap-center shrink-0 px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl flex items-center gap-2 transition-all duration-300 font-bold text-[11px] sm:text-xs md:text-sm whitespace-nowrap cursor-pointer ${
+                    activeTab === 'chat'
+                      ? 'bg-gradient-to-r from-indigo-500 to-violet-500 text-white shadow-md shadow-indigo-500/25 -translate-y-0.5'
+                      : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+                  }`}
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span>Live Chat</span>
                 </button>
               </>
             )}
@@ -689,14 +720,68 @@ export const BrandDashboardView: React.FC = () => {
         {/* Tab 3: Direct Bookings / Enquiries */}
         {activeTab === 'enquiries' && (
           <div className="space-y-4 animate-fadeIn">
-            {myEnquiries.length === 0 ? (
+            {myEnquiries.length === 0 && incomingCreatorInquiries.length === 0 ? (
               <div className="bg-white p-12 text-center rounded-3xl border border-slate-200 space-y-2">
                 <MessageSquare className="w-10 h-10 text-slate-300 mx-auto" />
-                <h3 className="font-bold text-slate-800 text-sm">No Direct Bookings Yet</h3>
-                <p className="text-xs text-slate-500">When you send direct messages to creators, they will be tracked here.</p>
+                <h3 className="font-bold text-slate-800 text-sm">No Inquiries Yet</h3>
+                <p className="text-xs text-slate-500">Creator inquiries and your direct messages will appear here.</p>
               </div>
             ) : (
-              myEnquiries.map((lead) => {
+              <>
+              {incomingCreatorInquiries.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-black text-slate-900">Creator Inquiries</h3>
+                      <p className="text-[11px] text-slate-500">Messages received from creators through your brand page.</p>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold">
+                      {incomingCreatorInquiries.length} received
+                    </span>
+                  </div>
+                  {incomingCreatorInquiries.map((inquiry) => (
+                    <div key={inquiry.id} className="bg-white p-5 rounded-2xl border border-amber-200 shadow-[0_4px_20px_rgb(0,0,0,0.03)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                      <div className="flex items-start gap-3 min-w-0">
+                        {inquiry.creatorAvatar ? (
+                          <img src={inquiry.creatorAvatar} alt={inquiry.creatorName} className="w-11 h-11 rounded-full object-cover shrink-0 border border-slate-200" />
+                        ) : (
+                          <div className="w-11 h-11 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center font-black shrink-0">
+                            {inquiry.creatorName?.charAt(0)?.toUpperCase() || 'C'}
+                          </div>
+                        )}
+                        <div className="min-w-0 space-y-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-black text-slate-900 text-sm">{inquiry.creatorName}</span>
+                            <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-700 text-[10px] font-bold">Creator inquiry</span>
+                          </div>
+                          <p className="text-xs text-slate-600 leading-relaxed">{inquiry.message}</p>
+                          <span className="text-[11px] text-slate-400 font-medium">{inquiry.createdAt}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                          inquiry.status === 'Confirmed' ? 'bg-emerald-100 text-emerald-700' :
+                          inquiry.status === 'Declined' ? 'bg-slate-100 text-slate-600' :
+                          'bg-amber-100 text-amber-700'
+                        }`}>{inquiry.status}</span>
+                        {inquiry.status === 'New' && (
+                          <button
+                            onClick={() => void updateBrandInquiryStatus(inquiry.id, 'Read')}
+                            className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-black text-white text-[10px] font-bold transition cursor-pointer"
+                          >
+                            Mark Read
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {myEnquiries.length > 0 && (
+                <div className="space-y-3 pt-2">
+                  {incomingCreatorInquiries.length > 0 && <h3 className="text-sm font-black text-slate-900">Messages Sent to Creators</h3>}
+              {myEnquiries.map((lead) => {
                 const creator = creators.find(c => c.id === lead.creatorId);
                 return (
                   <div key={lead.id} className="bg-white p-5 rounded-2xl border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -727,8 +812,21 @@ export const BrandDashboardView: React.FC = () => {
                     </span>
                   </div>
                 );
-              })
+              })}
+                </div>
+              )}
+              </>
             )}
+          </div>
+        )}
+
+        {activeTab === 'chat' && (
+          <div className="space-y-3 animate-fadeIn">
+            <div>
+              <h2 className="text-lg font-black text-slate-800">Live Chat</h2>
+              <p className="text-xs text-slate-500">Chat directly with creators after a collaboration inquiry is confirmed.</p>
+            </div>
+            <ConversationsPanel />
           </div>
         )}
 

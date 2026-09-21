@@ -35,6 +35,7 @@ import {
 import { usePlatform } from '../context/PlatformContext';
 import { Creator } from '../types';
 import { ChangePasswordForm } from '../components/common/ChangePasswordForm';
+import { ConversationsPanel } from '../components/common/ConversationsPanel';
 import { cleanInstagramHandle } from '../utils/sanitize';
 
 export const CreatorDashboardView: React.FC = () => {
@@ -173,7 +174,7 @@ export const CreatorDashboardView: React.FC = () => {
     );
   })();
 
-  const [activeTab, setActiveTab] = useState<'leads' | 'profile' | 'pitches' | 'savedBrands' | 'settings'>('leads');
+  const [activeTab, setActiveTab] = useState<'leads' | 'chat' | 'profile' | 'pitches' | 'savedBrands' | 'settings'>('leads');
 
   // Form states synced with creator's database fields
   const [bio, setBio] = useState(creator.bio || '');
@@ -675,7 +676,7 @@ export const CreatorDashboardView: React.FC = () => {
         {/* Brand-style dashboard summary cards */}
         <div className="flex flex-col lg:flex-row gap-6 items-stretch">
         {/* Top Header Profile Card */}
-        <div className="bg-gradient-to-br from-white via-[#fcfaf5] to-[#f1e6cc] p-6 sm:p-8 rounded-[2.5rem] border border-[#D4A338]/30 shadow-[0_12px_40px_rgba(212,163,56,0.12)] hover:shadow-[0_20px_50px_rgba(212,163,56,0.2)] transition-all duration-500 flex flex-col md:flex-row md:items-center justify-between gap-5 relative overflow-hidden">
+        <div className="w-full flex-1 bg-gradient-to-br from-white via-[#fcfaf5] to-[#f1e6cc] p-6 sm:p-8 rounded-[2.5rem] border border-[#D4A338]/30 shadow-[0_12px_40px_rgba(212,163,56,0.12)] hover:shadow-[0_20px_50px_rgba(212,163,56,0.2)] transition-all duration-500 flex flex-col md:flex-row md:items-center justify-between gap-5 relative overflow-hidden">
           <div className="absolute -right-16 -top-20 w-64 h-64 bg-[#D4A338]/10 rounded-full blur-3xl pointer-events-none" />
           <div className="flex items-center gap-4">
             {/* Interactive Avatar with Camera Upload Overlay */}
@@ -810,6 +811,7 @@ export const CreatorDashboardView: React.FC = () => {
         <div className="flex overflow-x-auto gap-2 p-1.5 bg-white border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] rounded-2xl text-xs font-bold">
           {[
             { key: 'leads', icon: <MessageSquare className="w-3.5 h-3.5" />, label: `Enquiries (${myEnquiries.length})` },
+            { key: 'chat', icon: <MessageSquare className="w-3.5 h-3.5" />, label: 'Live Chat' },
             { key: 'profile', icon: <Edit3 className="w-3.5 h-3.5" />, label: 'Edit Profile' },
             { key: 'pitches', icon: <Flame className="w-3.5 h-3.5" />, label: `Briefs (${campaigns.length})` },
             { key: 'savedBrands', icon: <Bookmark className="w-3.5 h-3.5" />, label: `Saved Brands (${savedBrandIds.length})` },
@@ -1404,6 +1406,16 @@ export const CreatorDashboardView: React.FC = () => {
                 );
               })
             )}
+          </div>
+        )}
+
+        {activeTab === 'chat' && (
+          <div className="space-y-3 animate-fadeIn">
+            <div>
+              <h2 className="text-lg font-black text-slate-800">Live Chat</h2>
+              <p className="text-xs text-slate-500">Chat directly with brands after you confirm a collaboration.</p>
+            </div>
+            <ConversationsPanel />
           </div>
         )}
 

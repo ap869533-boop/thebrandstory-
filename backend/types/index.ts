@@ -224,7 +224,6 @@ export interface CampaignRequirement {
   campaignTitle: string;
   campaignDescription: string;
   city: string;
-  influencersCount: string;
   followerRange: string;
   budget: string;
   genderPreference?: string;

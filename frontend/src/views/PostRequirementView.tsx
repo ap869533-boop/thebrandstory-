@@ -40,7 +40,6 @@ export const PostRequirementView: React.FC = () => {
     companyName: authUser?.companyName || activeBrandName || '',
     contactPerson: authUser?.name || '',
     email: authUser?.email || '',
-    countryCode: '+91',
     phone: '',
     campaignTitle: '',
     industry: 'Fashion & Lifestyle',
@@ -48,12 +47,11 @@ export const PostRequirementView: React.FC = () => {
     city: 'Delhi NCR',
     deliverablesNeeded: '1x Instagram Reel (30s) with brand product tagging + 2x Stories with link',
     budget: '₹25,000 - ₹50,000',
-    influencersCount: 2 as number | string,
     genderPreference: 'Any / Both',
     maleCount: 0 as number | string,
     femaleCount: 0 as number | string,
     ageRange: '',
-    language: 'Hindi',
+    languages: ['Hindi'] as string[],
     followerRange: '10k-100k',
     isBarter: false,
     campaignStartDate: '',
@@ -73,10 +71,6 @@ const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false);
   const [selectedCities, setSelectedCities] = useState<string[]>(['Delhi NCR']);
   const cityDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Custom country code dropdown state
-  const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
-  const countryDropdownRef = useRef<HTMLDivElement>(null);
-
   // Close dropdowns on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -88,9 +82,6 @@ const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false);
       }
       if (cityDropdownRef.current && !cityDropdownRef.current.contains(e.target as Node)) {
         setCityDropdownOpen(false);
-      }
-      if (countryDropdownRef.current && !countryDropdownRef.current.contains(e.target as Node)) {
-        setCountryDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handler);
@@ -164,19 +155,18 @@ const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false);
         companyName: finalBrandName,
         contactPerson: formData.contactPerson || finalBrandName,
         email: formData.email,
-        phone: `${formData.countryCode} ${formData.phone}`.trim(),
+        phone: formData.phone,
         campaignTitle: formData.campaignTitle,
         industry: finalIndustry,
         category: formData.categories.join(', '),
         city: selectedCities.join(', '),
         deliverablesNeeded: formData.deliverablesNeeded,
         budget: formData.isBarter ? 'Barter / Product Exchange' : formData.budget,
-        influencersCount: Number(formData.influencersCount) || 1,
         genderPreference: formData.genderPreference,
         maleCount: Number(formData.maleCount) || 0,
         femaleCount: Number(formData.femaleCount) || 0,
         ageRange: formData.ageRange || 'Any',
-        language: formData.language || 'Any',
+        language: formData.languages.length ? formData.languages.join(', ') : 'Any',
         followerRange: formData.followerRange,
         isBarter: formData.isBarter,
         campaignStartDate: formData.campaignStartDate || 'Immediate',
@@ -532,18 +522,7 @@ const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false);
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block font-bold text-slate-800 text-xs mb-1.5">Total Influencer Need</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={formData.influencersCount || ''}
-                    onChange={(e) => setFormData({ ...formData, influencersCount: e.target.value === '' ? '' : Number(e.target.value) })}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] font-medium"
-                  />
-                </div>
-
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block font-bold text-slate-800 text-xs mb-1.5">Desired Follower Tier</label>
                   <div className="relative">
@@ -635,10 +614,16 @@ const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false);
               {/* Language Details */}
               <div className="mt-4">
                 <label className="block font-bold text-slate-800 text-xs mb-1.5">Language Preference</label>
+                <p className="text-[11px] text-slate-500 mb-1.5">Use Ctrl (Windows) or Cmd (Mac) to select multiple languages.</p>
                 <div className="relative">
                   <select
-                    value={formData.language}
-                    onChange={(e) => setFormData({ ...formData, language: e.target.value })}
+                    multiple
+                    size={6}
+                    value={formData.languages}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      languages: Array.from(e.currentTarget.selectedOptions, option => option.value).filter(language => language !== 'Any'),
+                    })}
                     className="w-full appearance-none px-4 py-3 pr-10 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] text-xs font-medium text-slate-800 transition cursor-pointer"
                   >
                     <option value="Any">Any Language</option>
@@ -703,53 +688,18 @@ const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false);
 
                 <div>
                   <label className="block font-bold text-slate-800 text-xs mb-1.5">WhatsApp / Phone *</label>
-                  <div className="relative flex rounded-xl border border-slate-200 bg-slate-50 focus-within:border-[#D4A338] focus-within:bg-white transition">
-                    {/* Custom Country code selector */}
-                    <div ref={countryDropdownRef} className="relative shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => setCountryDropdownOpen(o => !o)}
-                        className="h-full px-2.5 py-3 flex items-center gap-1 border-r border-slate-200 hover:bg-slate-100/70 text-xs font-bold text-slate-800 transition cursor-pointer select-none rounded-l-xl"
-                      >
-                        <span>{formData.countryCode}</span>
-                        <ChevronDown
-                          className="w-3 h-3 text-slate-400 shrink-0 transition-transform"
-                          style={{ transform: countryDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
-                        />
-                      </button>
-
-                      {countryDropdownOpen && (
-                        <div className="absolute left-0 top-full mt-1 w-52 max-h-44 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-xl z-50 py-1">
-                          {COUNTRY_CODES.map((c) => (
-                            <button
-                              key={c.code}
-                              type="button"
-                              onClick={() => {
-                                setFormData(prev => ({ ...prev, countryCode: c.code }));
-                                setCountryDropdownOpen(false);
-                              }}
-                              className={`w-full px-3 py-1.5 text-left text-xs flex items-center justify-between hover:bg-amber-50/80 transition cursor-pointer ${
-                                formData.countryCode === c.code ? 'bg-amber-50 text-[#8e6819] font-bold' : 'text-slate-700'
-                              }`}
-                            >
-                              <span className="truncate">{c.name}</span>
-                              <span className="font-mono text-[11px] text-slate-500 font-semibold shrink-0 ml-2">
-                                {c.code}
-                              </span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Number input */}
+                  <div className="flex rounded-xl border border-slate-200 bg-slate-50 focus-within:border-[#D4A338] focus-within:bg-white transition">
                     <input
                       type="tel"
                       required
-                      placeholder="98112 00000"
+                      inputMode="numeric"
+                      maxLength={10}
+                      pattern="[6-9][0-9]{9}"
+                      title="Enter a valid 10-digit Indian mobile number"
+                      placeholder="9811200000"
                       value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '') })}
-                      className="flex-1 px-3 py-3 bg-transparent focus:outline-none text-xs font-medium text-slate-800 placeholder:text-slate-400 rounded-r-xl"
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                      className="w-full px-3 py-3 bg-transparent focus:outline-none text-xs font-medium text-slate-800 placeholder:text-slate-400 rounded-xl"
                     />
                   </div>
                 </div>

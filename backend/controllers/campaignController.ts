@@ -7,6 +7,15 @@ import { parseNonNegInt, validateWhatsAppNumber } from '../utils/validation';
 
 let campaignsStore: CampaignRequirement[] = [];
 
+function validateCampaignPhone(raw: string | undefined | null) {
+  const result = validateWhatsAppNumber(raw);
+  const digits = String(raw || '').replace(/\D/g, '');
+  if (!result.ok || !/^[6-9]\d{9}$/.test(digits)) {
+    return { ok: false, normalized: '', error: 'Enter a valid 10-digit Indian WhatsApp number' };
+  }
+  return result;
+}
+
 function mapCampaignRow(r: any, campApplicants: any[] = []) {
   const maleCount = Number(r.male_count) || 0;
   const femaleCount = Number(r.female_count) || 0;
@@ -22,7 +31,9 @@ function mapCampaignRow(r: any, campApplicants: any[] = []) {
     campaignTitle: r.campaign_title,
     campaignDescription: r.campaign_description,
     city: r.city,
-    influencersCount: totalCount > 0 ? String(totalCount) : (r.influencers_count || '0'),
+    genderPreference: r.gender_preference || 'Any',
+    ageRange: r.age_range || 'Any',
+    language: r.language || 'Any',
     maleCount,
     femaleCount,
     totalCount,
@@ -147,7 +158,7 @@ export async function createCampaign(req: AuthenticatedRequest, res: Response) {
       return res.status(400).json({ success: false, error: 'Company Name and Campaign Title are required' });
     }
 
-    const phoneCheck = validateWhatsAppNumber(data.phone);
+    const phoneCheck = validateCampaignPhone(data.phone);
     if (!phoneCheck.ok) {
       return res.status(400).json({ success: false, error: phoneCheck.error });
     }
@@ -170,7 +181,6 @@ export async function createCampaign(req: AuthenticatedRequest, res: Response) {
       campaignTitle: data.campaignTitle,
       campaignDescription: data.campaignDescription || data.requirements || '',
       city: data.city || 'Pan India',
-      influencersCount: String(totalCount),
       maleCount,
       femaleCount,
       totalCount,
@@ -198,7 +208,7 @@ export async function createCampaign(req: AuthenticatedRequest, res: Response) {
       await dbQuery(
         `INSERT INTO campaign_requirements (
           id, user_id, company_name, contact_person, email, phone, industry,
-          campaign_title, campaign_description, city, influencers_count, male_count, female_count,
+          campaign_title, campaign_description, city, male_count, female_count,
           gender_preference, age_range, language,
           follower_range, budget, category, collaboration_type, campaign_date, requirements, platforms,
           status, approval_status
@@ -214,7 +224,6 @@ export async function createCampaign(req: AuthenticatedRequest, res: Response) {
           newCampaign.campaignTitle,
           newCampaign.campaignDescription,
           newCampaign.city,
-          String(totalCount),
           maleCount,
           femaleCount,
           newCampaign.genderPreference || 'Any',
@@ -270,7 +279,7 @@ export async function updateCampaign(req: AuthenticatedRequest, res: Response) {
       const data = req.body;
       let phone = existing.phone;
       if (data.phone !== undefined) {
-        const phoneCheck = validateWhatsAppNumber(data.phone);
+        const phoneCheck = validateCampaignPhone(data.phone);
         if (!phoneCheck.ok) return res.status(400).json({ success: false, error: phoneCheck.error });
         phone = phoneCheck.normalized;
       }
@@ -296,7 +305,6 @@ export async function updateCampaign(req: AuthenticatedRequest, res: Response) {
         campaign_title = COALESCE(?, campaign_title),
         campaign_description = COALESCE(?, campaign_description),
         city = COALESCE(?, city),
-        influencers_count = ?,
         male_count = ?,
         female_count = ?,
         follower_range = COALESCE(?, follower_range),
@@ -316,7 +324,6 @@ export async function updateCampaign(req: AuthenticatedRequest, res: Response) {
           data.campaignTitle ?? null,
           data.campaignDescription ?? null,
           data.city ?? null,
-          String(totalCount),
           maleCount,
           femaleCount,
           data.followerRange ?? null,
