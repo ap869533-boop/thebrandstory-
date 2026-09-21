@@ -178,8 +178,9 @@ export const OpportunitiesView: React.FC = () => {
                         {Array.isArray(camp.applicants) ? camp.applicants.length : (camp.applicantsCount || 0)} Pitches
                       </span>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span>Influencers Needed: <strong>{camp.influencersCount || 1}</strong></span>
+                    <div className="flex items-center justify-between gap-3">
+                      <span>Male: <strong>{camp.maleCount || 0}</strong></span>
+                      <span>Female: <strong>{camp.femaleCount || 0}</strong></span>
                       {camp.language && camp.language !== 'Any' && (
                         <span>Lang: <strong>{camp.language}</strong></span>
                       )}

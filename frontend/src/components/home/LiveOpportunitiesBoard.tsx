@@ -49,15 +49,6 @@ export const LiveOpportunitiesBoard: React.FC = () => {
     }, 1500);
   };
 
-  const getOpeningLabel = (value: string | number | undefined) => {
-    const countValue = String(value ?? '');
-    if (!countValue) return '0 Creators';
-    const normalized = countValue.toLowerCase();
-    if (normalized.includes('creator')) return countValue;
-    const count = Number(countValue);
-    return `${countValue} ${Number.isFinite(count) && count === 1 ? 'Creator' : 'Creators'}`;
-  };
-
   return (
     <section className="py-16 bg-slate-50/70 text-slate-900 border-b border-slate-200/80 font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -173,14 +164,18 @@ export const LiveOpportunitiesBoard: React.FC = () => {
               </div>
 
               <div className="pt-4 mt-4 border-t border-slate-100 space-y-3">
-                <div className="grid grid-cols-2 gap-2 p-2.5 bg-slate-50/80 rounded-xl border border-slate-100 text-xs">
+                <div className="grid grid-cols-3 gap-2 p-2.5 bg-slate-50/80 rounded-xl border border-slate-100 text-xs">
                   <div>
                     <span className="text-[10px] font-medium text-slate-400 block uppercase tracking-wider">Budget</span>
                     <span className="font-black text-emerald-600 text-xs truncate block mt-0.5">{camp.budget}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] font-medium text-slate-400 block uppercase tracking-wider">Openings</span>
-                    <span className="font-bold text-slate-800 text-xs truncate block mt-0.5">{getOpeningLabel(camp.influencersCount)}</span>
+                    <span className="text-[10px] font-medium text-slate-400 block uppercase tracking-wider">Male</span>
+                    <span className="font-bold text-slate-800 text-xs truncate block mt-0.5">{camp.maleCount || 0}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-medium text-slate-400 block uppercase tracking-wider">Female</span>
+                    <span className="font-bold text-slate-800 text-xs truncate block mt-0.5">{camp.femaleCount || 0}</span>
                   </div>
                 </div>
 

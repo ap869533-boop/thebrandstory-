@@ -706,7 +706,14 @@ export const CreatorDashboardView: React.FC = () => {
             <div className="space-y-0.5">
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">{creator.name}</h1>
-
+                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-bold border ${
+                  creator.isVerified
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                    : 'bg-amber-50 border-amber-200 text-amber-700'
+                }`}>
+                  {creator.isVerified ? <CheckCircle2 className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                  {creator.isVerified ? 'Verified Creator' : isApprovalEligible ? 'Approval review' : 'Profile setup'}
+                </span>
               </div>
               <p className="text-xs text-slate-500 font-semibold">@{creator.username} • {creator.primaryCategory}</p>
               <p className="text-[11px] text-slate-400 flex items-center gap-1">
@@ -731,6 +738,7 @@ export const CreatorDashboardView: React.FC = () => {
           </div>
         </div>
 
+        {completionPct < 100 && (
         <div className="bg-gradient-to-br from-amber-50 via-orange-50/50 to-rose-50/50 rounded-[2.5rem] p-5 sm:p-6 shadow-[0_12px_40px_rgba(212,163,56,0.15)] border border-amber-200/60 flex flex-col items-center justify-center text-center relative shrink-0 lg:w-72 overflow-hidden">
           <div className="absolute -top-8 -right-8 h-28 w-28 rounded-full bg-[#D4A338]/10 blur-2xl" />
           <div
@@ -754,6 +762,7 @@ export const CreatorDashboardView: React.FC = () => {
             Complete Profile
           </button>
         </div>
+        )}
         </div>
 
         {/* === Profile Completion Progress Bar === */}
