@@ -57,8 +57,10 @@ app.use(
 );
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-app.use('/uploads', express.static(path.resolve(__dirname, 'uploads')));
-app.use('/api/uploads', express.static(path.resolve(__dirname, 'uploads')));
+// Upload filenames are UUIDs, so they can be cached aggressively without serving stale media.
+const uploadsStaticOptions = { maxAge: '1y', immutable: true };
+app.use('/uploads', express.static(path.resolve(__dirname, 'uploads'), uploadsStaticOptions));
+app.use('/api/uploads', express.static(path.resolve(__dirname, 'uploads'), uploadsStaticOptions));
 
 // Health check
 app.get('/health', (req, res) => {

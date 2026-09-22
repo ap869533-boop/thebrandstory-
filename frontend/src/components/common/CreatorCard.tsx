@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Heart, ArrowRight, CheckCircle2, Volume2, VolumeX } from 'lucide-react';
 import { Creator } from '../../types';
 import { usePlatform } from '../../context/PlatformContext';
@@ -17,6 +17,7 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({ creator, variant = 'gr
 
   const [isMuted, setIsMuted] = useState(true);
   const [videoError, setVideoError] = useState(false);
+  const [isPreviewing, setIsPreviewing] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const isSaved = isCreatorSaved(creator.id);
@@ -28,7 +29,16 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({ creator, variant = 'gr
     return count.toString();
   };
 
-  const handleCardClick = () => {
+  const handleCardClick = (event: React.MouseEvent) => {
+    // Touch devices do not have hover: the first tap previews the reel and the
+    // next tap keeps the original card-navigation behaviour.
+    const isTouchLayout = typeof window !== 'undefined'
+      && !window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    if (isTouchLayout && isUploadedVideo && !videoError && !isPreviewing) {
+      event.stopPropagation();
+      setIsPreviewing(true);
+      return;
+    }
     navigateTo('creator-detail', { username: creator.username, id: creator.id });
   };
 
@@ -45,8 +55,36 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({ creator, variant = 'gr
     });
   };
 
-  const displayImage = creator.coverImage || creator.portfolio?.[0]?.thumbnail || creator.avatar;
+  const displayImage = (creator as any).reelThumbnailUrl || creator.coverImage || creator.portfolio?.[0]?.thumbnail || creator.avatar;
   const isUploadedVideo = Boolean(creator.reelVideoUrl && !/instagram\.com/i.test(creator.reelVideoUrl));
+
+  const stopPreview = () => {
+    const video = videoRef.current;
+    if (video) {
+      video.pause();
+      try {
+        video.currentTime = 0;
+      } catch {
+        // Some streams cannot seek until metadata is available.
+      }
+    }
+    setIsMuted(true);
+    setIsPreviewing(false); // Unmounting removes the source and stops further fetching.
+  };
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!isPreviewing || !video) return;
+
+    video.muted = true;
+    setIsMuted(true);
+    video.play().catch(() => {
+      // Autoplay may be blocked; retain the poster instead of leaving a broken frame.
+      setIsPreviewing(false);
+    });
+
+    return () => video.pause();
+  }, [isPreviewing]);
 
   const initials = creator.name
     .split(/\s+/)
@@ -62,32 +100,41 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({ creator, variant = 'gr
     <div
       id={`creator-card-${creator.id}`}
       onClick={handleCardClick}
+      onPointerEnter={(event) => {
+        if (event.pointerType === 'mouse' && isUploadedVideo && !videoError) setIsPreviewing(true);
+      }}
+      onPointerLeave={(event) => {
+        if (event.pointerType === 'mouse') stopPreview();
+      }}
       className={`group relative rounded-[1.75rem] overflow-hidden cursor-pointer shadow-sm hover:shadow-2xl transition-all duration-300 border border-slate-300/70 flex flex-col justify-between bg-slate-950 ${
         variant === 'carousel'
           ? 'w-[210px] sm:w-[220px] md:w-[230px] h-[350px] sm:h-[390px] md:h-[420px] shrink-0'
           : 'w-full h-[350px] sm:h-[390px] md:h-[420px]'
       }`}
     >
-      {/* Background: Video (direct URL) or Image */}
+      {/* Poster is always rendered first. The video source is mounted only for an active preview. */}
       <div className="absolute inset-0 w-full h-full overflow-hidden z-0">
-        {isUploadedVideo && !videoError ? (
+        <img
+          src={displayImage}
+          alt={creator.name}
+          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
+          loading="lazy"
+          decoding="async"
+        />
+        {isUploadedVideo && !videoError && isPreviewing && (
           <video
             ref={videoRef}
             src={creator.reelVideoUrl}
-            autoPlay
             loop
             muted={isMuted}
             playsInline
-            preload="auto"
-            onError={() => setVideoError(true)}
-            className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
-          />
-        ) : (
-          <img
-            src={displayImage}
-            alt={creator.name}
-            className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
-            loading="lazy"
+            preload="metadata"
+            poster={displayImage}
+            onError={() => {
+              setVideoError(true);
+              setIsPreviewing(false);
+            }}
+            className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
           />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/45 to-transparent" />
@@ -113,7 +160,7 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({ creator, variant = 'gr
             <Heart className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />
           </button>
 
-          {isUploadedVideo && !videoError && (
+          {isUploadedVideo && !videoError && isPreviewing && (
             <button
               onClick={handleToggleMute}
               title={isMuted ? 'Unmute' : 'Mute'}

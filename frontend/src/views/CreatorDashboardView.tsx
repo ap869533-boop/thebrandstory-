@@ -899,12 +899,12 @@ export const CreatorDashboardView: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Card Reel Video Upload - autoplays on homepage card */}
+                {/* Card Reel Video Upload - previews on hover/tap on profile cards */}
                 <div className="md:col-span-3 border-2 border-dashed border-violet-300 bg-violet-50/40 rounded-2xl p-5 space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-violet-200/60 pb-3">
                     <div className="flex items-center gap-2 text-violet-900 font-bold text-xs">
                       <Film className="w-4 h-4 text-violet-600" />
-                      <span>Card Reel Video (Autoplays on Profile Card on Homepage)</span>
+                      <span>Card Reel Video (Hover / tap preview on profile cards)</span>
                     </div>
                     {creator.reelVideoUrl && (
                       <span className="px-2.5 py-0.5 bg-emerald-100 border border-emerald-300 text-emerald-800 text-[10px] font-bold rounded-full flex items-center gap-1">
