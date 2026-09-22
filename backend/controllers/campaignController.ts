@@ -23,6 +23,7 @@ function mapCampaignRow(r: any, campApplicants: any[] = []) {
   return {
     id: r.id,
     userId: r.user_id || null,
+    logoUrl: r.logo_url || r.logoUrl || null,
     companyName: r.company_name,
     contactPerson: r.contact_person,
     email: r.email,
@@ -112,20 +113,25 @@ export async function getCampaigns(req: AuthenticatedRequest, res: Response) {
     const userId = req.user?.id;
     const role = req.user?.role;
 
-    let sql = 'SELECT * FROM campaign_requirements';
+    let sql = `
+      SELECT c.*, COALESCE(bp.logo_url, u.avatar) as logo_url
+      FROM campaign_requirements c
+      LEFT JOIN users u ON c.user_id = u.id
+      LEFT JOIN brand_profiles bp ON c.user_id = bp.user_id
+    `;
     const params: any[] = [];
 
     if (scope === 'mine' && userId && role === 'BRAND') {
-      sql += ' WHERE user_id = ? OR email = ?';
+      sql += ' WHERE (c.user_id = ? OR c.email = ?)';
       params.push(userId, req.user?.email || '');
     } else if (scope === 'admin' && (role === 'ADMIN' || role === 'SALES')) {
       // all campaigns for admin
     } else {
       // Public: approved only, not rejected/pending
-      sql += ` WHERE approval_status = 'approved' AND status IN ('Open', 'In Review', 'Filled')`;
+      sql += ` WHERE c.approval_status = 'approved' AND c.status IN ('Open', 'In Review', 'Filled')`;
     }
 
-    sql += ' ORDER BY created_at DESC';
+    sql += ' ORDER BY c.created_at DESC';
 
     const dbRows: any = await dbQuery(sql, params);
     const applicantsByCampaign = await fetchApplicantsByCampaign();

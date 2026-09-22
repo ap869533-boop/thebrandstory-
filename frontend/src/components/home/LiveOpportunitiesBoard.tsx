@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { usePlatform } from '../../context/PlatformContext';
 import type { CampaignRequirement } from '../../types';
+import { apiUrl } from '../../config/api';
 
 export const LiveOpportunitiesBoard: React.FC = () => {
   const { campaigns, applyToCampaign, activeCreatorId, authUser, navigateTo, requireRole } = usePlatform();
@@ -120,12 +121,12 @@ export const LiveOpportunitiesBoard: React.FC = () => {
               
               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[#D4A338]/10 to-transparent rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-150 duration-700 pointer-events-none"></div>
               
-              <div className="p-5 sm:p-6 space-y-4 relative z-10 flex-1 flex flex-col">
+              <div className="p-5 sm:p-6 space-y-4 relative z-10 flex flex-col">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-12 h-12 rounded-2xl border border-slate-100 bg-white flex items-center justify-center shrink-0 shadow-md group-hover:shadow-lg transition-shadow overflow-hidden">
                       <img
-                        src={(camp as any).logoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(camp.companyName || 'Brand')}&background=fef3c7&color=78350f&bold=true`}
+                        src={(camp as any).logoUrl ? apiUrl((camp as any).logoUrl) : `https://ui-avatars.com/api/?name=${encodeURIComponent(camp.companyName || 'Brand')}&background=fef3c7&color=78350f&bold=true`}
                         alt={camp.companyName}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       />
@@ -187,14 +188,14 @@ export const LiveOpportunitiesBoard: React.FC = () => {
                   )}
                 </div>
 
-                <div className="mt-4 mb-2">
+                <div className="mt-2 mb-0">
                   <p className="text-sm text-slate-700 leading-relaxed line-clamp-2">
                     {camp.deliverablesNeeded || camp.requirements || camp.campaignDescription}
                   </p>
                 </div>
               </div>
 
-              <div className="p-5 sm:p-6 pt-0 mt-auto relative z-10 w-full flex flex-col justify-end">
+              <div className="p-5 sm:p-6 pt-0 relative z-10 w-full flex flex-col justify-end h-full">
                 {(camp.maleCount > 0 || camp.femaleCount > 0) && (
                   <div className="flex items-center gap-3 mb-2 bg-slate-50/80 px-3 py-2 rounded-xl border border-slate-100">
                     <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Required:</span>
@@ -224,7 +225,7 @@ export const LiveOpportunitiesBoard: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center justify-between gap-2 mt-auto">
                   <span className="text-[11px] text-slate-500 font-medium">
                     <strong className="text-slate-800 font-bold">
                       {Array.isArray(camp.applicants) ? camp.applicants.length : camp.applicantsCount || 0}
