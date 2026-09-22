@@ -51,17 +51,17 @@ sudo mysql
 
 2. Database aur User create karein:
 ```sql
-CREATE DATABASE IF NOT EXISTS social_cults_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS brand_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE USER 'brandsuser'@'localhost' IDENTIFIED BY 'StrongPassword123!';
-GRANT ALL PRIVILEGES ON social_cults_db.* TO 'brandsuser'@'localhost';
+GRANT ALL PRIVILEGES ON brand_db.* TO 'brandsuser'@'localhost';
 FLUSH PRIVILEGES;
 EXIT;
 ```
 
 3. Database schema import karein:
 ```bash
-mysql -u brandsuser -p social_cults_db < /var/www/thebrandsstory/backend/config/schema.sql
+mysql -u brandsuser -p brand_db < /var/www/thebrandsstory/backend/config/schema.sql
 ```
 
 ---

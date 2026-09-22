@@ -298,6 +298,7 @@ export interface CampaignRequirement {
   category: string;
   collaborationType?: string;
   campaignDate?: string;
+  validUntil?: string;
   deliverablesNeeded?: string;
   isBarter?: boolean;
   campaignStartDate?: string;
@@ -428,5 +429,6 @@ export interface BrandProfile {
   approvalStatus: 'pending' | 'approved' | 'rejected';
   rejectionReason?: string;
   isFeatured: boolean;
+  totalHiringCount?: number;
   createdAt: string;
 }

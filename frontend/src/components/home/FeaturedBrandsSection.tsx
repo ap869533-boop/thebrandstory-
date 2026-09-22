@@ -92,7 +92,7 @@ export const FeaturedBrandsSection: React.FC = () => {
             <span>Verified Brand Ecosystem</span>
           </div>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight">
-            Top Registered <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600">Brands</span>
+            Top Brands Hiring Influencers
           </h2>
           <p className="text-sm md:text-base text-slate-600 font-medium">
             Explore admin-approved enterprise brands hiring creators for active campaign briefs.
@@ -115,9 +115,15 @@ export const FeaturedBrandsSection: React.FC = () => {
               <div
                 key={`${brand.id || 'brand'}-${idx}`}
                 className={`group snap-start bg-white rounded-[24px] border ${
-                  brand.brandName === 'Reliance Retail' ? 'border-red-50 hover:border-red-100 bg-gradient-to-b from-white to-red-50/10' : 'border-slate-100'
-                } p-5 shadow-[0_8px_30px_rgba(0,0,0,0.08)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.14)] hover:-translate-y-2 cursor-pointer transition-all duration-500 flex flex-col items-center text-center w-[280px] sm:w-[320px] shrink-0`}
+                  brand.brandName === 'Reliance Retail' ? 'border-red-50 hover:border-red-100 bg-gradient-to-b from-white to-red-50/10' : 'border-[#D4A338]/30 hover:border-[#D4A338]/80 hover:shadow-[0_20px_40px_rgba(212,163,56,0.15)]'
+                } p-5 shadow-[0_8px_30px_rgba(0,0,0,0.08)] hover:-translate-y-2 cursor-pointer transition-all duration-500 flex flex-col items-center text-center w-[280px] sm:w-[320px] shrink-0 relative overflow-hidden`}
               >
+                {/* Premium Gradient Header */}
+                <div className="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-amber-300 via-[#f4c95d] to-[#D4A338] opacity-80 group-hover:opacity-100 transition-opacity z-10"></div>
+                
+                {/* Hover side glow */}
+                <div className="absolute -left-16 top-1/4 w-40 h-40 bg-[#f4c95d]/30 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
+
                 {/* Logo Area with glow */}
                 <div className="relative flex items-center justify-center">
                   <div className={`absolute inset-0 rounded-full blur-xl opacity-20 group-hover:opacity-40 transition-opacity duration-500 ${
@@ -152,9 +158,19 @@ export const FeaturedBrandsSection: React.FC = () => {
                 </h3>
                 
                 {/* Subtitle */}
-                <p className="text-[10px] font-bold tracking-widest uppercase text-slate-400 mb-4 line-clamp-1">
+                <p className="text-[10px] font-bold tracking-widest uppercase text-slate-400 mb-2 line-clamp-1">
                   {brand.industry}
                 </p>
+
+                {brand.totalHiringCount ? (
+                  <div className="mb-4">
+                    <p className="text-sm font-medium text-slate-500">
+                      {brand.totalHiringCount > 999 ? (brand.totalHiringCount / 1000).toFixed(1).replace(/\.0$/, '') + 'K+' : brand.totalHiringCount + '+'} are actively hiring
+                    </p>
+                  </div>
+                ) : (
+                  <div className="mb-3"></div>
+                )}
                 
                 {/* Description */}
                 <p className="text-xs text-slate-500 leading-relaxed mb-6 flex-1 px-2 line-clamp-3">

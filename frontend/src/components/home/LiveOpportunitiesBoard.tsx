@@ -9,6 +9,8 @@ import {
   Send,
   Tag,
   Clock,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { usePlatform } from '../../context/PlatformContext';
 import type { CampaignRequirement } from '../../types';
@@ -18,6 +20,19 @@ export const LiveOpportunitiesBoard: React.FC = () => {
   const [selectedCampaign, setSelectedCampaign] = useState<CampaignRequirement | null>(null);
   const [pitchText, setPitchText] = useState('');
   const [hasApplied, setHasApplied] = useState<string | null>(null);
+  const sliderRef = React.useRef<HTMLDivElement>(null);
+
+  const scrollLeft = () => {
+    if (sliderRef.current) {
+      sliderRef.current.scrollBy({ left: -sliderRef.current.offsetWidth, behavior: 'smooth' });
+    }
+  };
+
+  const scrollRight = () => {
+    if (sliderRef.current) {
+      sliderRef.current.scrollBy({ left: sliderRef.current.offsetWidth, behavior: 'smooth' });
+    }
+  };
 
   const isAlreadyPitched = (camp: CampaignRequirement) => {
     if (!camp || !Array.isArray(camp.applicants)) return false;
@@ -54,12 +69,8 @@ export const LiveOpportunitiesBoard: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 gap-4">
           <div>
-            <div className="flex items-center gap-1.5 text-[#D4A338] text-xs font-bold uppercase tracking-wider mb-1.5">
-              <Flame className="w-3.5 h-3.5 fill-[#D4A338]" />
-              <span>Live Campaign Marketplace</span>
-            </div>
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-              Active Brand Briefs & Opportunities
+              Live campaign
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl">
               Verified brands post live collaboration requirements with transparent budgets. Apply directly with zero commission.
@@ -67,17 +78,22 @@ export const LiveOpportunitiesBoard: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
-            <button
-              type="button"
-              onClick={() => {
-                if (!requireRole('BRAND', 'post a campaign brief', 'post-requirement')) return;
-                navigateTo('post-requirement');
-              }}
-              className="px-4 py-2.5 bg-[#D4A338] hover:bg-[#b88628] text-black font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
-            >
-              <PlusCircle className="w-4 h-4 text-black" />
-              <span>Post Campaign Brief</span>
-            </button>
+            <div className="hidden sm:flex items-center gap-2 mr-4">
+              <button
+                type="button"
+                onClick={scrollLeft}
+                className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-500 hover:text-black hover:border-black hover:bg-slate-50 transition"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={scrollRight}
+                className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-500 hover:text-black hover:border-black hover:bg-slate-50 transition"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
             <button
               type="button"
               onClick={() => navigateTo('opportunities')}
@@ -89,17 +105,30 @@ export const LiveOpportunitiesBoard: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {campaigns.slice(0, 6).map((camp) => (
+        {/* Slider Container */}
+        <div ref={sliderRef} className="flex gap-6 overflow-x-auto snap-x snap-mandatory pb-8 pt-4 no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth">
+          {campaigns
+            .filter((camp) => !camp.validUntil || new Date(camp.validUntil) >= new Date(new Date().setHours(0, 0, 0, 0)))
+            .slice(0, 10)
+            .map((camp) => (
             <div
               key={camp.id}
-              className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-2xs hover:shadow-xl hover:border-[#D4A338]/60 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group"
+              className="bg-white rounded-[24px] border border-slate-100 shadow-[0_8px_30px_rgba(0,0,0,0.06)] hover:shadow-[0_20px_40px_rgba(212,163,56,0.15)] hover:border-[#D4A338]/40 hover:-translate-y-2 transition-all duration-500 flex flex-col group relative overflow-hidden w-[85vw] sm:w-[calc(50%-0.75rem)] md:w-[calc(33.333%-1rem)] lg:w-[calc(33.333%-1rem)] snap-center shrink-0"
             >
-              <div className="space-y-3.5">
+              {/* Yellow Gradient Header */}
+              <div className="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-amber-300 via-[#f4c95d] to-[#D4A338]"></div>
+              
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[#D4A338]/10 to-transparent rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-150 duration-700 pointer-events-none"></div>
+              
+              <div className="p-5 sm:p-6 space-y-4 relative z-10 flex-1 flex flex-col">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-50 to-amber-100/90 border border-amber-200/80 text-amber-900 font-black text-xs flex items-center justify-center shrink-0 shadow-2xs">
-                      {camp.companyName.trim().slice(0, 2).toUpperCase() || 'BR'}
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-12 h-12 rounded-2xl border border-slate-100 bg-white flex items-center justify-center shrink-0 shadow-md group-hover:shadow-lg transition-shadow overflow-hidden">
+                      <img
+                        src={(camp as any).logoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(camp.companyName || 'Brand')}&background=fef3c7&color=78350f&bold=true`}
+                        alt={camp.companyName}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      />
                     </div>
                     <div className="min-w-0">
                       <h4 className="font-bold text-slate-900 text-xs truncate">{camp.companyName}</h4>
@@ -110,9 +139,9 @@ export const LiveOpportunitiesBoard: React.FC = () => {
                     </div>
                   </div>
 
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/60 shrink-0">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    Active
+                  <span className="inline-flex relative z-10 items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 shadow-xs shrink-0">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span>
+                    ACTIVE
                   </span>
                 </div>
 
@@ -144,9 +173,9 @@ export const LiveOpportunitiesBoard: React.FC = () => {
                     </span>
                   )}
 
-                  {camp.genderPreference && camp.genderPreference !== 'Any' && camp.genderPreference !== 'Any / Both' && (
+                  {camp.genderPreference && camp.genderPreference !== 'Any' && camp.genderPreference !== 'Any / Both' && camp.genderPreference !== 'Custom Mix' && (
                     <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-pink-50 text-pink-600 border border-pink-200/60">
-                      Gender: {camp.genderPreference === 'Custom Mix' ? `${camp.maleCount}M, ${camp.femaleCount}F` : camp.genderPreference}
+                      Gender: {camp.genderPreference}
                     </span>
                   )}
 
@@ -158,24 +187,40 @@ export const LiveOpportunitiesBoard: React.FC = () => {
                   )}
                 </div>
 
-                <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">
-                  {camp.deliverablesNeeded || camp.requirements || camp.campaignDescription || 'Open for creator pitches with custom deliverables.'}
-                </p>
+                <div className="mt-4 mb-2">
+                  <p className="text-sm text-slate-700 leading-relaxed line-clamp-2">
+                    {camp.deliverablesNeeded || camp.requirements || camp.campaignDescription}
+                  </p>
+                </div>
               </div>
 
-              <div className="pt-4 mt-4 border-t border-slate-100 space-y-3">
-                <div className="grid grid-cols-3 gap-2 p-2.5 bg-slate-50/80 rounded-xl border border-slate-100 text-xs">
-                  <div>
-                    <span className="text-[10px] font-medium text-slate-400 block uppercase tracking-wider">Budget</span>
-                    <span className="font-black text-emerald-600 text-xs truncate block mt-0.5">{camp.budget}</span>
+              <div className="p-5 sm:p-6 pt-0 mt-auto relative z-10 w-full flex flex-col justify-end">
+                {(camp.maleCount > 0 || camp.femaleCount > 0) && (
+                  <div className="flex items-center gap-3 mb-2 bg-slate-50/80 px-3 py-2 rounded-xl border border-slate-100">
+                    <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Required:</span>
+                    {camp.maleCount > 0 && (
+                      <span className="text-xs font-bold text-blue-700">
+                        {camp.maleCount} Male
+                      </span>
+                    )}
+                    {camp.femaleCount > 0 && (
+                      <span className="text-xs font-bold text-rose-700">
+                        {camp.femaleCount} Female
+                      </span>
+                    )}
                   </div>
+                )}
+                
+                <div className="p-3 mb-4 bg-gradient-to-br from-slate-50 to-white rounded-2xl border border-slate-100 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] text-xs flex justify-between items-center">
                   <div>
-                    <span className="text-[10px] font-medium text-slate-400 block uppercase tracking-wider">Male</span>
-                    <span className="font-bold text-slate-800 text-xs truncate block mt-0.5">{camp.maleCount || 0}</span>
+                    <span className="text-[9px] font-bold text-slate-400 block uppercase tracking-widest mb-1">Total Budget</span>
+                    <span className="font-black text-emerald-600 text-sm block whitespace-normal leading-snug">{camp.budget}</span>
                   </div>
-                  <div>
-                    <span className="text-[10px] font-medium text-slate-400 block uppercase tracking-wider">Female</span>
-                    <span className="font-bold text-slate-800 text-xs truncate block mt-0.5">{camp.femaleCount || 0}</span>
+                  <div className="text-right">
+                    <span className="text-[9px] font-bold text-slate-400 block uppercase tracking-widest mb-1">Valid Till</span>
+                    <span className={`font-bold text-[13px] block whitespace-normal leading-snug ${camp.validUntil ? 'text-rose-600' : 'text-slate-500'}`}>
+                      {camp.validUntil ? new Date(camp.validUntil).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Until Filled'}
+                    </span>
                   </div>
                 </div>
 

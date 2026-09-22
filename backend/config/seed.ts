@@ -20,7 +20,7 @@ async function runSeed() {
   const host = process.env.DB_HOST || 'localhost';
   const user = process.env.DB_USER || 'root';
   const password = process.env.DB_PASSWORD || '';
-  const database = process.env.DB_NAME || 'social_cults_db';
+  const database = process.env.DB_NAME || 'brand_db';
   const port = process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 3306;
 
   let connection;

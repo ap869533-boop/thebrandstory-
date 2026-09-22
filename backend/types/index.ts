@@ -217,6 +217,7 @@ export interface BrandInquiryLead {
 export interface CampaignRequirement {
   id: string;
   companyName: string;
+  logoUrl?: string | null;
   contactPerson: string;
   email: string;
   phone: string;

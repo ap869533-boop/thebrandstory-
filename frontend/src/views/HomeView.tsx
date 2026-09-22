@@ -16,65 +16,65 @@ export const HomeView: React.FC = () => {
   return (
     <div className="min-h-screen bg-white w-full max-w-full overflow-x-hidden">
       {/* 1 & 2. Hero Section + Trust Proof Strip: Exactly fills mobile screen height with TrustProofStrip as the last element */}
-    <div className="min-h-[calc(100dvh-4rem)] h-[calc(100dvh-4rem)] flex flex-col justify-between bg-black relative overflow-hidden">
-      <div className="absolute inset-0 z-0 pointer-events-none opacity-70" aria-hidden="true">
-        <PredictiveArcCanvas
-          variant="signal-particles"
-          mode="dark"
-          speed={1}
-          hue={0}
-          saturation={1}
-          brightness={1}
-          className="h-full w-full"
-        />
+      <div className="min-h-[calc(100dvh-4rem)] h-[calc(100dvh-4rem)] flex flex-col justify-between bg-black relative overflow-hidden">
+        <div className="absolute inset-0 z-0 pointer-events-none opacity-70" aria-hidden="true">
+          <PredictiveArcCanvas
+            variant="signal-particles"
+            mode="dark"
+            speed={1}
+            hue={0}
+            saturation={1}
+            brightness={1}
+            className="h-full w-full"
+          />
+        </div>
+        <div className="relative z-10 flex min-h-0 h-full flex-col justify-between">
+          <HomeHero />
+          <TrustProofStrip />
+        </div>
       </div>
-      <div className="relative z-10 flex min-h-0 h-full flex-col justify-between">
-        <HomeHero />
-        <TrustProofStrip />
+
+      {/* 3. Brand Partners Slider (Placed right above Top Influencers in India) */}
+      <div className="relative overflow-hidden bg-white">
+        <div className="absolute inset-0 z-0 pointer-events-none opacity-45" aria-hidden="true">
+          <PredictiveArcCanvas
+            variant="signal-particles"
+            mode="light"
+            speed={1}
+            hue={0}
+            saturation={1}
+            brightness={1}
+            className="h-full w-full"
+          />
+        </div>
+        <div className="relative z-10">
+          <BrandPartnersSlider />
+
+          {/* 4. Nearby Influencers (Dynamic based on location) */}
+          <NearbyInfluencersSection />
+
+          {/* 4.5 Top Influencers in India */}
+          <TopCreatorsSection />
+
+          {/* 4.7 Featured Brands Showcase */}
+          <FeaturedBrandsSection />
+
+          {/* 5. Regional & Tier Highlights */}
+          <RegionalShowcases />
+
+          {/* 6. How It Works (For Brands & For Creators) */}
+          <HowItWorksSection />
+
+          {/* 7. Live Opportunities Board */}
+          <LiveOpportunitiesBoard />
+
+          {/* 8. Quick CTA Banners */}
+          <CTABanners />
+
+          {/* 9. Testimonials & FAQ */}
+          <TestimonialsAndFAQ />
+        </div>
       </div>
-    </div>
-
-    {/* 3. Brand Partners Slider (Placed right above Top Influencers in India) */}
-    <div className="relative overflow-hidden bg-white">
-      <div className="absolute inset-0 z-0 pointer-events-none opacity-45" aria-hidden="true">
-        <PredictiveArcCanvas
-          variant="signal-particles"
-          mode="light"
-          speed={1}
-          hue={0}
-          saturation={1}
-          brightness={1}
-          className="h-full w-full"
-        />
-      </div>
-      <div className="relative z-10">
-        <BrandPartnersSlider />
-
-        {/* 4. Nearby Influencers (Dynamic based on location) */}
-        <NearbyInfluencersSection />
-
-        {/* 4.5 Top Influencers in India */}
-        <TopCreatorsSection />
-
-        {/* 4.7 Featured Brands Showcase */}
-        <FeaturedBrandsSection />
-
-        {/* 5. Regional & Tier Highlights */}
-        <RegionalShowcases />
-
-        {/* 6. How It Works (For Brands & For Creators) */}
-        <HowItWorksSection />
-
-        {/* 7. Live Opportunities Board */}
-        <LiveOpportunitiesBoard />
-
-        {/* 8. Quick CTA Banners */}
-        <CTABanners />
-
-        {/* 9. Testimonials & FAQ */}
-        <TestimonialsAndFAQ />
-      </div>
-    </div>
     </div>
   );
 };

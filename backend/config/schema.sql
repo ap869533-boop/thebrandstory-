@@ -3,8 +3,8 @@
 -- MySQL Database Production Schema
 -- =========================================================
 
-CREATE DATABASE IF NOT EXISTS `social_cults_db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE `social_cults_db`;
+CREATE DATABASE IF NOT EXISTS `brand_db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `brand_db`;
 
 -- 1. Users & Authentication Table
 CREATE TABLE IF NOT EXISTS `users` (
@@ -151,6 +151,7 @@ CREATE TABLE IF NOT EXISTS `campaign_requirements` (
   `category` VARCHAR(80) DEFAULT 'Lifestyle',
   `collaboration_type` VARCHAR(50) DEFAULT 'Paid',
   `campaign_date` VARCHAR(80) DEFAULT 'Upcoming',
+  `valid_until` DATE DEFAULT NULL,
   `platforms` JSON DEFAULT NULL,
   `requirements` TEXT DEFAULT NULL,
   `status` ENUM('Open', 'In Review', 'Filled', 'Completed') DEFAULT 'Open',

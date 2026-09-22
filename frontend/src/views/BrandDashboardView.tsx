@@ -138,6 +138,26 @@ export const BrandDashboardView: React.FC = () => {
     }
   }, [activeTab, authUser?.role]);
 
+  const handleDeleteCampaign = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this campaign? This action cannot be undone.")) return;
+    try {
+      const token = localStorage.getItem('sc_auth_token');
+      const res = await fetch(apiUrl(`/api/campaigns/${id}`), {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        window.location.reload();
+      } else {
+        alert(data.error || "Failed to delete campaign");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error deleting campaign");
+    }
+  };
+
   const handleSaveBrandProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setBpSaving(true);
@@ -708,9 +728,27 @@ export const BrandDashboardView: React.FC = () => {
                           <span className="text-[10px] font-bold text-[#D4A338] uppercase tracking-wider">{camp.category}</span>
                           <h3 className="text-base font-black text-slate-900">{camp.campaignTitle}</h3>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-black rounded-lg">{camp.budget}</span>
-                          <span className="px-2.5 py-1 bg-blue-50 text-[#b88628] text-xs font-bold rounded-lg">{camp.status}</span>
+                        <div className="flex flex-col items-end gap-2">
+                          <button 
+                            onClick={() => handleDeleteCampaign(camp.id)}
+                            className="p-1.5 bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 rounded-lg transition-colors shadow-sm"
+                            title="Delete Campaign"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                          <div className="flex items-center gap-2">
+                            <span className="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-black rounded-lg">{camp.budget}</span>
+                            {(() => {
+                              const isExpired = camp.validUntil && new Date(camp.validUntil) < new Date(new Date().setHours(0, 0, 0, 0));
+                              const displayStatus = isExpired ? `Expired (${new Date(camp.validUntil as string).toLocaleString('en-IN', { day: '2-digit', month: 'short' })})` : camp.status;
+                              const statusColor = isExpired ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-blue-50 text-[#b88628]';
+                              return (
+                                <span className={`px-2.5 py-1 text-xs font-bold rounded-lg ${statusColor}`}>
+                                  {displayStatus}
+                                </span>
+                              );
+                            })()}
+                          </div>
                         </div>
                       </div>
                       <p className="text-xs text-slate-600">{camp.campaignDescription}</p>

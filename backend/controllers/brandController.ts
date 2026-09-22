@@ -30,6 +30,7 @@ function mapDbRowToBrandProfile(row: any) {
     approvalStatus: row.approval_status || 'pending',
     rejectionReason: row.rejection_reason || '',
     isFeatured: Boolean(row.is_featured),
+    totalHiringCount: row.total_hiring_count || 0,
     createdAt: row.created_at || new Date().toISOString(),
   };
 }
@@ -535,6 +536,7 @@ export async function getFeaturedBrands(req: Request, res: Response) {
         u.email,
         COALESCE(bp.approval_status, u.approval_status) as approval_status,
         COALESCE(bp.is_featured, 1) as is_featured,
+        (SELECT COALESCE(SUM(male_count + female_count), 0) FROM campaign_requirements cr WHERE cr.user_id = u.id) as total_hiring_count,
         u.created_at
       FROM users u
       LEFT JOIN brand_profiles bp ON u.id = bp.user_id

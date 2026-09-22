@@ -4,6 +4,15 @@ import { usePlatform } from '../context/PlatformContext';
 import { CATEGORIES_LIST, CITIES_LIST, INDUSTRIES_LIST, CAMPAIGN_TYPES } from '../data/initialData';
 import confetti from 'canvas-confetti';
 
+const INDIAN_LANGUAGES = [
+  'Hindi — हिंदी', 'Bengali — বাংলা', 'Telugu — తెలుగు', 'Marathi — मराठी',
+  'Tamil — தமிழ்', 'Gujarati — ગુજરાતી', 'Urdu — اردو', 'Kannada — ಕನ್ನಡ',
+  'Odia — ଓଡ଼ିଆ', 'Malayalam — മലയാളം', 'Punjabi — ਪੰਜਾਬੀ', 'Assamese — অসমীয়া',
+  'Maithili — मैथिली', 'Sanskrit — संस्कृत', 'Kashmiri — कश्मीरी', 'Nepali — नेपाली',
+  'Konkani — कोंकणी', 'Sindhi — सिन्धी', 'Dogri — डोगरी', 'Manipuri (Meitei) — মৈতৈলোন / মণিপুরী',
+  'Bodo — बड़ो', 'Santali — संताली'
+];
+
 export const PostRequirementView: React.FC = () => {
   const { postCampaignRequirement, navigateTo, activeBrandName, categories, cities, industries, authUser, requireRole } = usePlatform();
 
@@ -15,24 +24,24 @@ export const PostRequirementView: React.FC = () => {
 
   const COUNTRY_CODES = [
     { code: '+91', flag: '🇮🇳', name: 'India' },
-    { code: '+1',  flag: '🇺🇸', name: 'USA' },
+    { code: '+1', flag: '🇺🇸', name: 'USA' },
     { code: '+44', flag: '🇬🇧', name: 'UK' },
     { code: '+971', flag: '🇦🇪', name: 'UAE' },
     { code: '+966', flag: '🇸🇦', name: 'Saudi Arabia' },
-    { code: '+65',  flag: '🇸🇬', name: 'Singapore' },
-    { code: '+60',  flag: '🇲🇾', name: 'Malaysia' },
-    { code: '+61',  flag: '🇦🇺', name: 'Australia' },
-    { code: '+49',  flag: '🇩🇪', name: 'Germany' },
-    { code: '+33',  flag: '🇫🇷', name: 'France' },
-    { code: '+81',  flag: '🇯🇵', name: 'Japan' },
-    { code: '+82',  flag: '🇰🇷', name: 'South Korea' },
-    { code: '+86',  flag: '🇨🇳', name: 'China' },
-    { code: '+55',  flag: '🇧🇷', name: 'Brazil' },
-    { code: '+27',  flag: '🇿🇦', name: 'South Africa' },
+    { code: '+65', flag: '🇸🇬', name: 'Singapore' },
+    { code: '+60', flag: '🇲🇾', name: 'Malaysia' },
+    { code: '+61', flag: '🇦🇺', name: 'Australia' },
+    { code: '+49', flag: '🇩🇪', name: 'Germany' },
+    { code: '+33', flag: '🇫🇷', name: 'France' },
+    { code: '+81', flag: '🇯🇵', name: 'Japan' },
+    { code: '+82', flag: '🇰🇷', name: 'South Korea' },
+    { code: '+86', flag: '🇨🇳', name: 'China' },
+    { code: '+55', flag: '🇧🇷', name: 'Brazil' },
+    { code: '+27', flag: '🇿🇦', name: 'South Africa' },
     { code: '+234', flag: '🇳🇬', name: 'Nigeria' },
-    { code: '+92',  flag: '🇵🇰', name: 'Pakistan' },
+    { code: '+92', flag: '🇵🇰', name: 'Pakistan' },
     { code: '+880', flag: '🇧🇩', name: 'Bangladesh' },
-    { code: '+94',  flag: '🇱🇰', name: 'Sri Lanka' },
+    { code: '+94', flag: '🇱🇰', name: 'Sri Lanka' },
     { code: '+977', flag: '🇳🇵', name: 'Nepal' },
   ];
 
@@ -55,6 +64,7 @@ export const PostRequirementView: React.FC = () => {
     followerRange: '10k-100k',
     isBarter: false,
     campaignStartDate: '',
+    validUntil: '',
     customInstructions: '',
   });
 
@@ -64,12 +74,14 @@ export const PostRequirementView: React.FC = () => {
   const [newCatInput, setNewCatInput] = useState('');
   const [customCats, setCustomCats] = useState<string[]>([]);
   const catDropdownRef = useRef<HTMLDivElement>(null);
-const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false);
+  const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false);
   const [selectedIndustries, setSelectedIndustries] = useState<string[]>(['Fashion & Lifestyle']);
   const industryDropdownRef = useRef<HTMLDivElement>(null);
   const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
   const [selectedCities, setSelectedCities] = useState<string[]>(['Delhi NCR']);
   const cityDropdownRef = useRef<HTMLDivElement>(null);
+  const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
+  const languageDropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -82,6 +94,9 @@ const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false);
       }
       if (cityDropdownRef.current && !cityDropdownRef.current.contains(e.target as Node)) {
         setCityDropdownOpen(false);
+      }
+      if (languageDropdownRef.current && !languageDropdownRef.current.contains(e.target as Node)) {
+        setLanguageDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handler);
@@ -116,6 +131,18 @@ const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false);
     });
   };
 
+  const toggleLanguage = (lang: string) => {
+    setFormData(prev => {
+      const already = prev.languages.includes(lang);
+      return {
+        ...prev,
+        languages: already
+          ? prev.languages.filter(l => l !== lang)
+          : [...prev.languages, lang],
+      };
+    });
+  };
+
   const addCustomCategory = () => {
     const trimmed = newCatInput.trim();
     if (!trimmed) return;
@@ -138,14 +165,40 @@ const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false);
 
   const [submittedId, setSubmittedId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError('');
     const finalBrandName = authUser?.companyName || activeBrandName || 'Verified Brand';
     const finalIndustry = authUser?.industry || 'Fashion & Lifestyle';
 
-    if (!formData.campaignTitle || !formData.email || !formData.phone) {
-      alert('Please fill out all required fields');
+    if (!formData.campaignTitle || !formData.email || !formData.phone || formData.categories.length === 0 || selectedCities.length === 0 || !formData.budget || !formData.deliverablesNeeded || !formData.contactPerson) {
+      setFormError('Kindly fill all required fields');
+      // Scroll to the top or near the error if needed
+      return;
+    }
+
+    if (formData.genderPreference === 'Custom Mix' || formData.genderPreference === 'Any / Both') {
+      if (Number(formData.maleCount) === 0 && Number(formData.femaleCount) === 0) {
+        setFormError('Kindly provide at least one Male or Female count');
+        return;
+      }
+    } else if (formData.genderPreference === 'Only Male') {
+      if (Number(formData.maleCount) === 0) {
+        setFormError('Kindly provide Male count');
+        return;
+      }
+    } else if (formData.genderPreference === 'Only Female') {
+      if (Number(formData.femaleCount) === 0) {
+        setFormError('Kindly provide Female count');
+        return;
+      }
+    }
+
+    const charCount = formData.deliverablesNeeded.length;
+    if (charCount > 150) {
+      setFormError('Deliverables Needed cannot exceed 150 characters');
       return;
     }
 
@@ -161,15 +214,17 @@ const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false);
         category: formData.categories.join(', '),
         city: selectedCities.join(', '),
         deliverablesNeeded: formData.deliverablesNeeded,
+        campaignDescription: formData.deliverablesNeeded,
         budget: formData.isBarter ? 'Barter / Product Exchange' : formData.budget,
         genderPreference: formData.genderPreference,
-        maleCount: Number(formData.maleCount) || 0,
-        femaleCount: Number(formData.femaleCount) || 0,
+        maleCount: formData.genderPreference === 'Only Female' ? 0 : (Number(formData.maleCount) || 0),
+        femaleCount: formData.genderPreference === 'Only Male' ? 0 : (Number(formData.femaleCount) || 0),
         ageRange: formData.ageRange || 'Any',
         language: formData.languages.length ? formData.languages.join(', ') : 'Any',
         followerRange: formData.followerRange,
         isBarter: formData.isBarter,
         campaignStartDate: formData.campaignStartDate || 'Immediate',
+        validUntil: formData.validUntil,
         customInstructions: formData.customInstructions,
       });
 
@@ -219,28 +274,16 @@ const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false);
   return (
     <div className="min-h-screen bg-slate-50/60 py-10">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-        {/* Header */}
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-[#b88628] text-xs font-bold uppercase">
-            <Building2 className="w-3.5 h-3.5" />
-            <span>Post Requirement & Get Contacted (IndiaMART Style)</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            Tell Us Your Influencer Requirement
-          </h1>
-
-        </div>
-
-        {submittedId ? (
+        {/* Header - Removed as requested */}        {submittedId ? (
           <div className="bg-white p-8 rounded-3xl border border-slate-200/80 shadow-md text-center space-y-5">
             <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
               <CheckCircle2 className="w-10 h-10" />
             </div>
 
             <div className="space-y-1">
-              <h2 className="text-2xl font-black text-slate-900">Campaign Brief Published!</h2>
+              <h2 className="text-2xl font-black text-slate-900">Campaign Submitted for Approval!</h2>
               <p className="text-xs text-slate-500">
-                Your requirement has been listed on the Live Brand Briefs board and dispatched to matching verified creators.
+                Your requirement has been sent to our team for verification. It will be live on the board once approved by admin.
               </p>
             </div>
 
@@ -261,21 +304,6 @@ const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false);
                 <span className="text-slate-500 font-medium">Allocated Budget:</span>
                 <span className="font-bold text-emerald-600">{formData.budget}</span>
               </div>
-            </div>
-
-            <div className="pt-3 flex justify-center gap-3">
-              <button
-                onClick={() => navigateTo('opportunities')}
-                className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl"
-              >
-                View Live Board
-              </button>
-              <button
-                onClick={() => navigateTo('explore')}
-                className="px-6 py-2.5 bg-black hover:bg-zinc-900 text-white font-bold text-xs rounded-xl shadow-md"
-              >
-                Browse Creators
-              </button>
             </div>
           </div>
         ) : (
@@ -371,19 +399,17 @@ const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false);
                               <li
                                 key={idx}
                                 onClick={() => toggleCategory(cat)}
-                                className={`flex items-center justify-between px-3 py-1.5 cursor-pointer transition select-none ${
-                                  selected
-                                    ? 'bg-amber-50/70 font-semibold text-slate-900'
-                                    : 'hover:bg-slate-50 text-slate-700'
-                                }`}
+                                className={`flex items-center justify-between px-3 py-1.5 cursor-pointer transition select-none ${selected
+                                  ? 'bg-amber-50/70 font-semibold text-slate-900'
+                                  : 'hover:bg-slate-50 text-slate-700'
+                                  }`}
                               >
                                 <div className="flex items-center gap-2 truncate">
                                   <span
-                                    className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition ${
-                                      selected
-                                        ? 'bg-[#D4A338] border-[#D4A338]'
-                                        : 'border-slate-300 bg-white'
-                                    }`}
+                                    className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition ${selected
+                                      ? 'bg-[#D4A338] border-[#D4A338]'
+                                      : 'border-slate-300 bg-white'
+                                      }`}
                                   >
                                     {selected && <Check className="w-2.5 h-2.5 text-white stroke-[3]" />}
                                   </span>
@@ -511,18 +537,33 @@ const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false);
               </h3>
 
               <div>
-                <label className="block font-bold text-slate-800 text-xs mb-1.5">Deliverables Needed *</label>
+                <label className="block font-bold text-slate-800 text-xs mb-1.5">Deliverables Needed (Campaign Description) *</label>
                 <textarea
                   rows={2}
                   required
                   placeholder="e.g. 1x Reel, 2x Stories..."
                   value={formData.deliverablesNeeded}
-                  onChange={(e) => setFormData({ ...formData, deliverablesNeeded: e.target.value })}
+                  onChange={(e) => {
+                    const newVal = e.target.value;
+                    setFormData({ ...formData, deliverablesNeeded: newVal });
+                    if (newVal.length > 150) {
+                      setFormError('Deliverables Needed cannot exceed 150 characters');
+                    } else {
+                      setFormError('');
+                    }
+                  }}
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] font-medium"
                 />
+                <p className={`text-right text-[10px] mt-1 font-semibold ${
+                  formData.deliverablesNeeded.length > 150 
+                  ? 'text-red-500' 
+                  : 'text-slate-500'
+                }`}>
+                  {formData.deliverablesNeeded.length} / 150 characters
+                </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block font-bold text-slate-800 text-xs mb-1.5">Desired Follower Tier</label>
                   <div className="relative">
@@ -539,6 +580,17 @@ const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false);
                     </select>
                     <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                   </div>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-800 text-xs mb-1.5">Valid Till (Expiry Date) *</label>
+                  <input
+                    type="date"
+                    required
+                    value={formData.validUntil}
+                    onChange={(e) => setFormData({ ...formData, validUntil: e.target.value })}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] font-medium"
+                  />
                 </div>
 
                 <div>
@@ -572,31 +624,31 @@ const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false);
                   </div>
                 </div>
 
-                {(formData.genderPreference === 'Custom Mix' || formData.genderPreference === 'Any / Both') && (
-                  <>
-                    <div className="sm:col-span-1 lg:col-span-1">
-                      <label className="block font-bold text-slate-800 text-xs mb-1.5">Male Count</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={formData.maleCount === 0 ? '' : formData.maleCount}
-                        onChange={(e) => setFormData({ ...formData, maleCount: e.target.value === '' ? 0 : Number(e.target.value) })}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] font-medium"
-                        placeholder="e.g. 5"
-                      />
-                    </div>
-                    <div className="sm:col-span-1 lg:col-span-1">
-                      <label className="block font-bold text-slate-800 text-xs mb-1.5">Female Count</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={formData.femaleCount === 0 ? '' : formData.femaleCount}
-                        onChange={(e) => setFormData({ ...formData, femaleCount: e.target.value === '' ? 0 : Number(e.target.value) })}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] font-medium"
-                        placeholder="e.g. 5"
-                      />
-                    </div>
-                  </>
+                {(formData.genderPreference === 'Custom Mix' || formData.genderPreference === 'Any / Both' || formData.genderPreference === 'Only Male') && (
+                  <div className="sm:col-span-1 lg:col-span-1">
+                    <label className="block font-bold text-slate-800 text-xs mb-1.5">Male Count *</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={formData.maleCount === 0 ? '' : formData.maleCount}
+                      onChange={(e) => setFormData({ ...formData, maleCount: e.target.value === '' ? 0 : Number(e.target.value) })}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] font-medium"
+                      placeholder="e.g. 5"
+                    />
+                  </div>
+                )}
+                {(formData.genderPreference === 'Custom Mix' || formData.genderPreference === 'Any / Both' || formData.genderPreference === 'Only Female') && (
+                  <div className="sm:col-span-1 lg:col-span-1">
+                    <label className="block font-bold text-slate-800 text-xs mb-1.5">Female Count *</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={formData.femaleCount === 0 ? '' : formData.femaleCount}
+                      onChange={(e) => setFormData({ ...formData, femaleCount: e.target.value === '' ? 0 : Number(e.target.value) })}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] font-medium"
+                      placeholder="e.g. 5"
+                    />
+                  </div>
                 )}
 
                 <div className="sm:col-span-1 lg:col-span-1">
@@ -614,45 +666,74 @@ const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false);
               {/* Language Details */}
               <div className="mt-4">
                 <label className="block font-bold text-slate-800 text-xs mb-1.5">Language Preference</label>
-                <p className="text-[11px] text-slate-500 mb-1.5">Use Ctrl (Windows) or Cmd (Mac) to select multiple languages.</p>
-                <div className="relative">
-                  <select
-                    multiple
-                    size={6}
-                    value={formData.languages}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      languages: Array.from(e.currentTarget.selectedOptions, option => option.value).filter(language => language !== 'Any'),
-                    })}
-                    className="w-full appearance-none px-4 py-3 pr-10 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] text-xs font-medium text-slate-800 transition cursor-pointer"
+                <div ref={languageDropdownRef} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setLanguageDropdownOpen(open => !open)}
+                    className="w-full min-h-[46px] px-4 py-3 pr-10 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none text-left flex items-center justify-between gap-2 transition cursor-pointer"
+                    style={{ borderColor: languageDropdownOpen ? '#D4A338' : undefined }}
                   >
-                    <option value="Any">Any Language</option>
-                    <option value="Hindi">Hindi</option>
-                    <option value="English">English</option>
-                    <option value="Hinglish (Hindi + English)">Hinglish (Hindi + English)</option>
-                    <option value="Assamese">Assamese (অসমীয়া)</option>
-                    <option value="Bengali">Bengali (বাংলা)</option>
-                    <option value="Bhojpuri">Bhojpuri (भोजपुरी)</option>
-                    <option value="Gujarati">Gujarati (ગુજરાતી)</option>
-                    <option value="Kannada">Kannada (ಕನ್ನಡ)</option>
-                    <option value="Kashmiri">Kashmiri (कॉशुर / كأشُر)</option>
-                    <option value="Konkani">Konkani (कोंकणी)</option>
-                    <option value="Maithili">Maithili (मैथिली)</option>
-                    <option value="Malayalam">Malayalam (മലയാളം)</option>
-                    <option value="Manipuri">Manipuri (Meitei / মৈতৈ)</option>
-                    <option value="Marathi">Marathi (मराठी)</option>
-                    <option value="Nepali">Nepali (नेपाली)</option>
-                    <option value="Odia">Odia (ଓଡ଼ିଆ)</option>
-                    <option value="Punjabi">Punjabi (ਪੰਜਾਬੀ)</option>
-                    <option value="Sanskrit">Sanskrit (संस्कृतम्)</option>
-                    <option value="Sindhi">Sindhi (सिंधी / سنڌي)</option>
-                    <option value="Tamil">Tamil (தமிழ்)</option>
-                    <option value="Telugu">Telugu (తెలుగు)</option>
-                    <option value="Urdu">Urdu (اردو)</option>
-                    <option value="Other">Other (Please specify in instructions)</option>
-                  </select>
-                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <span className="truncate text-slate-800 font-medium">
+                      {formData.languages.length === 0 ? 'Any Language' : formData.languages.join(', ')}
+                    </span>
+                    <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${languageDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  {languageDropdownOpen && (
+                    <div className="absolute z-50 mt-1.5 w-full bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden">
+                      <div className="px-3 py-2 border-b border-slate-100 bg-slate-50/80 text-[10px] text-slate-500">
+                        Select one or more languages
+                      </div>
+                      <ul className="max-h-48 overflow-y-auto py-1">
+                        {INDIAN_LANGUAGES.map(lang => {
+                          const selected = formData.languages.includes(lang);
+                          return (
+                            <li
+                              key={lang}
+                              onClick={() => toggleLanguage(lang)}
+                              className={`flex items-center justify-between px-3 py-1.5 cursor-pointer transition select-none ${selected
+                                ? 'bg-amber-50/70 font-semibold text-slate-900'
+                                : 'hover:bg-slate-50 text-slate-700'
+                                }`}
+                            >
+                              <div className="flex items-center gap-2 truncate">
+                                <span
+                                  className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition ${selected
+                                    ? 'bg-[#D4A338] border-[#D4A338]'
+                                    : 'border-slate-300 bg-white'
+                                    }`}
+                                >
+                                  {selected && <Check className="w-2.5 h-2.5 text-white stroke-[3]" />}
+                                </span>
+                                <span className="text-xs truncate">{lang}</span>
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  )}
                 </div>
+
+                {/* Selected tags */}
+                {formData.languages.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1.5">
+                    {formData.languages.map(lang => (
+                      <span
+                        key={lang}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-900 rounded-md text-[10px] font-semibold"
+                      >
+                        {lang}
+                        <button
+                          type="button"
+                          onClick={() => toggleLanguage(lang)}
+                          className="hover:text-red-500 transition ml-0.5"
+                        >
+                          <X className="w-2.5 h-2.5" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -707,11 +788,18 @@ const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false);
             </div>
 
             {/* Submit */}
-            <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-              <span className="text-slate-500 text-[11px] font-medium flex items-center gap-1">
-                <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                Zero commission • Real direct creator pitches
-              </span>
+            <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex flex-col gap-1.5">
+                <span className="text-slate-500 text-[11px] font-medium flex items-center gap-1">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  Zero commission • Real direct creator pitches
+                </span>
+                {formError && (
+                  <span className="text-red-500 text-xs font-bold animate-pulse">
+                    {formError}
+                  </span>
+                )}
+              </div>
 
               <button
                 type="submit"
@@ -719,7 +807,7 @@ const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false);
                 className="px-6 py-3 bg-black hover:bg-zinc-900 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-500/20 transition flex items-center gap-2 cursor-pointer"
               >
                 <Send className="w-3.5 h-3.5" />
-                {isSubmitting ? 'Publishing Campaign...' : 'Publish Brief & Get Quotes'}
+                {isSubmitting ? 'Submitting Campaign...' : 'Submit Brief for Approval'}
               </button>
             </div>
           </form>

@@ -42,6 +42,7 @@ function mapCampaignRow(r: any, campApplicants: any[] = []) {
     category: r.category,
     collaborationType: r.collaboration_type,
     campaignDate: r.campaign_date || 'Upcoming',
+    validUntil: r.valid_until || undefined,
     platforms: typeof r.platforms === 'string' ? JSON.parse(r.platforms) : (r.platforms || ['instagram']),
     requirements: r.requirements || r.campaign_description,
     status: r.status || 'Open',
@@ -193,6 +194,7 @@ export async function createCampaign(req: AuthenticatedRequest, res: Response) {
       category: data.category || 'Lifestyle',
       collaborationType: data.collaborationType || 'Paid',
       campaignDate: data.campaignDate || 'Upcoming',
+      validUntil: data.validUntil || undefined,
       platforms: data.platforms || ['instagram'],
       requirements: data.requirements || data.campaignDescription || '',
       status: 'In Review',
@@ -210,7 +212,7 @@ export async function createCampaign(req: AuthenticatedRequest, res: Response) {
           id, user_id, company_name, contact_person, email, phone, industry,
           campaign_title, campaign_description, city, male_count, female_count,
           gender_preference, age_range, language,
-          follower_range, budget, category, collaboration_type, campaign_date, requirements, platforms,
+          follower_range, budget, category, collaboration_type, campaign_date, valid_until, requirements, platforms,
           status, approval_status
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'In Review', 'pending')`,
         [
@@ -234,6 +236,7 @@ export async function createCampaign(req: AuthenticatedRequest, res: Response) {
           newCampaign.category,
           newCampaign.collaborationType,
           newCampaign.campaignDate,
+          newCampaign.validUntil || null,
           newCampaign.requirements,
           JSON.stringify(newCampaign.platforms),
         ]
