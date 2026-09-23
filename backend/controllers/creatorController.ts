@@ -514,7 +514,7 @@ export async function updateCreator(req: AuthenticatedRequest, res: Response) {
 
   // Check if they are being verified for the first time
   const wasVerified = creatorsStore[index].isVerified;
-  const isNowVerified = req.body.isVerified;
+  let isNowVerified = Boolean(req.body.isVerified);
   const candidate = { ...creatorsStore[index], ...req.body };
   const completionFields = [
     Boolean(candidate.avatar && !candidate.avatar.includes('unsplash')),
@@ -534,8 +534,14 @@ export async function updateCreator(req: AuthenticatedRequest, res: Response) {
       error: `Profile must be at least 70% complete before approval. Current completion: ${completionPct}%.`,
     });
   }
-  if (!isNowVerified && completionPct >= 70 && candidate.status === 'pending') {
-    req.body.verificationRequested = true;
+  // Creators become visible automatically as soon as their profile meets the
+  // minimum completion requirement. Suspended profiles remain an admin action.
+  const shouldAutoApprove = !wasVerified && completionPct >= 70 && candidate.status !== 'suspended';
+  if (shouldAutoApprove) {
+    req.body.isVerified = true;
+    req.body.status = 'active';
+    req.body.verificationRequested = false;
+    isNowVerified = true;
   }
   const shouldSendApprovalEmail = !wasVerified && isNowVerified;
 

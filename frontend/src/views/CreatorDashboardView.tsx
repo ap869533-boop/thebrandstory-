@@ -36,6 +36,7 @@ import { usePlatform } from '../context/PlatformContext';
 import { Creator } from '../types';
 import { ChangePasswordForm } from '../components/common/ChangePasswordForm';
 import { ConversationsPanel } from '../components/common/ConversationsPanel';
+import { CreatorCard } from '../components/common/CreatorCard';
 import { cleanInstagramHandle } from '../utils/sanitize';
 
 export const CreatorDashboardView: React.FC = () => {
@@ -390,7 +391,7 @@ export const CreatorDashboardView: React.FC = () => {
               setUploadNotice('Profile photo uploaded successfully.');
             } else {
               updateCreatorProfile(creator.id, { coverImage: uploadedUrl });
-              setUploadNotice('Cover banner uploaded successfully.');
+              setUploadNotice('Display card photo uploaded successfully.');
             }
             setTimeout(() => setUploadNotice(null), 3000);
           } else {
@@ -422,7 +423,7 @@ export const CreatorDashboardView: React.FC = () => {
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Delete failed');
       updateCreatorProfile(creator.id, type === 'avatar' ? { avatar: '' } : { coverImage: '' });
-      setUploadNotice(`${type === 'avatar' ? 'Avatar' : 'Cover'} deleted successfully.`);
+      setUploadNotice(`${type === 'avatar' ? 'Profile photo' : 'Display card photo'} deleted successfully.`);
       setTimeout(() => setUploadNotice(null), 3000);
     } catch (err) {
       console.error('Photo delete error:', err);
@@ -612,8 +613,8 @@ export const CreatorDashboardView: React.FC = () => {
     });
     setProfileSaveNotice(
       pendingCompletionPct < 70
-        ? `Profile saved, but it is only ${pendingCompletionPct}% complete. Please complete at least 70% of your profile; then your account can be sent for approval.`
-        : 'Profile saved. Your profile is 70%+ complete and is ready for the approval review.'
+        ? `Profile saved, but it is only ${pendingCompletionPct}% complete. Complete at least 70% to activate your profile.`
+        : 'Profile saved. Your profile is 70%+ complete and has been approved automatically.'
     );
     setProfileSaved(true);
     setTimeout(() => setProfileSaved(false), 5000);
@@ -623,7 +624,7 @@ export const CreatorDashboardView: React.FC = () => {
   // === Profile Completion Calculation ===
   const profileFields = [
     { label: 'Profile Photo', done: !!creator.avatar && !creator.avatar.includes('unsplash') },
-    { label: 'Cover Image', done: !!creator.coverImage && !creator.coverImage.includes('unsplash') },
+    { label: 'Display Card Photo', done: !!creator.coverImage && !creator.coverImage.includes('unsplash') },
     { label: 'Bio / About', done: !!creator.bio && creator.bio.trim().length > 30 },
     { label: 'City', done: !!creator.currentCity && creator.currentCity.trim().length > 0 },
     { label: 'Category', done: !!creator.primaryCategory && creator.primaryCategory.trim().length > 0 },
@@ -638,23 +639,8 @@ export const CreatorDashboardView: React.FC = () => {
   const isApprovalEligible = completionPct >= 70;
 
   return (
-    <div className="min-h-screen bg-slate-50/60 py-8 font-sans">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-        {!creator.isVerified && (
-          <div className={`flex items-start gap-3 p-4 rounded-2xl border ${
-            isApprovalEligible ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-amber-50 border-amber-200 text-amber-900'
-          }`}>
-            <Clock className={`w-5 h-5 shrink-0 mt-0.5 ${isApprovalEligible ? 'text-emerald-500' : 'text-amber-500'}`} />
-            <div>
-              <p className="text-xs font-black">{isApprovalEligible ? 'Profile Ready for Approval Review' : 'Complete 70% Profile for Approval'}</p>
-              <p className="text-xs font-medium mt-0.5">
-                {isApprovalEligible
-                  ? 'Your profile meets the minimum completion requirement and can be reviewed by the admin team.'
-                  : `Your profile is ${completionPct}% complete. Complete at least 70% first; then your account can be sent for approval.`}
-              </p>
-            </div>
-          </div>
-        )}
+    <div className="min-h-screen overflow-x-hidden bg-slate-50/60 py-4 sm:py-6 lg:py-8 font-sans">
+      <div className="mx-auto w-full max-w-7xl px-3 sm:px-6 lg:px-8 space-y-4 sm:space-y-6">
         {/* Hidden File Inputs */}
         <input type="file" ref={avatarInputRef} accept="image/*" className="hidden"
           onChange={(e) => { if (e.target.files?.[0]) handlePhotoUpload(e.target.files[0], 'avatar'); }} />
@@ -673,8 +659,37 @@ export const CreatorDashboardView: React.FC = () => {
           </div>
         )}
 
-        {/* Brand-style dashboard summary cards */}
-        <div className="flex flex-col lg:flex-row gap-6 items-stretch">
+        <section className="rounded-3xl border border-slate-200 bg-white p-3 sm:rounded-[2rem] sm:p-6 shadow-sm">
+          <div className="flex flex-col items-center gap-5 lg:flex-row lg:items-stretch">
+            <div className="w-full max-w-[330px] shrink-0 sm:max-w-[360px]">
+              <CreatorCard creator={creator} interactive={false} showSaveButton={false} showViewProfile={false} />
+            </div>
+            <div className="flex min-w-0 flex-1 flex-col justify-center rounded-2xl bg-slate-50 p-4 sm:p-7">
+              <span className="text-[10px] font-black uppercase tracking-widest text-[#b88628]">Instagram information</span>
+              <h1 className="mt-2 text-2xl font-black text-slate-900">@{creator.username || 'creator'}</h1>
+              <div className="mt-4 grid max-w-xl grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-3">
+                <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5"><p className="text-[10px] font-bold uppercase text-slate-400">Followers</p><p className="mt-1 text-sm font-black text-slate-800">{(creator.followers || 0).toLocaleString('en-IN')}</p></div>
+                <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5"><p className="text-[10px] font-bold uppercase text-slate-400">Posts</p><p className="mt-1 text-sm font-black text-slate-800">{(creator.totalPosts || 0).toLocaleString('en-IN')}</p></div>
+                <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5"><p className="text-[10px] font-bold uppercase text-slate-400">Avg. views</p><p className="mt-1 text-sm font-black text-slate-800">{(creator.avgViews || 0).toLocaleString('en-IN')}</p></div>
+              </div>
+              <div className="mt-4 max-w-xl">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Bio</p>
+                <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{creator.bio?.trim() || 'Add a short bio to tell brands about your content and audience.'}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveTab('profile')}
+                className="mt-5 inline-flex w-fit items-center gap-2 rounded-xl bg-[#D4A338] px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-[#D4A338]/20 transition hover:bg-[#b88628]"
+              >
+                <Edit3 className="w-4 h-4" />
+                Edit Profile
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Replaced dashboard profile header, retained temporarily only to avoid changing unrelated dashboard logic. */}
+        <div className="hidden">
         {/* Top Header Profile Card */}
         <div className="w-full flex-1 bg-gradient-to-br from-white via-[#fcfaf5] to-[#f1e6cc] p-6 sm:p-8 rounded-[2.5rem] border border-[#D4A338]/30 shadow-[0_12px_40px_rgba(212,163,56,0.12)] hover:shadow-[0_20px_50px_rgba(212,163,56,0.2)] transition-all duration-500 flex flex-col md:flex-row md:items-center justify-between gap-5 relative overflow-hidden">
           <div className="absolute -right-16 -top-20 w-64 h-64 bg-[#D4A338]/10 rounded-full blur-3xl pointer-events-none" />
@@ -739,35 +754,10 @@ export const CreatorDashboardView: React.FC = () => {
           </div>
         </div>
 
-        {completionPct < 100 && (
-        <div className="bg-gradient-to-br from-amber-50 via-orange-50/50 to-rose-50/50 rounded-[2.5rem] p-5 sm:p-6 shadow-[0_12px_40px_rgba(212,163,56,0.15)] border border-amber-200/60 flex flex-col items-center justify-center text-center relative shrink-0 lg:w-72 overflow-hidden">
-          <div className="absolute -top-8 -right-8 h-28 w-28 rounded-full bg-[#D4A338]/10 blur-2xl" />
-          <div
-            className="relative w-28 h-28 rounded-full p-2 shadow-lg bg-white"
-            style={{ background: `conic-gradient(#D4A338 ${completionPct * 3.6}deg, #e2e8f0 0deg)` }}
-          >
-            <div className="w-full h-full rounded-full bg-white flex flex-col items-center justify-center">
-              <span className="text-3xl font-black text-slate-900">{completionPct}%</span>
-              <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Complete</span>
-            </div>
-          </div>
-          <h2 className="relative mt-4 text-sm font-black text-slate-900">Creator Profile</h2>
-          <p className="relative mt-1 text-[10px] leading-relaxed font-medium text-slate-500 max-w-[210px]">
-            {isApprovalEligible ? 'Your profile is ready for the admin approval review.' : `Complete ${70 - completionPct}% more to submit your account for approval.`}
-          </p>
-          <button
-            onClick={() => setActiveTab('profile')}
-            className="relative mt-4 px-4 py-2 rounded-xl bg-white border border-[#D4A338]/30 text-[#9a6b19] hover:bg-[#fff9eb] text-[10px] font-bold transition cursor-pointer flex items-center gap-1.5"
-          >
-            <Edit3 className="w-3.5 h-3.5" />
-            Complete Profile
-          </button>
-        </div>
-        )}
         </div>
 
-        {/* === Profile Completion Progress Bar === */}
-        {completionPct < 100 && (
+        {/* Profile completion is collected during signup, so this dashboard prompt is intentionally hidden. */}
+        {false && completionPct < 100 && (
           <div className={`rounded-[2rem] border px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-4 animate-fadeIn shadow-[0_12px_40px_rgba(212,163,56,0.10)] ${
             completionPct >= 80 ? 'bg-emerald-50 border-emerald-200' :
             completionPct >= 50 ? 'bg-amber-50 border-amber-200' :
@@ -808,7 +798,7 @@ export const CreatorDashboardView: React.FC = () => {
         )}
 
         {/* Dashboard Tabs */}
-        <div className="flex overflow-x-auto gap-2 p-1.5 bg-white border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] rounded-2xl text-xs font-bold">
+        <div className="-mx-3 flex touch-pan-x gap-2 overflow-x-auto border border-slate-100 bg-white p-1.5 px-3 shadow-[0_4px_20px_rgb(0,0,0,0.03)] sm:mx-0 sm:rounded-2xl sm:px-1.5 text-xs font-bold">
           {[
             { key: 'leads', icon: <MessageSquare className="w-3.5 h-3.5" />, label: `Enquiries (${myEnquiries.length})` },
             { key: 'chat', icon: <MessageSquare className="w-3.5 h-3.5" />, label: 'Live Chat' },
@@ -835,7 +825,7 @@ export const CreatorDashboardView: React.FC = () => {
           <form onSubmit={handleSaveProfile} className="space-y-5 animate-fadeIn">
             {profileSaved && (
               <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fadeIn">
-                <div className="bg-white rounded-3xl p-8 max-w-sm w-full mx-4 shadow-2xl flex flex-col items-center text-center animate-scaleUp">
+                <div className="bg-white rounded-3xl p-5 sm:p-8 max-w-sm w-full mx-3 shadow-2xl flex flex-col items-center text-center animate-scaleUp">
                   <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4 border-4 border-emerald-50">
                     <CheckCircle2 className="w-8 h-8" />
                   </div>
@@ -849,10 +839,10 @@ export const CreatorDashboardView: React.FC = () => {
             )}
 
             {/* Section 1: Photos */}
-            <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-4">
+            <div className="bg-white rounded-3xl p-4 sm:p-6 border border-slate-200/80 shadow-xs space-y-4">
               <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
                 <Camera className="w-4 h-4 text-[#D4A338]" />
-                Profile Photos & Card Reel Video
+                Profile Photo, Display Card Photo & Card Reel Video
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Avatar Upload */}
@@ -877,14 +867,14 @@ export const CreatorDashboardView: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Cover Photo Upload */}
+                {/* Display Card Photo Upload */}
                 <div
                   onClick={() => coverInputRef.current?.click()}
                   className="relative border-2 border-dashed border-slate-200 hover:border-blue-400 rounded-2xl p-4 cursor-pointer transition group flex items-center gap-3 overflow-hidden"
                 >
                   {creator.coverImage && (
                     <div className="absolute inset-0">
-                      <img src={creator.coverImage} alt="Cover" className="w-full h-full object-cover opacity-25" />
+                      <img src={creator.coverImage} alt="Display card" className="w-full h-full object-cover opacity-25" />
                     </div>
                   )}
                   <div className="relative z-10 flex items-center gap-3">
@@ -892,7 +882,7 @@ export const CreatorDashboardView: React.FC = () => {
                       {isUploadingCover ? <Loader2 className="w-5 h-5 animate-spin text-blue-500" /> : <ImageIcon className="w-5 h-5 text-slate-400" />}
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-slate-800">Cover / Banner</p>
+                      <p className="text-xs font-bold text-slate-800">Display Card Photo</p>
                       <p className="text-[10px] text-slate-400 mt-0.5">1200×400px ideal</p>
                       <p className="text-[10px] text-blue-500 font-bold mt-1">{isUploadingCover ? 'Uploading...' : 'Click to change'}</p>
                     </div>
@@ -900,7 +890,7 @@ export const CreatorDashboardView: React.FC = () => {
                 </div>
 
                 {/* Card Reel Video Upload - previews on hover/tap on profile cards */}
-                <div className="md:col-span-3 border-2 border-dashed border-violet-300 bg-violet-50/40 rounded-2xl p-5 space-y-4">
+                <div className="md:col-span-3 border-2 border-dashed border-violet-300 bg-violet-50/40 rounded-2xl p-4 sm:p-5 space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-violet-200/60 pb-3">
                     <div className="flex items-center gap-2 text-violet-900 font-bold text-xs">
                       <Film className="w-4 h-4 text-violet-600" />
@@ -959,8 +949,8 @@ export const CreatorDashboardView: React.FC = () => {
                   </div>
 
                   {creator.reelVideoUrl && (
-                    <div className="flex items-center justify-between pt-2 border-t border-violet-200/60 text-xs">
-                      <span className="text-violet-700 text-[11px] font-semibold">
+                    <div className="flex flex-col gap-2 pt-2 text-xs sm:flex-row sm:items-center sm:justify-between border-t border-violet-200/60">
+                      <span className="min-w-0 break-all text-violet-700 text-[11px] font-semibold">
                         Uploaded video: <code className="bg-white/80 px-2 py-0.5 rounded text-[10px] text-slate-700">{creator.reelVideoUrl.split('/').pop()}</code>
                       </span>
                       <button
@@ -991,7 +981,7 @@ export const CreatorDashboardView: React.FC = () => {
             </div>
 
             {/* Section 2: Basic Info */}
-            <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-4">
+            <div className="bg-white rounded-3xl p-4 sm:p-6 border border-slate-200/80 shadow-xs space-y-4">
               <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
                 <User className="w-4 h-4 text-[#D4A338]" />
                 Basic Information
@@ -1100,17 +1090,16 @@ export const CreatorDashboardView: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-slate-600 font-bold mb-1">Age Group</label>
-                  <select
+                  <label className="block text-slate-600 font-bold mb-1">Age</label>
+                  <input
+                    type="number"
+                    min="13"
+                    max="100"
                     value={profileAgeGroup}
                     onChange={e => setProfileAgeGroup(e.target.value)}
+                    placeholder="Enter age"
                     className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 font-medium outline-none"
-                  >
-                    <option value="">Select age group</option>
-                    {['18-21', '22-29', '25-34', '30-39', '35-44', '40+'].map(ag => (
-                      <option key={ag} value={ag}>{ag} yrs</option>
-                    ))}
-                  </select>
+                  />
                 </div>
               </div>
               <div>
@@ -1126,13 +1115,13 @@ export const CreatorDashboardView: React.FC = () => {
             </div>
 
             {/* Section 3: Performance Metrics */}
-            <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-4">
+            <div className="bg-white rounded-3xl p-4 sm:p-6 border border-slate-200/80 shadow-xs space-y-4">
               <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-[#D4A338]" />
                 Performance Metrics
                 <span className="text-[10px] font-medium text-slate-400 ml-1">Shown on your public profile</span>
               </h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 text-xs">
                 <div>
                   <label className="block text-slate-600 font-bold mb-1">Followers</label>
                   <input
@@ -1188,12 +1177,12 @@ export const CreatorDashboardView: React.FC = () => {
             </div>
 
             {/* Section 4: Commercial Deliverable Pricing */}
-            <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-4">
+            <div className="bg-white rounded-3xl p-4 sm:p-6 border border-slate-200/80 shadow-xs space-y-4">
               <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
                 <IndianRupee className="w-4 h-4 text-[#D4A338]" />
                 Commercial Deliverable Rates (Shown on Public Profile)
               </h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 text-xs">
                 <div>
                   <label className="block text-slate-600 font-bold mb-1">Reel (1x) (₹)</label>
                   <input
@@ -1256,7 +1245,7 @@ export const CreatorDashboardView: React.FC = () => {
                 </div>
               </div>
 
-              <div className="pt-2 flex flex-wrap items-center gap-6 text-xs">
+              <div className="flex flex-col gap-3 pt-2 text-xs sm:flex-row sm:flex-wrap sm:items-center sm:gap-6">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
@@ -1310,7 +1299,7 @@ export const CreatorDashboardView: React.FC = () => {
             )}
 
             {myEnquiries.length === 0 ? (
-              <div className="bg-white p-12 text-center rounded-3xl border border-slate-200 space-y-2">
+              <div className="bg-white p-6 sm:p-12 text-center rounded-3xl border border-slate-200 space-y-2">
                 <MessageSquare className="w-10 h-10 text-slate-300 mx-auto" />
                 <h3 className="font-bold text-slate-800 text-sm">No Enquiries Yet</h3>
                 <p className="text-xs text-slate-500">When brands pitch or send you collaboration requests, they will appear here for you to accept or decline.</p>
@@ -1438,7 +1427,7 @@ export const CreatorDashboardView: React.FC = () => {
           return (
             <div className="space-y-4 animate-fadeIn">
               {myPitchedCampaigns.length === 0 ? (
-                <div className="bg-white p-12 text-center rounded-3xl border border-slate-200 space-y-2">
+                <div className="bg-white p-6 sm:p-12 text-center rounded-3xl border border-slate-200 space-y-2">
                   <Flame className="w-10 h-10 text-slate-300 mx-auto" />
                   <h3 className="font-bold text-slate-800 text-sm">No Pitches Yet</h3>
                   <p className="text-xs text-slate-500">When you pitch for a campaign, you can track its status here.</p>
@@ -1496,7 +1485,7 @@ export const CreatorDashboardView: React.FC = () => {
         {activeTab === 'savedBrands' && (
           <div className="space-y-4 animate-fadeIn">
             {savedBrandIds.length === 0 ? (
-              <div className="bg-white p-12 text-center rounded-3xl border border-slate-200 space-y-2">
+              <div className="bg-white p-6 sm:p-12 text-center rounded-3xl border border-slate-200 space-y-2">
                 <Bookmark className="w-10 h-10 text-slate-300 mx-auto" />
                 <h3 className="font-bold text-slate-800 text-sm">No Saved Brands Yet</h3>
                 <p className="text-xs text-slate-500 max-w-sm mx-auto">

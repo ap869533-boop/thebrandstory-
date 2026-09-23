@@ -119,7 +119,6 @@ export const FeaturedBrandsSection: React.FC = () => {
                 } p-5 shadow-[0_8px_30px_rgba(0,0,0,0.08)] hover:-translate-y-2 cursor-pointer transition-all duration-500 flex flex-col items-center text-center w-[280px] sm:w-[320px] shrink-0 relative overflow-hidden`}
               >
                 {/* Premium Gradient Header */}
-                <div className="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-amber-300 via-[#f4c95d] to-[#D4A338] opacity-80 group-hover:opacity-100 transition-opacity z-10"></div>
                 
                 {/* Hover side glow */}
                 <div className="absolute -left-16 top-1/4 w-40 h-40 bg-[#f4c95d]/30 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
@@ -165,7 +164,7 @@ export const FeaturedBrandsSection: React.FC = () => {
                 {brand.totalHiringCount ? (
                   <div className="mb-4">
                     <p className="text-sm font-medium text-slate-500">
-                      {brand.totalHiringCount > 999 ? (brand.totalHiringCount / 1000).toFixed(1).replace(/\.0$/, '') + 'K+' : brand.totalHiringCount + '+'} are actively hiring
+                      {brand.totalHiringCount > 999 ? (brand.totalHiringCount / 1000).toFixed(1).replace(/\.0$/, '') + 'K+' : brand.totalHiringCount + '+'} actively hiring
                     </p>
                   </div>
                 ) : (

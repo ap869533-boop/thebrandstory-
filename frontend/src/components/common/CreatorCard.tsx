@@ -6,9 +6,18 @@ import { usePlatform } from '../../context/PlatformContext';
 interface CreatorCardProps {
   creator: Creator;
   variant?: 'grid' | 'carousel' | 'compact';
+  interactive?: boolean;
+  showSaveButton?: boolean;
+  showViewProfile?: boolean;
 }
 
-export const CreatorCard: React.FC<CreatorCardProps> = ({ creator, variant = 'grid' }) => {
+export const CreatorCard: React.FC<CreatorCardProps> = ({
+  creator,
+  variant = 'grid',
+  interactive = true,
+  showSaveButton = true,
+  showViewProfile = true,
+}) => {
   const {
     navigateTo,
     isCreatorSaved,
@@ -30,6 +39,7 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({ creator, variant = 'gr
   };
 
   const handleCardClick = (event: React.MouseEvent) => {
+    if (!interactive) return;
     // Touch devices do not have hover: the first tap previews the reel and the
     // next tap keeps the original card-navigation behaviour.
     const isTouchLayout = typeof window !== 'undefined'
@@ -99,14 +109,14 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({ creator, variant = 'gr
   return (
     <div
       id={`creator-card-${creator.id}`}
-      onClick={handleCardClick}
+      onClick={interactive ? handleCardClick : undefined}
       onPointerEnter={(event) => {
-        if (event.pointerType === 'mouse' && isUploadedVideo && !videoError) setIsPreviewing(true);
+        if (interactive && event.pointerType === 'mouse' && isUploadedVideo && !videoError) setIsPreviewing(true);
       }}
       onPointerLeave={(event) => {
-        if (event.pointerType === 'mouse') stopPreview();
+        if (interactive && event.pointerType === 'mouse') stopPreview();
       }}
-      className={`group relative rounded-[1.75rem] overflow-hidden cursor-pointer shadow-sm hover:shadow-2xl transition-all duration-300 border border-slate-300/70 flex flex-col justify-between bg-slate-950 ${
+      className={`group relative rounded-[1.75rem] overflow-hidden ${interactive ? 'cursor-pointer hover:shadow-2xl' : 'cursor-default'} shadow-sm transition-all duration-300 border border-slate-300/70 flex flex-col justify-between bg-slate-950 ${
         variant === 'carousel'
           ? 'w-[210px] sm:w-[220px] md:w-[230px] h-[350px] sm:h-[390px] md:h-[420px] shrink-0'
           : 'w-full h-[350px] sm:h-[390px] md:h-[420px]'
@@ -147,7 +157,7 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({ creator, variant = 'gr
         </span>
 
         <div className="flex flex-col gap-2">
-          <button
+          {showSaveButton && <button
             id={`save-creator-btn-${creator.id}`}
             onClick={handleSaveClick}
             title={isSaved ? 'Remove from Saved' : 'Save Creator'}
@@ -158,7 +168,7 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({ creator, variant = 'gr
             }`}
           >
             <Heart className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />
-          </button>
+          </button>}
 
           {isUploadedVideo && !videoError && isPreviewing && (
             <button
@@ -200,10 +210,10 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({ creator, variant = 'gr
             <span className="font-bold text-white">From ₹{(creator.startingPrice || 0).toLocaleString('en-IN')}</span>
           </div>
 
-          <div className="w-full rounded-full bg-white text-slate-900 group-hover:bg-[#D4A338] px-3 py-0 max-h-0 opacity-0 overflow-hidden flex items-center justify-center gap-2 text-xs sm:text-sm font-bold group-hover:py-2.5 group-hover:max-h-12 group-hover:opacity-100 transition-all duration-200">
+          {showViewProfile && <div className="w-full rounded-full bg-white text-slate-900 group-hover:bg-[#D4A338] px-3 py-0 max-h-0 opacity-0 overflow-hidden flex items-center justify-center gap-2 text-xs sm:text-sm font-bold group-hover:py-2.5 group-hover:max-h-12 group-hover:opacity-100 transition-all duration-200">
             <span>View Profile</span>
             <ArrowRight className="w-4 h-4" />
-          </div>
+          </div>}
         </div>
     </div>
   );

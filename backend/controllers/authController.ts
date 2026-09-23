@@ -591,31 +591,33 @@ export async function requestOtp(req: Request, res: Response) {
 
 export async function verifyOtp(req: Request, res: Response) {
   try {
-    const { email, otp, name, role, phone, companyName, gstNumber, username, category, city, password, countryCode } = req.body;
+    const { email, otp, name, role, phone, companyName, gstNumber, username, category, city, password, countryCode, deferCreatorSignup, signupToken } = req.body;
 
-    if (!email || !otp) {
+    if (!email || (!otp && !signupToken)) {
       return res.status(400).json({ success: false, error: 'Email and OTP are required' });
     }
 
     const cleanEmail = email.toLowerCase().trim();
     const normalizedPhone = normalizeMobile(phone, countryCode);
-    const cachedData = otpCache.get(cleanEmail);
-
-    if (!cachedData) {
-      return res.status(400).json({ success: false, error: 'OTP expired or not requested' });
-    }
-
-    if (Date.now() > cachedData.expires) {
+    if (signupToken) {
+      try {
+        const verifiedSignup: any = jwt.verify(signupToken, JWT_SECRET);
+        if (verifiedSignup?.purpose !== 'creator_signup' || verifiedSignup.email !== cleanEmail || verifiedSignup.role !== 'CREATOR') {
+          return res.status(401).json({ success: false, error: 'Invalid signup session. Please verify OTP again.' });
+        }
+      } catch {
+        return res.status(401).json({ success: false, error: 'Signup session expired. Please verify OTP again.' });
+      }
+    } else {
+      const cachedData = otpCache.get(cleanEmail);
+      if (!cachedData) return res.status(400).json({ success: false, error: 'OTP expired or not requested' });
+      if (Date.now() > cachedData.expires) {
+        otpCache.delete(cleanEmail);
+        return res.status(400).json({ success: false, error: 'OTP has expired' });
+      }
+      if (cachedData.otp !== otp.toString()) return res.status(400).json({ success: false, error: 'Invalid OTP' });
       otpCache.delete(cleanEmail);
-      return res.status(400).json({ success: false, error: 'OTP has expired' });
     }
-
-    if (cachedData.otp !== otp.toString()) {
-      return res.status(400).json({ success: false, error: 'Invalid OTP' });
-    }
-
-    // OTP Verified. Clear it.
-    otpCache.delete(cleanEmail);
 
     const isSignupContext = !!(name && role && password); // True when called from signup form
 
@@ -629,6 +631,14 @@ export async function verifyOtp(req: Request, res: Response) {
     const existingDbUser = (dbUsers && dbUsers.length > 0) ? dbUsers[0] : null;
     const existingMemUser = memoryUsers.find((u) => u.email === cleanEmail);
     const existingUser = existingDbUser || existingMemUser;
+
+    // Creator onboarding must not create any database record at the OTP step.
+    // It only issues a short-lived proof which is consumed by the final step.
+    if (deferCreatorSignup && role === 'CREATOR' && !signupToken) {
+      if (existingUser) return res.status(409).json({ success: false, error: 'This email is already registered. Please sign in instead.' });
+      const pendingSignupToken = jwt.sign({ email: cleanEmail, role: 'CREATOR', purpose: 'creator_signup' }, JWT_SECRET, { expiresIn: '20m' });
+      return res.json({ success: true, message: 'OTP verified. Complete your profile to create the account.', signupToken: pendingSignupToken });
+    }
 
     if (isSignupContext) {
       // This is a SIGNUP attempt — if email already registered, reject it

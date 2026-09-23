@@ -100,6 +100,23 @@ export const AuthModal: React.FC = () => {
       setOtpSent(false);
       setIsForgotPassword(false);
       setResetOtpSent(false);
+      setCreatorProfileSetup(false);
+      setCreatorSetupStep(1);
+      setSignupCreator(null);
+      setPendingSignupToken('');
+      setGender('');
+      setCreatorState('');
+      setLanguages('');
+      setAgeGroup('');
+      setStartingPrice('');
+      setFollowers('');
+      setTotalPosts('');
+      setAvgViews('');
+      setAvgLikes('');
+      setAvgComments('');
+      setProfilePhotoUrl('');
+      setBannerUrl('');
+      setUploadingMedia(null);
       setErrorMsg(null);
       setSuccessMsg(null);
       setFieldErrors({});
@@ -115,6 +132,23 @@ export const AuthModal: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const [creatorProfileSetup, setCreatorProfileSetup] = useState(false);
+  const [creatorSetupStep, setCreatorSetupStep] = useState<1 | 2>(1);
+  const [signupCreator, setSignupCreator] = useState<any>(null);
+  const [pendingSignupToken, setPendingSignupToken] = useState('');
+  const [gender, setGender] = useState('');
+  const [creatorState, setCreatorState] = useState('');
+  const [languages, setLanguages] = useState('');
+  const [ageGroup, setAgeGroup] = useState('');
+  const [startingPrice, setStartingPrice] = useState('');
+  const [followers, setFollowers] = useState('');
+  const [totalPosts, setTotalPosts] = useState('');
+  const [avgViews, setAvgViews] = useState('');
+  const [avgLikes, setAvgLikes] = useState('');
+  const [avgComments, setAvgComments] = useState('');
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState('');
+  const [bannerUrl, setBannerUrl] = useState('');
+  const [uploadingMedia, setUploadingMedia] = useState<'avatar' | 'cover' | null>(null);
 
   if (!authModalOpen) return null;
 
@@ -190,8 +224,106 @@ export const AuthModal: React.FC = () => {
     validate();
   };
 
+  const completeCreatorSetup = async () => {
+    if (creatorSetupStep === 1) {
+      if (!profilePhotoUrl || !bannerUrl || !gender || !creatorState.trim() || !category || !languages.trim() || !ageGroup) {
+        throw new Error('Please complete every basic information field, including profile photo and display card photo.');
+      }
+      setCreatorSetupStep(2);
+      return;
+    }
+    if (!username.trim() || !/^https?:\/\/(www\.)?instagram\.com\/[^/]+/i.test(username.trim())) throw new Error('Please enter a valid Instagram profile URL.');
+    if (![followers, totalPosts, avgViews, avgLikes, avgComments].every(value => value.trim() !== '') || Number(startingPrice) <= 0) {
+      throw new Error('Please enter every Instagram metric and a starting price. Use 0 where a metric is zero.');
+    }
+    let creatorUser = signupCreator;
+    let token = localStorage.getItem('sc_auth_token') || '';
+    if (!creatorUser) {
+      const createResponse = await fetch(apiUrl('/api/auth/verify-otp'), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), password, name: name.trim(), role: 'CREATOR', phone: phone.trim(), countryCode, signupToken: pendingSignupToken }),
+      });
+      const createData = await readApiResponse(createResponse);
+      if (!createResponse.ok || !createData.success || !createData.token || !createData.user?.creatorProfile) throw new Error(createData.error || 'Could not create creator profile');
+      token = createData.token;
+      localStorage.setItem('sc_auth_token', token);
+      creatorUser = createData.user;
+      setSignupCreator(creatorUser);
+    }
+    const creatorId = creatorUser.creatorProfile.id;
+    const persistImage = async (image: string, type: 'avatar' | 'cover') => {
+      if (!image.startsWith('data:')) return image;
+      const imageResponse = await fetch(apiUrl('/api/upload'), {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ image, creatorId, type }),
+      });
+      const imageData = await readApiResponse(imageResponse);
+      if (!imageResponse.ok || !imageData.success || !imageData.url) throw new Error(imageData.error || 'Image upload failed');
+      return apiUrl(imageData.url);
+    };
+    const avatarUrl = await persistImage(profilePhotoUrl, 'avatar');
+    const cardPhotoUrl = await persistImage(bannerUrl, 'cover');
+    const instagramHandle = username.match(/instagram\.com\/([^/?#]+)/i)?.[1] || username;
+    const updates = {
+      username: instagramHandle, gender, state: creatorState.trim(), primaryCategory: category,
+      avatar: avatarUrl || undefined,
+      coverImage: cardPhotoUrl || undefined,
+      languages: languages.split(',').map((item) => item.trim()).filter(Boolean), ageGroup,
+      startingPrice: Number(startingPrice),
+      pricing: { startingPrice: Number(startingPrice) },
+      followers: Number(followers) || 0, totalPosts: Number(totalPosts) || 0,
+      avgViews: Number(avgViews) || 0, avgLikes: Number(avgLikes) || 0, avgComments: Number(avgComments) || 0,
+      socialPlatforms: [{ platform: 'instagram', username: instagramHandle, url: username.trim(), followers: Number(followers) || 0, avgViews: Number(avgViews) || 0, verified: false }],
+    };
+    const response = await fetch(apiUrl(`/api/creators/${creatorId}`), {
+      method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(updates),
+    });
+    const data = await readApiResponse(response);
+    if (!response.ok || !data.success || !data.creator) throw new Error(data.error || 'Could not save creator profile');
+    const user = { ...creatorUser, creatorProfile: data.creator };
+    localStorage.setItem('sc_auth_user', JSON.stringify(user));
+    setAuthUser(user); setCreators((prev) => [data.creator, ...prev.filter((c) => c.id !== data.creator.id)]);
+    setActiveCreatorId(data.creator.id); closeAuthModal(); navigateTo('creator-dashboard');
+  };
+
+  const uploadCreatorMedia = (file: File, type: 'avatar' | 'cover') => {
+    const creatorId = signupCreator?.creatorProfile?.id;
+    const token = localStorage.getItem('sc_auth_token');
+    if (!file.type.startsWith('image/')) { setErrorMsg('Please choose an image file.'); return; }
+    if (file.size > 10 * 1024 * 1024) { setErrorMsg('Please choose an image smaller than 10 MB.'); return; }
+    if (!creatorId || !token) {
+      const reader = new FileReader();
+      reader.onload = () => { if (type === 'avatar') setProfilePhotoUrl(String(reader.result)); else setBannerUrl(String(reader.result)); };
+      reader.readAsDataURL(file);
+      return;
+    }
+    setUploadingMedia(type); setErrorMsg(null);
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const response = await fetch(apiUrl('/api/upload'), {
+          method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ image: reader.result, creatorId, type }),
+        });
+        const data = await readApiResponse(response);
+        if (!response.ok || !data.success || !data.url) throw new Error(data.error || 'Image upload failed');
+        const url = apiUrl(data.url);
+        if (type === 'avatar') setProfilePhotoUrl(url); else setBannerUrl(url);
+        setSignupCreator((prev: any) => prev ? { ...prev, creatorProfile: { ...prev.creatorProfile, [type === 'avatar' ? 'avatar' : 'coverImage']: url } } : prev);
+      } catch (err: any) { setErrorMsg(err.message || 'Image upload failed.'); }
+      finally { setUploadingMedia(null); }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (creatorProfileSetup) {
+      setIsLoading(true); setErrorMsg(null);
+      try { await completeCreatorSetup(); } catch (err: any) { setErrorMsg(err.message || 'Could not save profile details.'); }
+      finally { setIsLoading(false); }
+      return;
+    }
     setTouched({
       name: true,
       username: true,
@@ -340,6 +472,7 @@ export const AuthModal: React.FC = () => {
             instagramUrl: role === 'CREATOR' ? username.trim() : '',
             category,
             city,
+            deferCreatorSignup: role === 'CREATOR',
           };
 
           const res = await fetch(apiUrl('/api/auth/verify-otp'), {
@@ -352,6 +485,15 @@ export const AuthModal: React.FC = () => {
 
           if (!res.ok || !data.success) {
             throw new Error(data.error || 'Authentication failed');
+          }
+
+          if (role === 'CREATOR' && data.signupToken) {
+            setPendingSignupToken(data.signupToken);
+            setCreatorProfileSetup(true);
+            setCreatorSetupStep(1);
+            setOtpSent(false);
+            setSuccessMsg('Email verified. Complete all profile steps before confirming your account.');
+            return;
           }
 
           if (data.token) localStorage.setItem('sc_auth_token', data.token);
@@ -373,6 +515,15 @@ export const AuthModal: React.FC = () => {
                 return [data.user.creatorProfile, ...prev];
               });
               setActiveCreatorId(data.user.creatorProfile.id);
+            }
+
+            if (data.user.role === 'CREATOR') {
+              setSignupCreator(data.user);
+              setCreatorProfileSetup(true);
+              setCreatorSetupStep(1);
+              setOtpSent(false);
+              setSuccessMsg('Email verified. Complete your creator profile.');
+              return;
             }
 
             setSuccessMsg(null);
@@ -425,17 +576,21 @@ export const AuthModal: React.FC = () => {
             />
           </div>
           <h2 className="text-2xl font-black tracking-tight text-slate-900">
-            {isForgotPassword ? 'Reset Password' : mode === 'login' ? 'Sign In to thebrandsstory.' : 'Create Your Account'}
+            {creatorProfileSetup
+              ? creatorSetupStep === 1 ? 'Complete your basic profile' : 'Add your Instagram details'
+              : isForgotPassword ? 'Reset Password' : mode === 'login' ? 'Sign In to thebrandsstory.' : 'Create Your Account'}
           </h2>
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
-            {mode === 'login'
+            {creatorProfileSetup
+              ? 'Your information can be updated anytime from Edit Profile.'
+              : mode === 'login'
               ? 'Access verified creators, brand campaigns, and live enquiries'
               : 'Join India’s premier influencer marketing platform'}
           </p>
         </div>
 
         {/* Mode Switcher Tabs */}
-        {!otpSent && !isForgotPassword && (
+        {!otpSent && !isForgotPassword && !creatorProfileSetup && (
           <div className="flex p-1 bg-slate-100 rounded-xl">
             <button
               type="button"
@@ -500,7 +655,70 @@ export const AuthModal: React.FC = () => {
 
         {/* Form */}
         <form onSubmit={handleSubmit} noValidate className="space-y-3.5 text-xs">
-          {(!otpSent && !resetOtpSent) ? (
+          {mode === 'signup' && role === 'CREATOR' && !isForgotPassword && (
+            <div className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2.5">
+              <div className="flex items-center justify-between font-bold text-blue-900">
+                <span>Influencer signup</span>
+                <span>Step {creatorProfileSetup ? creatorSetupStep + 2 : otpSent ? 2 : 1} of 4</span>
+              </div>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-blue-100">
+                <div
+                  className="h-full rounded-full bg-blue-600 transition-all duration-300"
+                  style={{ width: `${creatorProfileSetup ? creatorSetupStep === 1 ? 75 : 100 : otpSent ? 50 : 25}%` }}
+                />
+              </div>
+              <p className="mt-1.5 text-[10px] font-medium text-blue-700">
+                {creatorProfileSetup
+                  ? creatorSetupStep === 1 ? 'Basic information' : 'Instagram information'
+                  : otpSent ? 'Verify your email OTP' : 'Account details'}
+              </p>
+            </div>
+          )}
+          {creatorProfileSetup && (
+            <div className="space-y-4">
+              <button
+                type="button"
+                onClick={() => {
+                  if (creatorSetupStep === 2) setCreatorSetupStep(1);
+                  else { setCreatorProfileSetup(false); setOtpSent(true); }
+                  setErrorMsg(null);
+                }}
+                className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-slate-800"
+              >
+                ← Back
+              </button>
+              <div className="rounded-xl bg-blue-50 border border-blue-100 p-3 text-blue-900 font-semibold">
+                Step {creatorSetupStep} of 2 — {creatorSetupStep === 1 ? 'Basic information' : 'Instagram information'}
+              </div>
+              {creatorSetupStep === 1 ? <>
+                <div className="flex gap-3">
+                  <label className="relative flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 text-center font-semibold text-slate-500 cursor-pointer">
+                    {profilePhotoUrl ? <img src={profilePhotoUrl} alt="Profile photo preview" className="w-full h-full object-cover" /> : <span className="px-2">{uploadingMedia === 'avatar' ? 'Uploading...' : 'Profile photo'}</span>}
+                    <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" disabled={uploadingMedia !== null} onChange={e => { const file = e.target.files?.[0]; if (file) uploadCreatorMedia(file, 'avatar'); }} />
+                  </label>
+                  <label className="relative flex h-28 min-w-0 flex-1 items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 text-center font-semibold text-slate-500 cursor-pointer">
+                    {bannerUrl ? <img src={bannerUrl} alt="Display card photo preview" className="w-full h-full object-cover" /> : <span className="px-2">{uploadingMedia === 'cover' ? 'Uploading...' : 'Display card photo'}</span>}
+                    <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" disabled={uploadingMedia !== null} onChange={e => { const file = e.target.files?.[0]; if (file) uploadCreatorMedia(file, 'cover'); }} />
+                  </label>
+                </div>
+                <p className="text-[10px] text-slate-500">Upload a square profile photo and a wide display card photo. Both are required.</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <select value={gender} onChange={e => setGender(e.target.value)} className="p-3 bg-slate-50 border border-slate-200 rounded-xl"><option value="">Gender *</option><option>Female</option><option>Male</option><option>Non-binary</option></select>
+                  <input type="number" min="13" max="100" value={ageGroup} onChange={e => setAgeGroup(e.target.value)} placeholder="Age *" className="p-3 bg-slate-50 border border-slate-200 rounded-xl" />
+                </div>
+                <input value={creatorState} onChange={e => setCreatorState(e.target.value)} placeholder="State * (e.g. Maharashtra)" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" />
+                <select value={category} onChange={e => setCategory(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl"><option value="">Category *</option>{(categories?.length ? categories : CATEGORIES_LIST).map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}</select>
+                <input value={languages} onChange={e => setLanguages(e.target.value)} placeholder="Languages * (e.g. Hindi, English)" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" />
+              </> : <>
+                <input value={username} onChange={e => setUsername(e.target.value)} placeholder="Instagram URL * (https://instagram.com/yourhandle)" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" />
+                <input type="number" min="1" value={startingPrice} onChange={e => setStartingPrice(e.target.value)} placeholder="Starting price (₹) *" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" />
+                <div className="grid grid-cols-2 gap-3">{[
+                  ['Followers count', followers, setFollowers], ['Total posts', totalPosts, setTotalPosts], ['Average views', avgViews, setAvgViews], ['Average likes', avgLikes, setAvgLikes], ['Average comments', avgComments, setAvgComments],
+                ].map(([label, value, setter]: any) => <input key={label} type="number" min="0" value={value} onChange={e => setter(e.target.value)} placeholder={label} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" />)}</div>
+              </>}
+            </div>
+          )}
+          {!creatorProfileSetup && ((!otpSent && !resetOtpSent) ? (
             <>
               {mode === 'signup' && !isForgotPassword && (
                 <>
@@ -575,7 +793,7 @@ export const AuthModal: React.FC = () => {
                     </div>
 
                     {role === 'CREATOR' ? (
-                      <div>
+                      <div className={role === 'CREATOR' ? 'hidden' : ''}>
                         <label className="block text-slate-800 text-xs font-bold mb-1.5">Instagram Profile URL</label>
                         <div className="relative">
                           <AtSign className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5" />
@@ -632,7 +850,7 @@ export const AuthModal: React.FC = () => {
                   </div>
 
                   {/* Category & City for Creator */}
-                  {role === 'CREATOR' && (
+                  {false && role === 'CREATOR' && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label className="block text-slate-800 text-xs font-bold mb-1.5">Primary Niche</label>
@@ -895,7 +1113,7 @@ export const AuthModal: React.FC = () => {
                 </div>
               )}
             </div>
-          )}
+          ))}
 
           {/* Submit Button */}
           <button
@@ -915,8 +1133,10 @@ export const AuthModal: React.FC = () => {
                     ? resetOtpSent ? 'Reset Password' : 'Get OTP'
                     : mode === 'login'
                     ? 'Login'
+                    : creatorProfileSetup
+                    ? creatorSetupStep === 1 ? 'Continue to Instagram Details' : 'Save Profile & Open Dashboard'
                     : !otpSent
-                    ? 'Get OTP'
+                    ? role === 'CREATOR' ? 'Continue to OTP Verification' : 'Get OTP'
                     : 'Verify & Complete Registration'}
                 </span>
                 <ArrowRight className="w-4 h-4" />

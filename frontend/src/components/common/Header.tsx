@@ -103,7 +103,7 @@ export const Header: React.FC = () => {
               }`}
             >
               <span className="w-1.5 h-1.5 rounded-full bg-[#D4A338]" />
-              <span>Live Briefs</span>
+              <span>Live Collaboration</span>
             </button>
 
             <button
@@ -315,7 +315,7 @@ export const Header: React.FC = () => {
             className="w-full p-2.5 bg-slate-50 rounded-lg text-left flex items-center gap-2"
           >
             <Flame className="w-4 h-4 text-amber-500" />
-            <span>Live Briefs</span>
+            <span>Live Collaboration</span>
           </button>
           <button
             onClick={() => {

@@ -4,6 +4,7 @@ import path from 'path';
 import { Request, Response } from 'express';
 import { dbQuery } from '../config/db';
 import { creatorsStore } from './creatorController';
+import { AuthenticatedRequest } from '../middleware/authMiddleware';
 
 const uploadsDir = path.resolve(__dirname, '../uploads');
 const allowedTypes = new Set(['avatar', 'cover', 'reel_video', 'reel_thumbnail']);
@@ -42,7 +43,7 @@ function getPreviousUrl(creatorId: string, type: string) {
   return undefined;
 }
 
-export async function uploadImage(req: Request, res: Response) {
+export async function uploadImage(req: AuthenticatedRequest, res: Response) {
   try {
     const { image, creatorId, type = 'avatar' } = req.body;
     if (!image || typeof image !== 'string' || !image.startsWith('data:')) {
@@ -50,6 +51,18 @@ export async function uploadImage(req: Request, res: Response) {
     }
     if (!allowedTypes.has(type)) {
       return res.status(400).json({ success: false, error: 'Unsupported upload type' });
+    }
+
+    // Media is attached to a profile, so an authenticated creator may only
+    // update their own files. Administrators can still maintain any profile.
+    if ((type === 'avatar' || type === 'cover') && creatorId) {
+      if (!req.user) return res.status(401).json({ success: false, error: 'Authentication required' });
+      const isAdmin = req.user.role === 'ADMIN' || req.user.role === 'SALES';
+      const ownerRows: any = await dbQuery('SELECT user_id FROM creators WHERE id = ? LIMIT 1', [creatorId]);
+      const ownerId = Array.isArray(ownerRows) ? ownerRows[0]?.user_id : null;
+      if (!isAdmin && ownerId !== req.user.id) {
+        return res.status(403).json({ success: false, error: 'Not authorized to upload media for this profile' });
+      }
     }
 
     const encodedData = image.split(',')[1];
