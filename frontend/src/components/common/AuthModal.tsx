@@ -303,7 +303,7 @@ export const AuthModal: React.FC = () => {
     const cardPhotoUrl = await persistImage(bannerUrl, 'cover');
     const instagramHandle = username.match(/instagram\.com\/([^/?#]+)/i)?.[1] || username;
     const updates = {
-      username: instagramHandle, gender, state: creatorState.trim(), primaryCategory: category,
+      username: instagramHandle, gender, currentCity: creatorState.trim(), state: '', primaryCategory: category,
       avatar: avatarUrl || undefined,
       coverImage: cardPhotoUrl || undefined,
       languages: languages.split(',').map((item) => item.trim()).filter(Boolean), ageGroup,
