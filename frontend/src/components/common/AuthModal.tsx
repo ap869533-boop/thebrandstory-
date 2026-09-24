@@ -767,7 +767,7 @@ export const AuthModal: React.FC = () => {
                   <select value={gender} onChange={e => setGender(e.target.value)} className="p-3 bg-slate-50 border border-slate-200 rounded-xl"><option value="">Gender *</option><option>Female</option><option>Male</option><option>Non-binary</option></select>
                   <input type="number" min="13" max="100" value={ageGroup} onChange={e => setAgeGroup(e.target.value)} placeholder="Age *" className="p-3 bg-slate-50 border border-slate-200 rounded-xl" />
                 </div>
-                <input value={creatorState} onChange={e => setCreatorState(e.target.value)} placeholder="State * (e.g. Maharashtra)" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" />
+                <input value={creatorState} onChange={e => setCreatorState(e.target.value)} placeholder="City * (e.g. Mumbai, Delhi)" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" />
                 <select value={category} onChange={e => setCategory(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl"><option value="">Category *</option>{(categories?.length ? categories : CATEGORIES_LIST).map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}</select>
                 <input value={languages} onChange={e => setLanguages(e.target.value)} placeholder="Languages * (e.g. Hindi, English)" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" />
               </> : <>

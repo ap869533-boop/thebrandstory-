@@ -19,7 +19,7 @@ import {
 import { usePlatform } from '../context/PlatformContext';
 import { UserRole } from '../types';
 import { apiUrl, readApiResponse } from '../config/api';
-import { CATEGORIES_LIST } from '../data/initialData';
+import { CATEGORIES_LIST, CITIES_LIST } from '../data/initialData';
 
 const COUNTRY_CODES = [
   { code: '+91', label: 'IN +91' }, { code: '+1', label: 'US +1' },
@@ -638,7 +638,7 @@ export const LoginView: React.FC = () => {
                     <select value={gender} onChange={e => setGender(e.target.value)} className="rounded-xl border border-slate-200 bg-slate-50 p-3"><option value="">Gender *</option><option>Female</option><option>Male</option><option>Non-binary</option></select>
                     <input type="number" min="13" max="100" value={ageGroup} onChange={e => setAgeGroup(e.target.value)} placeholder="Age *" className="rounded-xl border border-slate-200 bg-slate-50 p-3" />
                   </div>
-                  <input value={creatorState} onChange={e => setCreatorState(e.target.value)} placeholder="State * (e.g. Maharashtra)" className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3" />
+                  <input value={creatorState} onChange={e => setCreatorState(e.target.value)} placeholder="City * (e.g. Mumbai, Delhi)" className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3" />
                   <select value={category} onChange={e => setCategory(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3"><option value="">Category *</option>{CATEGORIES_LIST.map(item => <option key={item.id} value={item.name}>{item.name}</option>)}</select>
                   <input value={languages} onChange={e => setLanguages(e.target.value)} placeholder="Languages * (e.g. Hindi, English)" className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3" />
                 </> : <>
