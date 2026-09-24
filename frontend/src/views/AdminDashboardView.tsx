@@ -143,6 +143,8 @@ export const AdminDashboardView: React.FC = () => {
   };
   const [creatorFilterTab, setCreatorFilterTab] = useState<'all' | 'pending' | 'active' | 'suspended'>('all');
   const [creatorSearch, setCreatorSearch] = useState('');
+  const [emailMenuCreatorId, setEmailMenuCreatorId] = useState<string | null>(null);
+  const [sendingEmail, setSendingEmail] = useState<{ creatorId: string; type: 'complete_profile' | 'information_warning' } | null>(null);
   const [brandSearch, setBrandSearch] = useState('');
   const [isRefreshingCreators, setIsRefreshingCreators] = useState(false);
 
@@ -192,6 +194,25 @@ export const AdminDashboardView: React.FC = () => {
       await adminDeleteCreator(creator.id);
     } catch (error) {
       window.alert(error instanceof Error ? error.message : 'Failed to delete influencer');
+    }
+  };
+
+  const sendCreatorReviewEmail = async (creator: Creator, type: 'complete_profile' | 'information_warning') => {
+    setSendingEmail({ creatorId: creator.id, type });
+    try {
+      const response = await fetch(apiUrl(`/api/creators/${creator.id}/review-email`), {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ type }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || 'Failed to send email');
+      setEmailMenuCreatorId(null);
+      window.alert(`${type === 'complete_profile' ? 'Complete-profile reminder' : 'Profile-information warning'} sent to ${creator.name}.`);
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'Failed to send email');
+    } finally {
+      setSendingEmail(null);
     }
   };
 
@@ -777,6 +798,40 @@ export const AdminDashboardView: React.FC = () => {
                                       <Check className="w-3.5 h-3.5" />
                                       <span>Approve</span>
                                     </button>
+                                    <div className="relative">
+                                      <button
+                                        type="button"
+                                        onClick={() => setEmailMenuCreatorId((current) => current === c.id ? null : c.id)}
+                                        title="Send profile review email"
+                                        className="p-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 transition cursor-pointer"
+                                      >
+                                        <Mail className="w-3.5 h-3.5" />
+                                      </button>
+                                      {emailMenuCreatorId === c.id && (
+                                        <div className="absolute right-0 top-full z-20 mt-1 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 text-left shadow-lg">
+                                          <button
+                                            type="button"
+                                            disabled={sendingEmail?.creatorId === c.id}
+                                            onClick={() => void sendCreatorReviewEmail(c, 'complete_profile')}
+                                            className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                          >
+                                            {sendingEmail?.creatorId === c.id && sendingEmail.type === 'complete_profile'
+                                              ? 'Sending…'
+                                              : 'Send complete-profile reminder'}
+                                          </button>
+                                          <button
+                                            type="button"
+                                            disabled={sendingEmail?.creatorId === c.id}
+                                            onClick={() => void sendCreatorReviewEmail(c, 'information_warning')}
+                                            className="w-full px-3 py-2 text-left text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                          >
+                                            {sendingEmail?.creatorId === c.id && sendingEmail.type === 'information_warning'
+                                              ? 'Sending…'
+                                              : 'Send information-correction warning'}
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
                                     <button
                                       type="button"
                                       onClick={() => handleRejectCreator(c.id)}

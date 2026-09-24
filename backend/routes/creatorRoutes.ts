@@ -5,7 +5,8 @@ import {
   createCreator,
   updateCreator,
   deleteCreator,
-  addCreatorReview
+  addCreatorReview,
+  sendCreatorReviewEmail
 } from '../controllers/creatorController';
 import { authMiddleware, requireRole } from '../middleware/authMiddleware';
 
@@ -16,6 +17,7 @@ router.get('/:idOrUsername', getCreatorByIdOrUsername);
 router.post('/', createCreator);
 router.put('/:id', authMiddleware, updateCreator);
 router.delete('/:id', authMiddleware, requireRole('ADMIN', 'SALES'), deleteCreator);
+router.post('/:id/review-email', authMiddleware, requireRole('ADMIN', 'SALES'), sendCreatorReviewEmail);
 router.post('/:id/reviews', authMiddleware, addCreatorReview);
 
 export default router;
