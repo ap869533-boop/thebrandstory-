@@ -116,12 +116,10 @@ export const LiveOpportunitiesBoard: React.FC = () => {
               key={camp.id}
               className="bg-white rounded-[24px] border border-slate-100 shadow-[0_8px_30px_rgba(0,0,0,0.06)] hover:shadow-[0_20px_40px_rgba(212,163,56,0.15)] hover:border-[#D4A338]/40 hover:-translate-y-2 transition-all duration-500 flex flex-col group relative overflow-hidden w-[85vw] sm:w-[calc(50%-0.75rem)] md:w-[calc(33.333%-1rem)] lg:w-[calc(33.333%-1rem)] snap-center shrink-0"
             >
-              {/* Yellow Gradient Header */}
-              <div className="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-amber-300 via-[#f4c95d] to-[#D4A338]"></div>
-              
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[#D4A338]/10 to-transparent rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-150 duration-700 pointer-events-none"></div>
-              
-              <div className="p-5 sm:p-6 space-y-4 relative z-10 flex flex-col">
+              {/* Thick Yellow Top Border */}
+                <div className="absolute top-0 inset-x-0 h-4 bg-[#D4A338] z-0"></div>
+                
+                <div className="p-5 sm:p-6 pt-7 space-y-4 relative z-10 flex-1 flex flex-col">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-12 h-12 rounded-2xl border border-slate-100 bg-white flex items-center justify-center shrink-0 shadow-md group-hover:shadow-lg transition-shadow overflow-hidden">
@@ -147,13 +145,13 @@ export const LiveOpportunitiesBoard: React.FC = () => {
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-slate-900 text-sm leading-snug group-hover:text-[#b88628] transition line-clamp-2">
+                  <h3 className="font-bold text-[#b88628] text-lg leading-snug line-clamp-2">
                     {camp.campaignTitle}
                   </h3>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-[#8e6819] border border-amber-200/60">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-50/30 text-[#b88628] border border-amber-200">
                     <Tag className="w-2.5 h-2.5 text-[#b88628]" />
                     {camp.category}
                   </span>
@@ -169,13 +167,13 @@ export const LiveOpportunitiesBoard: React.FC = () => {
                   ) : null}
 
                   {camp.language && camp.language !== 'Any' && camp.language !== 'Any Language' && (
-                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-blue-50 text-blue-600 border border-blue-200/60">
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-amber-50/30 text-[#b88628] border border-amber-200">
                       Lang: {camp.language}
                     </span>
                   )}
 
                   {camp.genderPreference && camp.genderPreference !== 'Any' && camp.genderPreference !== 'Any / Both' && camp.genderPreference !== 'Custom Mix' && (
-                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-pink-50 text-pink-600 border border-pink-200/60">
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-amber-50/30 text-[#b88628] border border-amber-200">
                       Gender: {camp.genderPreference}
                     </span>
                   )}
@@ -195,39 +193,39 @@ export const LiveOpportunitiesBoard: React.FC = () => {
                 </div>
               </div>
 
-              <div className="p-5 sm:p-6 pt-0 relative z-10 w-full flex flex-col justify-end h-full">
+              <div className="p-5 sm:p-6 pt-0 mt-auto relative z-10 w-full flex flex-col justify-end">
                 {(camp.maleCount > 0 || camp.femaleCount > 0) && (
-                  <div className="flex items-center gap-3 mb-2 bg-slate-50/80 px-3 py-2 rounded-xl border border-slate-100">
+                  <div className="flex items-center gap-3 mb-3 bg-slate-50 px-4 py-3 rounded-2xl border border-slate-100/80">
                     <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Required:</span>
                     {camp.maleCount > 0 && (
-                      <span className="text-xs font-bold text-blue-700">
+                      <span className="text-[13px] font-bold text-[#b88628]">
                         {camp.maleCount} Male
                       </span>
                     )}
                     {camp.femaleCount > 0 && (
-                      <span className="text-xs font-bold text-rose-700">
+                      <span className="text-[13px] font-bold text-rose-700">
                         {camp.femaleCount} Female
                       </span>
                     )}
                   </div>
                 )}
                 
-                <div className="p-3 mb-4 bg-gradient-to-br from-slate-50 to-white rounded-2xl border border-slate-100 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] text-xs flex justify-between items-center">
+                <div className="p-4 mb-5 bg-slate-50 rounded-3xl border border-slate-100/80 flex justify-between items-center">
                   <div>
                     <span className="text-[9px] font-bold text-slate-400 block uppercase tracking-widest mb-1">Total Budget</span>
-                    <span className="font-black text-emerald-600 text-sm block whitespace-normal leading-snug">{camp.budget}</span>
+                    <span className="font-black text-emerald-600 text-[15px] block whitespace-normal leading-snug">{camp.budget}</span>
                   </div>
                   <div className="text-right">
                     <span className="text-[9px] font-bold text-slate-400 block uppercase tracking-widest mb-1">Valid Till</span>
-                    <span className={`font-bold text-[13px] block whitespace-normal leading-snug ${camp.validUntil ? 'text-rose-600' : 'text-slate-500'}`}>
+                    <span className={`font-bold text-[14px] block whitespace-normal leading-snug ${camp.validUntil ? 'text-rose-600' : 'text-slate-600'}`}>
                       {camp.validUntil ? new Date(camp.validUntil).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Until Filled'}
                     </span>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between gap-2 mt-auto">
-                  <span className="text-[11px] text-slate-500 font-medium">
-                    <strong className="text-slate-800 font-bold">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[13px] text-slate-500 font-medium">
+                    <strong className="text-slate-700 font-bold">
                       {Array.isArray(camp.applicants) ? camp.applicants.length : camp.applicantsCount || 0}
                     </strong>{' '}
                     applied
@@ -246,11 +244,11 @@ export const LiveOpportunitiesBoard: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleApply(camp)}
-                      className="px-4 py-2 bg-black hover:bg-[#D4A338] hover:text-black text-white font-bold text-xs rounded-xl shadow-xs transition-all duration-200 flex items-center gap-1.5 cursor-pointer group/btn"
+                      className="px-4 py-2 bg-black hover:bg-[#D4A338] hover:text-black text-white font-bold text-[13px] rounded-xl shadow-xs transition-all duration-200 flex items-center gap-1.5 cursor-pointer group/btn"
                     >
-                      <Sparkles className="w-3.5 h-3.5 text-amber-400 group-hover/btn:text-black transition-colors" />
+                      <Sparkles className="w-4 h-4 text-[#D4A338]" />
                       <span>Pitch Now</span>
-                      <ArrowRight className="w-3 h-3 opacity-70 group-hover/btn:opacity-100 group-hover/btn:translate-x-0.5 transition-all" />
+                      <ArrowRight className="w-4 h-4 ml-0.5 opacity-70 group-hover/btn:opacity-100 group-hover/btn:translate-x-1 transition-all" />
                     </button>
                   )}
                 </div>
