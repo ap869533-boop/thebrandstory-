@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { dbQuery } from '../config/db';
 import { INITIAL_CREATORS } from '../data/initialData';
 import { Creator } from '../types';
-import { sendApprovalEmail } from '../utils/mailer';
+import { sendApprovalEmail, sendProfileInformationWarningEmail, sendProfileReminderEmail } from '../utils/mailer';
 import { cleanInstagramHandle } from '../utils/sanitize';
 import { AuthenticatedRequest } from '../middleware/authMiddleware';
 import { validateOptionalUrl } from '../utils/validation';
@@ -682,6 +682,49 @@ export async function deleteCreator(req: AuthenticatedRequest, res: Response) {
   } catch (error) {
     console.error('Delete creator error:', error);
     return res.status(500).json({ success: false, error: 'Failed to delete influencer' });
+  }
+}
+
+/** Send an approval-related email to a creator who is still pending review. */
+export async function sendCreatorReviewEmail(req: AuthenticatedRequest, res: Response) {
+  const { id } = req.params;
+  const { type } = req.body as { type?: string };
+
+  if (!['complete_profile', 'information_warning'].includes(type || '')) {
+    return res.status(400).json({ success: false, error: 'Invalid email type' });
+  }
+
+  try {
+    const rows: any[] | null = await dbQuery(
+      `SELECT c.name, c.email, c.status, c.verification_requested
+       FROM creators c
+       WHERE c.id = ?
+       LIMIT 1`,
+      [id]
+    );
+    const storedCreator = creatorsStore.find((creator) => creator.id === id);
+    const creator = rows?.[0] || storedCreator;
+
+    if (!creator) {
+      return res.status(404).json({ success: false, error: 'Influencer not found' });
+    }
+    if (creator.status !== 'pending' && !creator.verification_requested) {
+      return res.status(400).json({ success: false, error: 'Emails can only be sent to influencers pending approval' });
+    }
+    if (!creator.email) {
+      return res.status(400).json({ success: false, error: 'This influencer does not have an email address' });
+    }
+
+    if (type === 'complete_profile') {
+      await sendProfileReminderEmail(creator.email, creator.name);
+    } else {
+      await sendProfileInformationWarningEmail(creator.email, creator.name);
+    }
+
+    return res.json({ success: true, message: 'Email sent successfully' });
+  } catch (error: any) {
+    console.error('Send creator review email error:', error);
+    return res.status(500).json({ success: false, error: error.message || 'Failed to send email' });
   }
 }
 

@@ -176,3 +176,90 @@ export const sendApprovalEmail = async (to: string, name: string) => {
     console.warn(`[APPROVAL EMAIL WARNING] Could not send approval email to ${to}:`, error.message);
   }
 };
+
+/**
+ * Sends a reminder email to an influencer to complete their profile.
+ */
+export const sendProfileReminderEmail = async (to: string, name: string) => {
+  try {
+    const transporter = getTransporter();
+    const from = getFromAddress();
+
+    await transporter.sendMail({
+      from,
+      to,
+      subject: `Complete Your Profile on The Brands Story`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; padding: 32px 24px; max-width: 520px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
+          <h2 style="color: #334155; text-align: center; margin-top: 0;">Hey ${name}, 👋</h2>
+          <p style="color: #334155; font-size: 15px; line-height: 1.6;">
+            Your profile on <strong>The Brands Story</strong> is incomplete.
+          </p>
+          <p style="color: #334155; font-size: 15px; line-height: 1.6;">
+            Please complete your profile to <strong>80% or above</strong> to proceed with the approval process.
+          </p>
+          <p style="color: #334155; font-size: 15px; line-height: 1.6;">
+            A complete profile helps brands discover you and consider you for collaborations.
+          </p>
+          <div style="text-align: center; margin: 28px 0;">
+            <a href="https://thebrandsstory.com/dashboard" style="background-color: #D4A338; color: #ffffff; padding: 12px 28px; font-size: 14px; font-weight: 700; text-decoration: none; border-radius: 10px; display: inline-block;">
+              Complete Your Profile →
+            </a>
+          </div>
+          <p style="color: #334155; font-size: 15px; line-height: 1.6; margin-top: 20px;">
+            Best regards,<br/>
+            <strong>Team The Brands Story</strong>
+          </p>
+        </div>
+      `,
+    });
+    console.log(`✅ [REMINDER EMAIL] Sent to ${to}`);
+  } catch (error: any) {
+    console.warn(`[REMINDER EMAIL WARNING] Could not send reminder email to ${to}:`, error.message);
+    throw new Error('Unable to send the email. Please check the mail service configuration and try again.');
+  }
+};
+
+/**
+ * Sends an admin-requested warning when profile information needs correction.
+ */
+export const sendProfileInformationWarningEmail = async (to: string, name: string) => {
+  try {
+    const transporter = getTransporter();
+    const from = getFromAddress();
+
+    await transporter.sendMail({
+      from,
+      to,
+      subject: `Action required: review your profile information - The Brands Story`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; padding: 32px 24px; max-width: 520px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
+          <h2 style="color: #b45309; text-align: center; margin-top: 0;">Please review your profile</h2>
+          <p style="color: #334155; font-size: 15px; line-height: 1.6;">Hey <strong>${name}</strong>,</p>
+          <p style="color: #334155; font-size: 15px; line-height: 1.6;">
+            During our review, we found profile information that appears incomplete, inaccurate, or inconsistent.
+          </p>
+          <p style="color: #334155; font-size: 15px; line-height: 1.6;">
+            Please review and update your social handles, audience metrics, pricing, contact details, and portfolio with accurate, current information. Accurate profiles help us maintain a trusted platform and allow brands to consider you for collaborations.
+          </p>
+          <p style="color: #334155; font-size: 15px; line-height: 1.6;">
+            Your profile cannot proceed to approval until the required corrections are made.
+          </p>
+          <div style="text-align: center; margin: 28px 0;">
+            <a href="https://thebrandsstory.com/dashboard" style="background-color: #D4A338; color: #ffffff; padding: 12px 28px; font-size: 14px; font-weight: 700; text-decoration: none; border-radius: 10px; display: inline-block;">
+              Review Your Profile &rarr;
+            </a>
+          </div>
+          <p style="color: #334155; font-size: 15px; line-height: 1.6; margin-top: 20px;">
+            Best regards,<br/>
+            <strong>Team The Brands Story</strong>
+          </p>
+        </div>
+      `,
+    });
+    console.log(`[PROFILE INFORMATION WARNING EMAIL] Sent to ${to}`);
+  } catch (error: any) {
+    console.warn(`[PROFILE INFORMATION WARNING EMAIL] Could not send to ${to}:`, error.message);
+    throw new Error('Unable to send the email. Please check the mail service configuration and try again.');
+  }
+};
