@@ -22,6 +22,7 @@ import {
   Camera,
   ImagePlus
 } from 'lucide-react';
+import { ImageCropperModal } from './ImageCropperModal';
 import { usePlatform } from '../../context/PlatformContext';
 import { UserRole } from '../../types';
 import { CATEGORIES_LIST, CITIES_LIST } from '../../data/initialData';
@@ -152,6 +153,7 @@ export const AuthModal: React.FC = () => {
   const [profilePhotoUrl, setProfilePhotoUrl] = useState('');
   const [bannerUrl, setBannerUrl] = useState('');
   const [uploadingMedia, setUploadingMedia] = useState<'avatar' | 'cover' | null>(null);
+  const [cropModalData, setCropModalData] = useState<{ src: string, type: 'avatar' | 'cover' } | null>(null);
 
   useEffect(() => {
     const normalizedEmail = email.trim().toLowerCase();
@@ -1226,7 +1228,19 @@ export const AuthModal: React.FC = () => {
             </div>
           </div>
         )}
-      </div>
+            </div>
+      {cropModalData && (
+        <ImageCropperModal
+          imageSrc={cropModalData.src}
+          aspect={cropModalData.type === 'avatar' ? 1 : 9 / 16}
+          shape={cropModalData.type === 'avatar' ? 'round' : 'rect'}
+          onCropDone={(file) => {
+            uploadCreatorMedia(file, cropModalData.type);
+            setCropModalData(null);
+          }}
+          onCancel={() => setCropModalData(null)}
+        />
+      )}
     </div>
   );
 };

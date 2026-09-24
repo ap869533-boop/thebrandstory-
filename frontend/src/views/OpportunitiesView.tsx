@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Flame, MapPin, IndianRupee, Clock, ArrowRight, Users, CheckCircle2, PlusCircle, Sparkles, Send, Filter, Search, Tag } from 'lucide-react';
+import { Flame, MapPin, IndianRupee, Clock, ArrowRight, Users, Gift, Calendar, CheckCircle2, PlusCircle, Sparkles, Send, Filter, Search, Tag } from 'lucide-react';
 import { usePlatform } from '../context/PlatformContext';
 import { CampaignRequirement } from '../types';
 import { CATEGORIES_LIST, CITIES_LIST } from '../data/initialData';
