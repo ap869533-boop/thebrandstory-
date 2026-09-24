@@ -252,7 +252,7 @@ export const LoginView: React.FC = () => {
     const coverUrl = await persistImage(bannerUrl, 'cover');
     const instagramHandle = username.match(/instagram\.com\/([^/?#]+)/i)?.[1] || username.trim();
     const updates = {
-      username: instagramHandle, gender, ageGroup, state: creatorState.trim(), primaryCategory: category,
+      username: instagramHandle, gender, ageGroup, state: creatorState.trim(), currentCity: creatorState.trim(), primaryCategory: category,
       languages: languages.split(',').map(item => item.trim()).filter(Boolean),
       avatar: avatarUrl || undefined, coverImage: coverUrl || undefined,
       startingPrice: parsedStartingPrice,
