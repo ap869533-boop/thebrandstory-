@@ -197,10 +197,15 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({
                 <h3 className="font-bold text-white text-sm sm:text-base leading-tight group-hover:text-[#D4A338] transition truncate">
                   {creator.name || 'Creator'}
                 </h3>
-                {creator.isVerified && <CheckCircle2 className="w-4 h-4 text-sky-400 fill-white shrink-0" />}
+                {creator.isVerified && (
+                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" fill="#0095F6" />
+                    <path d="M8.5 12.5L11 15L16 9" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
               </div>
               <p className="text-[10px] sm:text-xs text-slate-300 font-medium truncate mt-0.5">
-                @{creator.username || 'creator'} <span className="text-white/50">•</span> {cityLabel}
+                @{creator.username || 'creator'} <span className="text-white/60">·</span> {cityLabel}
               </p>
             </div>
           </div>

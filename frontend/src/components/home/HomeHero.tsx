@@ -87,15 +87,14 @@ export const HomeHero: React.FC = () => {
         <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-0.5 sm:py-1.5 bg-black text-zinc-300 text-[9.5px] sm:text-xs font-semibold rounded-full border border-zinc-800 shadow-md max-w-full">
           <span className="w-2 h-2 rounded-full bg-[#D4A338] animate-pulse shrink-0" />
           <ShieldCheck className="w-3.5 h-3.5 text-[#D4A338] shrink-0" />
-          <span className="truncate">India's Biggest Influencer Marketplace</span>
-          <span className="hidden xs:inline text-zinc-500">•</span>
+
           <span className="hidden xs:inline text-[#D4A338] font-bold">50,000+ Verified Creators</span>
         </div>
 
         {/* 2. Responsive Headline & Subtitle */}
         <div className="space-y-1 sm:space-y-2.5 max-w-3xl mx-auto w-full">
           <h1 className="text-xl xs:text-2xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight">
-            Search Influencers & Promote Your Brand
+            India's Biggest Influencer Marketplace
           </h1>
           <p className="text-[9.5px] xs:text-[11px] sm:text-sm md:text-base text-zinc-400 font-medium max-w-2xl mx-auto leading-snug sm:leading-relaxed">
             Create Profile in Seconds <span className="text-[#D4A338] font-bold">•</span> 100% Free <span className="text-[#D4A338] font-bold">•</span> Trusted Profile

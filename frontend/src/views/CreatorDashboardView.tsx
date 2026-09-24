@@ -659,57 +659,57 @@ export const CreatorDashboardView: React.FC = () => {
           </div>
         )}
 
-        <section className="rounded-3xl border border-slate-200 bg-white p-3 sm:rounded-[2rem] sm:p-6 shadow-sm">
-          <div className="flex flex-col items-center gap-4 lg:flex-row lg:items-stretch">
-            {/* Creator Card – full width on mobile, fixed width on desktop */}
-            <div className="w-full shrink-0 sm:max-w-[360px]">
+        <section className="rounded-3xl border border-slate-200/90 bg-white p-5 sm:rounded-[2.5rem] sm:p-8 lg:p-10 shadow-[0_4px_24px_rgba(0,0,0,0.02)]">
+          <div className="flex flex-col md:flex-row items-center md:items-stretch gap-6 lg:gap-10">
+            {/* Creator Card – Left Column */}
+            <div className="w-full sm:w-[320px] md:w-[320px] lg:w-[340px] shrink-0">
               <CreatorCard creator={creator} interactive={false} showSaveButton={false} showViewProfile={false} />
             </div>
-            {/* Instagram Info Panel */}
-            <div className="flex min-w-0 w-full flex-1 flex-col justify-center rounded-2xl bg-slate-50 p-4 sm:p-7">
-              <span className="text-[10px] font-black uppercase tracking-widest text-[#b88628]">Instagram information</span>
-              <h1 className="mt-1.5 text-xl sm:text-2xl font-black text-slate-900 break-all">@{creator.username || 'creator'}</h1>
-              {/* Stats Row – always 3 columns */}
-              <div className="mt-3 grid grid-cols-3 gap-2 sm:gap-3 max-w-xl">
-                <div className="rounded-xl border border-slate-200 bg-white px-2.5 py-2 sm:px-3 sm:py-2.5">
-                  <p className="text-[9px] sm:text-[10px] font-bold uppercase text-slate-400">Followers</p>
-                  <p className="mt-0.5 text-xs sm:text-sm font-black text-slate-800">{(creator.followers || 0).toLocaleString('en-IN')}</p>
+            {/* Instagram Information – Right Column */}
+            <div className="flex min-w-0 w-full flex-1 flex-col justify-center">
+              <span className="text-[11px] font-black uppercase tracking-[0.18em] text-[#b88628]">INSTAGRAM INFORMATION</span>
+              <h1 className="mt-1.5 text-2xl sm:text-3xl font-black text-slate-900 tracking-tight break-all">@{cleanInstagramHandle(creator.username) || creator.username || 'creator'}</h1>
+              {/* Stats Grid – 6 Metric Boxes */}
+              <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-3.5 max-w-2xl">
+                <div className="rounded-2xl border border-slate-200/90 bg-white px-4 py-3 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">FOLLOWERS</p>
+                  <p className="mt-0.5 text-sm sm:text-base font-black text-slate-900">{(creator.followers || 0).toLocaleString('en-IN')}</p>
                 </div>
-                <div className="rounded-xl border border-slate-200 bg-white px-2.5 py-2 sm:px-3 sm:py-2.5">
-                  <p className="text-[9px] sm:text-[10px] font-bold uppercase text-slate-400">Posts</p>
-                  <p className="mt-0.5 text-xs sm:text-sm font-black text-slate-800">{(creator.totalPosts || 0).toLocaleString('en-IN')}</p>
+                <div className="rounded-2xl border border-slate-200/90 bg-white px-4 py-3 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">POSTS</p>
+                  <p className="mt-0.5 text-sm sm:text-base font-black text-slate-900">{(creator.totalPosts || 0).toLocaleString('en-IN')}</p>
                 </div>
-                <div className="rounded-xl border border-slate-200 bg-white px-2.5 py-2 sm:px-3 sm:py-2.5">
-                  <p className="text-[9px] sm:text-[10px] font-bold uppercase text-slate-400">Avg. views</p>
-                  <p className="mt-0.5 text-xs sm:text-sm font-black text-slate-800">{(creator.avgViews || 0).toLocaleString('en-IN')}</p>
+                <div className="rounded-2xl border border-slate-200/90 bg-white px-4 py-3 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">AVG. VIEWS</p>
+                  <p className="mt-0.5 text-sm sm:text-base font-black text-slate-900">{(creator.avgViews || 0).toLocaleString('en-IN')}</p>
                 </div>
-              </div>
-              {/* Additional stats row */}
-              <div className="mt-2 grid grid-cols-3 gap-2 sm:gap-3 max-w-xl">
-                <div className="rounded-xl border border-slate-200 bg-white px-2.5 py-2 sm:px-3 sm:py-2.5">
-                  <p className="text-[9px] sm:text-[10px] font-bold uppercase text-slate-400">Avg. likes</p>
-                  <p className="mt-0.5 text-xs sm:text-sm font-black text-slate-800">{(creator.avgLikes || 0).toLocaleString('en-IN')}</p>
+                <div className="rounded-2xl border border-slate-200/90 bg-white px-4 py-3 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">AVG. LIKES</p>
+                  <p className="mt-0.5 text-sm sm:text-base font-black text-slate-900">{(creator.avgLikes || 0).toLocaleString('en-IN')}</p>
                 </div>
-                <div className="rounded-xl border border-slate-200 bg-white px-2.5 py-2 sm:px-3 sm:py-2.5">
-                  <p className="text-[9px] sm:text-[10px] font-bold uppercase text-slate-400">Category</p>
-                  <p className="mt-0.5 text-xs sm:text-sm font-black text-slate-800 truncate">{creator.primaryCategory || '—'}</p>
+                <div className="rounded-2xl border border-slate-200/90 bg-white px-4 py-3 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">CATEGORY</p>
+                  <p className="mt-0.5 text-sm sm:text-base font-black text-slate-900 truncate">{creator.primaryCategory || '—'}</p>
                 </div>
-                <div className="rounded-xl border border-slate-200 bg-white px-2.5 py-2 sm:px-3 sm:py-2.5">
-                  <p className="text-[9px] sm:text-[10px] font-bold uppercase text-slate-400">City</p>
-                  <p className="mt-0.5 text-xs sm:text-sm font-black text-slate-800 truncate">{creator.currentCity || '—'}</p>
+                <div className="rounded-2xl border border-slate-200/90 bg-white px-4 py-3 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">CITY</p>
+                  <p className="mt-0.5 text-sm sm:text-base font-black text-slate-900 truncate">{creator.currentCity || '—'}</p>
                 </div>
               </div>
               {/* Bio */}
-              <div className="mt-3 max-w-xl">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Bio</p>
-                <p className="mt-1 text-xs sm:text-sm leading-relaxed text-slate-600 line-clamp-3">{creator.bio?.trim() || 'Add a short bio to tell brands about your content and audience.'}</p>
+              <div className="mt-4 sm:mt-5 max-w-2xl">
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">BIO</p>
+                <p className="mt-1 text-xs sm:text-sm leading-relaxed text-slate-600 font-normal line-clamp-3">
+                  {creator.bio?.trim() || 'Add a short bio to tell brands about your content and audience.'}
+                </p>
               </div>
+
               {/* Action buttons */}
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-5 sm:mt-6 flex flex-wrap items-center gap-3">
                 <button
                   type="button"
                   onClick={() => setActiveTab('profile')}
-                  className="inline-flex items-center gap-2 rounded-xl bg-[#D4A338] px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-[#D4A338]/20 transition hover:bg-[#b88628]"
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#D4A338] hover:bg-[#c2912a] px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md shadow-[#D4A338]/20 transition cursor-pointer active:scale-95"
                 >
                   <Edit3 className="w-4 h-4" />
                   Edit Profile
@@ -717,7 +717,7 @@ export const CreatorDashboardView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => navigateTo('creator-detail', { username: creator.username, id: creator.id })}
-                  className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-bold text-white shadow-md transition hover:bg-black"
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#111827] hover:bg-black px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md shadow-slate-900/15 transition cursor-pointer active:scale-95"
                 >
                   <Eye className="w-4 h-4" />
                   Preview Profile
