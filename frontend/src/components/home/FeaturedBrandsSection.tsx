@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Building2, Star, ArrowRight, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Building2, Star, Users, Gift, Calendar, ArrowRight, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { apiUrl } from '../../config/api';
 import { usePlatform } from '../../context/PlatformContext';
 import { BrandProfile } from '../../types';
@@ -161,20 +161,38 @@ export const FeaturedBrandsSection: React.FC = () => {
                   {brand.industry}
                 </p>
 
-                {brand.totalHiringCount ? (
-                  <div className="mb-4">
-                    <p className="text-sm font-medium text-slate-500">
-                      {brand.totalHiringCount > 999 ? (brand.totalHiringCount / 1000).toFixed(1).replace(/\.0$/, '') + 'K+' : brand.totalHiringCount + '+'} actively hiring
-                    </p>
+                {/* 3-Column Stats UI */}
+                <div className="grid grid-cols-3 bg-slate-50 rounded-2xl border border-slate-100/80 mb-5 overflow-hidden w-full mt-2">
+                  <div className="p-3 border-r border-slate-100/80 text-left flex flex-col justify-center">
+                    <div className="flex items-center gap-1 text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                      <Users className="w-3 h-3" /> Hiring
+                    </div>
+                    <div className="font-black text-slate-800 text-[14px] leading-tight">
+                      {brand.totalHiringCount ? (brand.totalHiringCount > 999 ? (brand.totalHiringCount / 1000).toFixed(1).replace(/\.0$/, '') + 'K+' : brand.totalHiringCount + '+') : '10+'}
+                    </div>
+                    <div className="text-[11px] font-bold text-slate-700 mt-0.5">Influencers</div>
                   </div>
-                ) : (
-                  <div className="mb-3"></div>
-                )}
-                
-                {/* Description */}
-                <p className="text-xs text-slate-500 leading-relaxed mb-6 flex-1 px-2 line-clamp-3">
-                  {brand.description || 'Verified enterprise brand hiring creators for multiple campaigns.'}
-                </p>
+                  <div className="p-3 border-r border-slate-100/80 text-left flex flex-col justify-center">
+                    <div className="flex items-center gap-1 text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                      <Gift className="w-3 h-3" /> Barter
+                    </div>
+                    <div className="font-black text-emerald-600 text-[14px] leading-tight truncate">
+                      ₹5000
+                    </div>
+                    <div className="text-[11px] font-medium text-emerald-500 truncate mt-0.5">+ products</div>
+                  </div>
+                  <div className="p-3 text-left flex flex-col justify-center">
+                    <div className="flex items-center gap-1 text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                      <Calendar className="w-3 h-3" /> Deadline
+                    </div>
+                    <div className="font-black text-slate-800 text-[14px] leading-tight">
+                      12 Sep
+                    </div>
+                    <div className="text-[11px] font-bold text-slate-700 mt-0.5">
+                      2026
+                    </div>
+                  </div>
+                </div>
 
                 {/* Action */}
                 <button

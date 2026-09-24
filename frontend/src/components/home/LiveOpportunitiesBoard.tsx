@@ -3,7 +3,7 @@ import {
   Flame,
   MapPin,
   ArrowRight,
-  CheckCircle2,
+  Users, Gift, Calendar, CheckCircle2,
   PlusCircle,
   Sparkles,
   Send,

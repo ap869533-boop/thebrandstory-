@@ -16,10 +16,11 @@ import {
   FileText,
   Clock
 } from 'lucide-react';
+import { ImageCropperModal } from '../components/common/ImageCropperModal';
 import { usePlatform } from '../context/PlatformContext';
 import { UserRole } from '../types';
 import { apiUrl, readApiResponse } from '../config/api';
-import { CATEGORIES_LIST } from '../data/initialData';
+import { CATEGORIES_LIST, CITIES_LIST } from '../data/initialData';
 
 const COUNTRY_CODES = [
   { code: '+91', label: 'IN +91' }, { code: '+1', label: 'US +1' },
@@ -85,6 +86,7 @@ export const LoginView: React.FC = () => {
   const [profilePhotoUrl, setProfilePhotoUrl] = useState('');
   const [bannerUrl, setBannerUrl] = useState('');
   const [uploadingMedia, setUploadingMedia] = useState<'avatar' | 'cover' | null>(null);
+  const [cropModalData, setCropModalData] = useState<{ src: string, type: 'avatar' | 'cover' } | null>(null);
 
   // Status & Feedback
   const [isLoading, setIsLoading] = useState(false);
@@ -252,7 +254,7 @@ export const LoginView: React.FC = () => {
     const coverUrl = await persistImage(bannerUrl, 'cover');
     const instagramHandle = username.match(/instagram\.com\/([^/?#]+)/i)?.[1] || username.trim();
     const updates = {
-      username: instagramHandle, gender, ageGroup, state: creatorState.trim(), primaryCategory: category,
+      username: instagramHandle, gender, ageGroup, currentCity: creatorState.trim(), state: '', primaryCategory: category,
       languages: languages.split(',').map(item => item.trim()).filter(Boolean),
       avatar: avatarUrl || undefined, coverImage: coverUrl || undefined,
       startingPrice: parsedStartingPrice,
@@ -624,21 +626,21 @@ export const LoginView: React.FC = () => {
                   ← Back
                 </button>
                 {creatorSetupStep === 1 ? <>
-                  <div className="flex gap-3">
-                    <label className="relative flex h-28 w-28 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 text-center text-slate-500">
-                      {profilePhotoUrl ? <img src={profilePhotoUrl} alt="Profile photo preview" className="h-full w-full object-cover" /> : <span className="px-2">{uploadingMedia === 'avatar' ? 'Uploading...' : 'Profile photo'}</span>}
-                      <input type="file" accept="image/*" className="absolute inset-0 opacity-0" disabled={uploadingMedia !== null} onChange={e => { const file = e.target.files?.[0]; if (file) uploadCreatorMedia(file, 'avatar'); }} />
-                    </label>
-                    <label className="relative flex h-28 min-w-0 flex-1 cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 text-center text-slate-500">
-                      {bannerUrl ? <img src={bannerUrl} alt="Display card photo preview" className="h-full w-full object-cover" /> : <span className="px-2">{uploadingMedia === 'cover' ? 'Uploading...' : 'Display card photo'}</span>}
-                      <input type="file" accept="image/*" className="absolute inset-0 opacity-0" disabled={uploadingMedia !== null} onChange={e => { const file = e.target.files?.[0]; if (file) uploadCreatorMedia(file, 'cover'); }} />
-                    </label>
-                  </div>
+                  <div className="flex gap-6 justify-center items-center py-2">
+                      <label className="relative flex h-28 w-28 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-slate-300 bg-slate-50 text-center text-slate-500 hover:bg-slate-100 transition-colors">
+                        {profilePhotoUrl ? <img src={profilePhotoUrl} alt="Profile photo preview" className="h-full w-full object-cover" /> : <span className="px-2 text-xs">{uploadingMedia === 'avatar' ? 'Uploading...' : 'Profile photo'}</span>}
+                        <input type="file" accept="image/*" className="absolute inset-0 opacity-0" disabled={uploadingMedia !== null} onChange={e => { const file = e.target.files?.[0]; if (file) { setCropModalData({ src: URL.createObjectURL(file), type: 'avatar' }); e.target.value = ''; } }} />
+                      </label>
+                      <label className="relative flex h-[160px] w-[90px] shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 text-center text-slate-500 hover:bg-slate-100 transition-colors shadow-sm">
+                        {bannerUrl ? <img src={bannerUrl} alt="Display story photo preview" className="h-full w-full object-cover" /> : <span className="px-2 text-xs">{uploadingMedia === 'cover' ? 'Uploading...' : 'Display story photo'}</span>}
+                        <input type="file" accept="image/*" className="absolute inset-0 opacity-0" disabled={uploadingMedia !== null} onChange={e => { const file = e.target.files?.[0]; if (file) { setCropModalData({ src: URL.createObjectURL(file), type: 'cover' }); e.target.value = ''; } }} />
+                      </label>
+                    </div>
                   <div className="grid grid-cols-2 gap-3">
                     <select value={gender} onChange={e => setGender(e.target.value)} className="rounded-xl border border-slate-200 bg-slate-50 p-3"><option value="">Gender *</option><option>Female</option><option>Male</option><option>Non-binary</option></select>
                     <input type="number" min="13" max="100" value={ageGroup} onChange={e => setAgeGroup(e.target.value)} placeholder="Age *" className="rounded-xl border border-slate-200 bg-slate-50 p-3" />
                   </div>
-                  <input value={creatorState} onChange={e => setCreatorState(e.target.value)} placeholder="State * (e.g. Maharashtra)" className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3" />
+                  <input value={creatorState} onChange={e => setCreatorState(e.target.value)} placeholder="City * (e.g. Mumbai, Delhi)" className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3" />
                   <select value={category} onChange={e => setCategory(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3"><option value="">Category *</option>{CATEGORIES_LIST.map(item => <option key={item.id} value={item.name}>{item.name}</option>)}</select>
                   <input value={languages} onChange={e => setLanguages(e.target.value)} placeholder="Languages * (e.g. Hindi, English)" className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3" />
                 </> : <>
@@ -933,7 +935,19 @@ export const LoginView: React.FC = () => {
             ← Back to Homepage
           </button>
         </div>
-      </div>
+            </div>
+      {cropModalData && (
+        <ImageCropperModal
+          imageSrc={cropModalData.src}
+          aspect={cropModalData.type === 'avatar' ? 1 : 9 / 16}
+          shape={cropModalData.type === 'avatar' ? 'round' : 'rect'}
+          onCropDone={(file) => {
+            uploadCreatorMedia(file, cropModalData.type);
+            setCropModalData(null);
+          }}
+          onCancel={() => setCropModalData(null)}
+        />
+      )}
     </div>
   );
 };

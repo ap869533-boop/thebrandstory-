@@ -22,6 +22,7 @@ import {
   Camera,
   ImagePlus
 } from 'lucide-react';
+import { ImageCropperModal } from './ImageCropperModal';
 import { usePlatform } from '../../context/PlatformContext';
 import { UserRole } from '../../types';
 import { CATEGORIES_LIST, CITIES_LIST } from '../../data/initialData';
@@ -152,6 +153,7 @@ export const AuthModal: React.FC = () => {
   const [profilePhotoUrl, setProfilePhotoUrl] = useState('');
   const [bannerUrl, setBannerUrl] = useState('');
   const [uploadingMedia, setUploadingMedia] = useState<'avatar' | 'cover' | null>(null);
+  const [cropModalData, setCropModalData] = useState<{ src: string, type: 'avatar' | 'cover' } | null>(null);
 
   useEffect(() => {
     const normalizedEmail = email.trim().toLowerCase();
@@ -303,7 +305,7 @@ export const AuthModal: React.FC = () => {
     const cardPhotoUrl = await persistImage(bannerUrl, 'cover');
     const instagramHandle = username.match(/instagram\.com\/([^/?#]+)/i)?.[1] || username;
     const updates = {
-      username: instagramHandle, gender, state: creatorState.trim(), primaryCategory: category,
+      username: instagramHandle, gender, currentCity: creatorState.trim(), state: '', primaryCategory: category,
       avatar: avatarUrl || undefined,
       coverImage: cardPhotoUrl || undefined,
       languages: languages.split(',').map((item) => item.trim()).filter(Boolean), ageGroup,
@@ -767,7 +769,7 @@ export const AuthModal: React.FC = () => {
                   <select value={gender} onChange={e => setGender(e.target.value)} className="p-3 bg-slate-50 border border-slate-200 rounded-xl"><option value="">Gender *</option><option>Female</option><option>Male</option><option>Non-binary</option></select>
                   <input type="number" min="13" max="100" value={ageGroup} onChange={e => setAgeGroup(e.target.value)} placeholder="Age *" className="p-3 bg-slate-50 border border-slate-200 rounded-xl" />
                 </div>
-                <input value={creatorState} onChange={e => setCreatorState(e.target.value)} placeholder="State * (e.g. Maharashtra)" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" />
+                <input value={creatorState} onChange={e => setCreatorState(e.target.value)} placeholder="City * (e.g. Mumbai, Delhi)" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" />
                 <select value={category} onChange={e => setCategory(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl"><option value="">Category *</option>{(categories?.length ? categories : CATEGORIES_LIST).map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}</select>
                 <input value={languages} onChange={e => setLanguages(e.target.value)} placeholder="Languages * (e.g. Hindi, English)" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" />
               </> : <>
@@ -1226,7 +1228,19 @@ export const AuthModal: React.FC = () => {
             </div>
           </div>
         )}
-      </div>
+            </div>
+      {cropModalData && (
+        <ImageCropperModal
+          imageSrc={cropModalData.src}
+          aspect={cropModalData.type === 'avatar' ? 1 : 9 / 16}
+          shape={cropModalData.type === 'avatar' ? 'round' : 'rect'}
+          onCropDone={(file) => {
+            uploadCreatorMedia(file, cropModalData.type);
+            setCropModalData(null);
+          }}
+          onCancel={() => setCropModalData(null)}
+        />
+      )}
     </div>
   );
 };
