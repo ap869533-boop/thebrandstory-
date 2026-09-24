@@ -43,6 +43,18 @@ function getPreviousUrl(creatorId: string, type: string) {
   return undefined;
 }
 
+export function saveBase64Media(dataUri: string, type: 'avatar' | 'cover' | 'reel_video' = 'avatar'): string {
+  if (!dataUri || typeof dataUri !== 'string' || !dataUri.startsWith('data:')) return dataUri || '';
+  const encodedData = dataUri.split(',')[1];
+  if (!encodedData) return '';
+  ensureUploadsDirectory();
+  const ext = getFileExtension(dataUri, type);
+  const fileName = `${randomUUID()}${ext}`;
+  const filePath = path.join(uploadsDir, fileName);
+  fs.writeFileSync(filePath, Buffer.from(encodedData, 'base64'));
+  return `/api/uploads/${fileName}`;
+}
+
 export async function uploadImage(req: AuthenticatedRequest, res: Response) {
   try {
     const { image, creatorId, type = 'avatar' } = req.body;

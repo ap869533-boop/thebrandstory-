@@ -27,6 +27,14 @@ const COUNTRY_CODES = [
   { code: '+61', label: 'AU +61' }, { code: '+65', label: 'SG +65' },
 ];
 
+/** Accept a single price or a range such as "2000-10000" and use its minimum. */
+function parseStartingPrice(value: string): number | null {
+  const matches = value.replace(/,/g, '').match(/\d+(?:\.\d+)?/g);
+  if (!matches?.length) return null;
+  const amount = Number(matches[0]);
+  return Number.isFinite(amount) && amount > 0 ? amount : null;
+}
+
 export const LoginView: React.FC = () => {
   const {
     viewParams,
@@ -200,8 +208,20 @@ export const LoginView: React.FC = () => {
       return;
     }
     if (!/^https?:\/\/(www\.)?instagram\.com\/[^/]+/i.test(username.trim())) throw new Error('Please enter a valid Instagram profile URL.');
-    if (![followers, totalPosts, avgViews, avgLikes, avgComments].every(value => value.trim() !== '') || Number(startingPrice) <= 0) {
-      throw new Error('Please enter every Instagram metric and a starting price. Use 0 where a metric is zero.');
+    const metrics = [
+      ['followers', followers],
+      ['total posts', totalPosts],
+      ['average views', avgViews],
+      ['average likes', avgLikes],
+      ['average comments', avgComments],
+    ];
+    const invalidMetric = metrics.find(([, value]) => !value.trim() || !Number.isFinite(Number(value)) || Number(value) < 0);
+    if (invalidMetric) {
+      throw new Error(`Please enter a valid ${invalidMetric[0]} count. Enter 0 when the count is zero.`);
+    }
+    const parsedStartingPrice = parseStartingPrice(startingPrice);
+    if (!parsedStartingPrice) {
+      throw new Error('Enter a valid starting price, for example ₹2000 or ₹2000-10000.');
     }
     let creatorUser = signupCreator;
     let token = localStorage.getItem('sc_auth_token') || '';
@@ -235,8 +255,8 @@ export const LoginView: React.FC = () => {
       username: instagramHandle, gender, ageGroup, state: creatorState.trim(), primaryCategory: category,
       languages: languages.split(',').map(item => item.trim()).filter(Boolean),
       avatar: avatarUrl || undefined, coverImage: coverUrl || undefined,
-      startingPrice: Number(startingPrice),
-      pricing: { startingPrice: Number(startingPrice) },
+      startingPrice: parsedStartingPrice,
+      pricing: { startingPrice: parsedStartingPrice },
       followers: Number(followers) || 0, totalPosts: Number(totalPosts) || 0,
       avgViews: Number(avgViews) || 0, avgLikes: Number(avgLikes) || 0, avgComments: Number(avgComments) || 0,
       socialPlatforms: [{ platform: 'instagram', username: instagramHandle, url: username.trim(), followers: Number(followers) || 0, avgViews: Number(avgViews) || 0, verified: false }],
@@ -623,7 +643,7 @@ export const LoginView: React.FC = () => {
                   <input value={languages} onChange={e => setLanguages(e.target.value)} placeholder="Languages * (e.g. Hindi, English)" className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3" />
                 </> : <>
                   <input value={username} onChange={e => setUsername(e.target.value)} placeholder="Instagram URL * (https://instagram.com/yourhandle)" className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3" />
-                  <input type="number" min="1" value={startingPrice} onChange={e => setStartingPrice(e.target.value)} placeholder="Starting price (₹) *" className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3" />
+                  <input type="text" inputMode="numeric" value={startingPrice} onChange={e => setStartingPrice(e.target.value)} placeholder="Starting price or range (₹) *" className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3" />
                   <div className="grid grid-cols-2 gap-3">{[
                     ['Followers count', followers, setFollowers], ['Total posts', totalPosts, setTotalPosts], ['Average likes', avgLikes, setAvgLikes], ['Average views', avgViews, setAvgViews], ['Average comments', avgComments, setAvgComments],
                   ].map(([label, value, setter]: any) => <input key={label} type="number" min="0" value={value} onChange={e => setter(e.target.value)} placeholder={label} className="rounded-xl border border-slate-200 bg-slate-50 p-3" />)}</div>
@@ -852,7 +872,7 @@ export const LoginView: React.FC = () => {
                 </>
               ) : creatorProfileSetup ? (
                 <>
-                  <span>{creatorSetupStep === 1 ? 'Continue to Instagram Details' : 'Save Profile & Open Dashboard'}</span>
+                  <span>{creatorSetupStep === 1 ? 'Continue to Instagram Details' : 'Sign Up & Open Dashboard'}</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               ) : otpSent ? (

@@ -18,6 +18,11 @@ function normalizeMobile(phone: unknown, countryCode: unknown = '+91'): string |
   return /^\d{10}$/.test(digits) ? `${code}${digits}` : null;
 }
 
+/** A unique placeholder prevents the creators.username unique index from blocking new onboarding profiles. */
+function createDraftCreatorUsername(userId: string): string {
+  return `creator_${userId.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase()}`;
+}
+
 // OTP Cache
 const otpCache = new Map<string, { otp: string; expires: number }>();
 
@@ -350,7 +355,7 @@ export async function fetchOrCreateCreatorProfile(user: any): Promise<Creator | 
   if (memCreator) return memCreator;
 
   // 3. Not found anywhere — auto-create in MySQL & creatorsStore!
-  const cleanUsername = '';
+  const cleanUsername = createDraftCreatorUsername(user.id || `draft_${Date.now()}`);
   const creatorId = `c_${Date.now()}`;
   const newCreator: Creator = {
     id: creatorId,
@@ -660,14 +665,20 @@ export async function verifyOtp(req: Request, res: Response) {
 
     if (isSignupContext) {
       // This is a SIGNUP attempt — if email already registered, reject it
-      if (existingUser) {
+      if (existingUser && !(signupToken && role === 'CREATOR' && existingUser.role === 'CREATOR')) {
         return res.status(409).json({
           success: false,
           error: 'This email is already registered. Please sign in instead.'
         });
       }
+      // A previously interrupted creator signup can resume only after it reaches
+      // this final, verified confirmation request with its short-lived token.
+      if (existingUser) {
+        user = existingUser;
+        user.creatorProfile = await fetchOrCreateCreatorProfile(user);
+      }
       // New user signup path
-      user = null; // will be created below
+      if (!user) user = null; // will be created below
     } else {
       // This is a LOGIN via OTP path
       user = existingUser || null;
@@ -683,9 +694,10 @@ export async function verifyOtp(req: Request, res: Response) {
       }
 
       isNewUser = true;
-      const cleanUsername = cleanInstagramHandle(req.body.instagramUrl || username || '');
-      const instagramUrl = cleanUsername ? `https://instagram.com/${cleanUsername}` : '';
+      const requestedUsername = cleanInstagramHandle(req.body.instagramUrl || username || '');
       const userId = `usr_${Date.now()}`;
+      const cleanUsername = requestedUsername || createDraftCreatorUsername(userId);
+      const instagramUrl = requestedUsername ? `https://instagram.com/${cleanUsername}` : '';
       const userAvatar = '';
 
       if (!password) {
@@ -843,8 +855,14 @@ export async function verifyOtp(req: Request, res: Response) {
             'pending'
           ]
         );
-        if (creatorInsertResult === null) {
-          throw new Error('Creator profile could not be saved to the database');
+        if (creatorInsertResult === null && isDbConnected()) {
+          // Do not leave an account behind if its required creator profile could not be created.
+          const failedCreatorIndex = creatorsStore.findIndex((creator) => creator.id === creatorId);
+          if (failedCreatorIndex !== -1) creatorsStore.splice(failedCreatorIndex, 1);
+          const memoryUserIndex = memoryUsers.findIndex((item) => item.id === userId);
+          if (memoryUserIndex !== -1) memoryUsers.splice(memoryUserIndex, 1);
+          await dbQuery('DELETE FROM users WHERE id = ?', [userId]);
+          throw new Error('Could not create the creator profile. Please try signing up again.');
         }
       }
 
@@ -883,9 +901,9 @@ export async function verifyOtp(req: Request, res: Response) {
       },
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Verify OTP error:', error);
-    res.status(500).json({ success: false, error: 'OTP verification failed' });
+    res.status(500).json({ success: false, error: error?.message || 'OTP verification failed' });
   }
 }
 
