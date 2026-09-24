@@ -18,7 +18,9 @@ import {
   ArrowLeft,
   ShieldCheck,
   Eye,
-  EyeOff
+  EyeOff,
+  Camera,
+  ImagePlus
 } from 'lucide-react';
 import { usePlatform } from '../../context/PlatformContext';
 import { UserRole } from '../../types';
@@ -127,6 +129,7 @@ export const AuthModal: React.FC = () => {
   // Validation State
   const [touched, setTouched] = useState<{ [key: string]: boolean }>({});
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
+  const [emailAvailability, setEmailAvailability] = useState<'idle' | 'checking' | 'available' | 'registered'>('idle');
 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -150,6 +153,39 @@ export const AuthModal: React.FC = () => {
   const [bannerUrl, setBannerUrl] = useState('');
   const [uploadingMedia, setUploadingMedia] = useState<'avatar' | 'cover' | null>(null);
 
+  useEffect(() => {
+    const normalizedEmail = email.trim().toLowerCase();
+    const isCreatorSignup = mode === 'signup' && role === 'CREATOR' && !creatorProfileSetup;
+    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail);
+
+    if (!isCreatorSignup || !isValidEmail) {
+      setEmailAvailability('idle');
+      return;
+    }
+
+    let isCurrentRequest = true;
+    setEmailAvailability('checking');
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await fetch(apiUrl('/api/auth/check-email'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: normalizedEmail }),
+        });
+        const data = await readApiResponse(response);
+        if (!isCurrentRequest) return;
+        setEmailAvailability(response.ok && data.success && !data.exists ? 'available' : 'registered');
+      } catch {
+        if (isCurrentRequest) setEmailAvailability('idle');
+      }
+    }, 450);
+
+    return () => {
+      isCurrentRequest = false;
+      window.clearTimeout(timer);
+    };
+  }, [email, mode, role, creatorProfileSetup]);
+
   if (!authModalOpen) return null;
 
   // Validation Logic
@@ -162,6 +198,8 @@ export const AuthModal: React.FC = () => {
       errors.email = 'Email address is required';
     } else if (!emailRegex.test(email.trim())) {
       errors.email = 'Please enter a valid email address (e.g. name@company.com)';
+    } else if (mode === 'signup' && role === 'CREATOR' && emailAvailability === 'registered') {
+      errors.email = 'This email is already registered. Please sign in instead.';
     }
 
     // Password validation
@@ -691,17 +729,40 @@ export const AuthModal: React.FC = () => {
                 Step {creatorSetupStep} of 2 — {creatorSetupStep === 1 ? 'Basic information' : 'Instagram information'}
               </div>
               {creatorSetupStep === 1 ? <>
-                <div className="flex gap-3">
-                  <label className="relative flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 text-center font-semibold text-slate-500 cursor-pointer">
-                    {profilePhotoUrl ? <img src={profilePhotoUrl} alt="Profile photo preview" className="w-full h-full object-cover" /> : <span className="px-2">{uploadingMedia === 'avatar' ? 'Uploading...' : 'Profile photo'}</span>}
-                    <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" disabled={uploadingMedia !== null} onChange={e => { const file = e.target.files?.[0]; if (file) uploadCreatorMedia(file, 'avatar'); }} />
+                <div className="flex items-start justify-center gap-7 sm:gap-10 py-1">
+                  <label className="group flex w-28 shrink-0 cursor-pointer flex-col items-center gap-2 text-center">
+                    <span className="relative flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-[#D4A338] bg-amber-50 shadow-sm transition group-hover:border-solid group-hover:shadow-md">
+                      {profilePhotoUrl ? (
+                        <img src={profilePhotoUrl} alt="Profile photo preview" className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="flex flex-col items-center gap-1 px-2 text-[#916a1f]">
+                          <Camera className="h-6 w-6" />
+                          <span className="text-[10px] font-bold">{uploadingMedia === 'avatar' ? 'Uploading…' : 'Add photo'}</span>
+                        </span>
+                      )}
+                      {profilePhotoUrl && <span className="absolute inset-0 flex items-center justify-center bg-slate-950/45 text-[10px] font-bold text-white opacity-0 transition group-hover:opacity-100">Change</span>}
+                      <input aria-label="Upload profile photo" type="file" accept="image/*" className="absolute inset-0 cursor-pointer opacity-0" disabled={uploadingMedia !== null} onChange={e => { const file = e.target.files?.[0]; if (file) uploadCreatorMedia(file, 'avatar'); }} />
+                    </span>
+                    <span className="text-[11px] font-bold text-slate-700">Profile photo</span>
                   </label>
-                  <label className="relative flex h-28 min-w-0 flex-1 items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 text-center font-semibold text-slate-500 cursor-pointer">
-                    {bannerUrl ? <img src={bannerUrl} alt="Display card photo preview" className="w-full h-full object-cover" /> : <span className="px-2">{uploadingMedia === 'cover' ? 'Uploading...' : 'Display card photo'}</span>}
-                    <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" disabled={uploadingMedia !== null} onChange={e => { const file = e.target.files?.[0]; if (file) uploadCreatorMedia(file, 'cover'); }} />
+
+                  <label className="group flex w-24 shrink-0 cursor-pointer flex-col items-center gap-2 text-center">
+                    <span className="relative flex h-36 w-24 items-center justify-center overflow-hidden rounded-[1.35rem] border-2 border-dashed border-indigo-300 bg-gradient-to-br from-indigo-50 via-white to-blue-100 shadow-sm transition group-hover:border-solid group-hover:shadow-md">
+                      {bannerUrl ? (
+                        <img src={bannerUrl} alt="Creator card photo preview" className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="flex flex-col items-center gap-1 px-2 text-indigo-600">
+                          <ImagePlus className="h-6 w-6" />
+                          <span className="text-[10px] font-bold">{uploadingMedia === 'cover' ? 'Uploading…' : 'Add card photo'}</span>
+                        </span>
+                      )}
+                      <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/70 to-transparent px-2 pb-2 pt-5 text-[9px] font-bold text-white opacity-0 transition group-hover:opacity-100">Change photo</span>
+                      <input aria-label="Upload creator card photo" type="file" accept="image/*" className="absolute inset-0 cursor-pointer opacity-0" disabled={uploadingMedia !== null} onChange={e => { const file = e.target.files?.[0]; if (file) uploadCreatorMedia(file, 'cover'); }} />
+                    </span>
+                    <span className="text-[11px] font-bold text-slate-700">Creator card photo</span>
                   </label>
                 </div>
-                <p className="text-[10px] text-slate-500">Upload a square profile photo and a wide display card photo. Both are required.</p>
+                <p className="text-center text-[10px] text-slate-500">Use a clear face photo for your round profile image and a vertical photo for your creator card. Both are required.</p>
                 <div className="grid grid-cols-2 gap-3">
                   <select value={gender} onChange={e => setGender(e.target.value)} className="p-3 bg-slate-50 border border-slate-200 rounded-xl"><option value="">Gender *</option><option>Female</option><option>Male</option><option>Non-binary</option></select>
                   <input type="number" min="13" max="100" value={ageGroup} onChange={e => setAgeGroup(e.target.value)} placeholder="Age *" className="p-3 bg-slate-50 border border-slate-200 rounded-xl" />
@@ -947,11 +1008,12 @@ export const AuthModal: React.FC = () => {
                     value={email}
                     onChange={(e) => {
                       setEmail(e.target.value);
+                      setTouched((prev) => ({ ...prev, email: true }));
                       if (fieldErrors.email) validate();
                     }}
                     onBlur={() => handleBlur('email')}
                     className={`w-full pl-10 pr-4 py-3 bg-slate-50 border rounded-xl focus:bg-white focus:outline-none transition font-medium ${
-                      touched.email && fieldErrors.email
+                      (touched.email && fieldErrors.email) || emailAvailability === 'registered'
                         ? 'border-rose-400 focus:border-rose-500 bg-rose-50/30'
                         : touched.email && !fieldErrors.email && email
                         ? 'border-emerald-400'
@@ -963,6 +1025,15 @@ export const AuthModal: React.FC = () => {
                   <span className="text-[11px] text-rose-600 font-semibold mt-1 block">
                     {fieldErrors.email}
                   </span>
+                )}
+                {mode === 'signup' && role === 'CREATOR' && emailAvailability === 'checking' && (
+                  <span className="text-[11px] text-slate-500 font-semibold mt-1 block">Checking email availability…</span>
+                )}
+                {mode === 'signup' && role === 'CREATOR' && emailAvailability === 'registered' && !fieldErrors.email && (
+                  <span className="text-[11px] text-rose-600 font-semibold mt-1 block">This email is already registered. Please sign in instead.</span>
+                )}
+                {mode === 'signup' && role === 'CREATOR' && emailAvailability === 'available' && (
+                  <span className="text-[11px] text-emerald-600 font-semibold mt-1 block">Email is available.</span>
                 )}
               </div>
 
@@ -1118,7 +1189,7 @@ export const AuthModal: React.FC = () => {
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || (mode === 'signup' && role === 'CREATOR' && !creatorProfileSetup && (emailAvailability === 'checking' || emailAvailability === 'registered'))}
             className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-500/20 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 mt-3"
           >
             {isLoading ? (
@@ -1134,7 +1205,7 @@ export const AuthModal: React.FC = () => {
                     : mode === 'login'
                     ? 'Login'
                     : creatorProfileSetup
-                    ? creatorSetupStep === 1 ? 'Continue to Instagram Details' : 'Save Profile & Open Dashboard'
+                    ? creatorSetupStep === 1 ? 'Continue to Instagram Details' : 'Sign Up & Open Dashboard'
                     : !otpSent
                     ? role === 'CREATOR' ? 'Continue to OTP Verification' : 'Get OTP'
                     : 'Verify & Complete Registration'}

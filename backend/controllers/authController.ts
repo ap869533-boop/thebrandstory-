@@ -71,6 +71,24 @@ const memoryUsers: UserRecord[] = [
   }
 ];
 
+/** Public availability check used while an influencer is completing signup. */
+export async function checkEmailAvailability(req: Request, res: Response) {
+  const cleanEmail = String(req.body?.email || '').toLowerCase().trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+    return res.status(400).json({ success: false, error: 'Please enter a valid email address' });
+  }
+
+  try {
+    const dbUsers = await dbQuery('SELECT id FROM users WHERE email = ? LIMIT 1', [cleanEmail]);
+    const existsInDatabase = Boolean(dbUsers?.length);
+    const existsInMemory = memoryUsers.some((user) => user.email === cleanEmail);
+    return res.json({ success: true, exists: existsInDatabase || existsInMemory });
+  } catch (error) {
+    console.error('Email availability check error:', error);
+    return res.status(500).json({ success: false, error: 'Unable to check email availability' });
+  }
+}
+
 export async function signup(req: Request, res: Response) {
   try {
     const {

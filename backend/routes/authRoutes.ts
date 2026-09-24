@@ -1,10 +1,11 @@
 import { Router } from 'express';
-import { signup, login, getMe, requestOtp, verifyOtp, changePassword, forgotPasswordOtp, resetPassword } from '../controllers/authController';
+import { signup, login, getMe, requestOtp, verifyOtp, changePassword, forgotPasswordOtp, resetPassword, checkEmailAvailability } from '../controllers/authController';
 import { authMiddleware } from '../middleware/authMiddleware';
 
 const router = Router();
 
 router.post('/signup', signup);
+router.post('/check-email', checkEmailAvailability);
 router.post('/login', login);
 router.get('/me', authMiddleware, getMe);
 
