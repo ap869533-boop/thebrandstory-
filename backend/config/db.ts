@@ -58,3 +58,11 @@ export async function dbQuery<T = any>(sql: string, params: any[] = []): Promise
     return null;
   }
 }
+
+// Use for writes that must be durable before an API can report success.
+export async function dbQueryStrict<T = any>(sql: string, params: any[] = []): Promise<T[]> {
+  const currentPool = await getDbPool();
+  if (!currentPool) throw new Error('Database is unavailable');
+  const [rows] = await currentPool.query(sql, params);
+  return rows as T[];
+}

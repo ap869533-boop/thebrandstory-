@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { randomUUID } from 'crypto';
-import { dbQuery } from '../config/db';
+import { dbQuery, dbQueryStrict } from '../config/db';
 import { AuthenticatedRequest } from '../middleware/authMiddleware';
 import { validateOptionalUrl } from '../utils/validation';
 
@@ -215,7 +215,7 @@ export async function createBrandProfile(req: AuthenticatedRequest, res: Respons
     }
 
     // Check if profile already exists
-    const existing = await dbQuery('SELECT id FROM brand_profiles WHERE user_id = ? LIMIT 1', [userId]);
+    const existing = await dbQueryStrict('SELECT id FROM brand_profiles WHERE user_id = ? LIMIT 1', [userId]);
     if (existing && existing.length > 0) {
       return res.status(409).json({ success: false, error: 'Brand profile already exists. Use PUT to update.' });
     }
@@ -248,12 +248,12 @@ export async function createBrandProfile(req: AuthenticatedRequest, res: Respons
 
     brandProfilesStore.unshift(profile as any);
 
-    await dbQuery(
+    await dbQueryStrict(
       `INSERT INTO brand_profiles (id, user_id, brand_name, gst_number, logo_url, cover_url, description, website, facebook_url, instagram_url, youtube_url, linkedin_url, industry, city, contact_person, phone, email, approval_status)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [id, userId, brandName, gstNumber || null, logoUrl || null, coverUrl || null, description || null, website || null, facebookUrl || null, instagramUrl || null, youtubeUrl || null, linkedinUrl || null, industry || null, city || null, contactPerson || null, phone || null, email || null, approvalStatus]
     );
-    await dbQuery(`UPDATE users SET approval_status = 'pending' WHERE id = ?`, [userId]);
+    await dbQueryStrict(`UPDATE users SET approval_status = 'pending' WHERE id = ?`, [userId]);
 
     res.status(201).json({ success: true, profile });
   } catch (error) {
@@ -303,7 +303,7 @@ export async function updateBrandProfile(req: AuthenticatedRequest, res: Respons
     }
 
     // Check if profile exists
-    const existing = await dbQuery('SELECT * FROM brand_profiles WHERE user_id = ? LIMIT 1', [userId]);
+    const existing = await dbQueryStrict('SELECT * FROM brand_profiles WHERE user_id = ? LIMIT 1', [userId]);
 
     if (!existing || existing.length === 0) {
       // Auto-create if not exists
@@ -311,7 +311,7 @@ export async function updateBrandProfile(req: AuthenticatedRequest, res: Respons
     }
 
     // Update in MySQL
-    await dbQuery(
+    await dbQueryStrict(
       `UPDATE brand_profiles SET brand_name=?, gst_number=?, logo_url=?, cover_url=?, description=?, website=?, facebook_url=?, instagram_url=?, youtube_url=?, linkedin_url=?, industry=?, city=?, contact_person=?, phone=?, email=? WHERE user_id=?`,
       [brandName, gstNumber || null, logoUrl || null, coverUrl || null, description || null, website || null, facebookUrl || null, instagramUrl || null, youtubeUrl || null, linkedinUrl || null, industry || null, city || null, contactPerson || null, phone || null, email || null, userId]
     );
