@@ -329,6 +329,7 @@ export async function runAutoMigrations() {
       `ALTER TABLE campaign_requirements ADD COLUMN female_count INT DEFAULT 0`,
       `ALTER TABLE campaign_requirements ADD COLUMN age_range VARCHAR(50) DEFAULT 'Any'`,
       `ALTER TABLE campaign_requirements ADD COLUMN language VARCHAR(255) DEFAULT 'Any'`,
+      `ALTER TABLE campaign_requirements ADD COLUMN valid_until DATE DEFAULT NULL`,
       `ALTER TABLE campaign_requirements MODIFY COLUMN language VARCHAR(255) DEFAULT 'Any'`,
       `ALTER TABLE campaign_requirements DROP COLUMN influencers_count`
     ];

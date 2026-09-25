@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { dbQuery } from '../config/db';
+import { dbQuery, dbQueryStrict } from '../config/db';
 import { CampaignRequirement } from '../types';
 import { creatorsStore } from './creatorController';
 import { AuthenticatedRequest } from '../middleware/authMiddleware';
@@ -210,10 +210,8 @@ export async function createCampaign(req: AuthenticatedRequest, res: Response) {
       createdAt: 'Just now',
     };
 
-    campaignsStore.unshift(newCampaign);
-
     try {
-      await dbQuery(
+      await dbQueryStrict(
         `INSERT INTO campaign_requirements (
           id, user_id, company_name, contact_person, email, phone, industry,
           campaign_title, campaign_description, city, male_count, female_count,
@@ -251,6 +249,8 @@ export async function createCampaign(req: AuthenticatedRequest, res: Response) {
       console.warn('MySQL campaign insert notice:', err);
       return res.status(500).json({ success: false, error: 'Failed to save campaign to database' });
     }
+
+    campaignsStore.unshift(newCampaign);
 
     return res.status(201).json({
       success: true,

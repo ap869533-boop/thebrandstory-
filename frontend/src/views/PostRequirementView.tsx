@@ -204,41 +204,42 @@ export const PostRequirementView: React.FC = () => {
 
     setIsSubmitting(true);
     setTimeout(async () => {
-      const campId = await postCampaignRequirement({
-        companyName: finalBrandName,
-        contactPerson: formData.contactPerson || finalBrandName,
-        email: formData.email,
-        phone: formData.phone,
-        campaignTitle: formData.campaignTitle,
-        industry: finalIndustry,
-        category: formData.categories.join(', '),
-        city: selectedCities.join(', '),
-        deliverablesNeeded: formData.deliverablesNeeded,
-        campaignDescription: formData.deliverablesNeeded,
-        budget: formData.isBarter ? 'Barter / Product Exchange' : formData.budget,
-        genderPreference: formData.genderPreference,
-        maleCount: formData.genderPreference === 'Only Female' ? 0 : (Number(formData.maleCount) || 0),
-        femaleCount: formData.genderPreference === 'Only Male' ? 0 : (Number(formData.femaleCount) || 0),
-        ageRange: formData.ageRange || 'Any',
-        language: formData.languages.length ? formData.languages.join(', ') : 'Any',
-        followerRange: formData.followerRange,
-        isBarter: formData.isBarter,
-        campaignStartDate: formData.campaignStartDate || 'Immediate',
-        validUntil: formData.validUntil,
-        customInstructions: formData.customInstructions,
-      });
-
-      setIsSubmitting(false);
-      setSubmittedId(campId);
-
       try {
+        const campId = await postCampaignRequirement({
+          companyName: finalBrandName,
+          contactPerson: formData.contactPerson || finalBrandName,
+          email: formData.email,
+          phone: formData.phone,
+          campaignTitle: formData.campaignTitle,
+          industry: finalIndustry,
+          category: formData.categories.join(', '),
+          city: selectedCities.join(', '),
+          deliverablesNeeded: formData.deliverablesNeeded,
+          campaignDescription: formData.deliverablesNeeded,
+          budget: formData.isBarter ? 'Barter / Product Exchange' : formData.budget,
+          genderPreference: formData.genderPreference,
+          maleCount: formData.genderPreference === 'Only Female' ? 0 : (Number(formData.maleCount) || 0),
+          femaleCount: formData.genderPreference === 'Only Male' ? 0 : (Number(formData.femaleCount) || 0),
+          ageRange: formData.ageRange || 'Any',
+          language: formData.languages.length ? formData.languages.join(', ') : 'Any',
+          followerRange: formData.followerRange,
+          isBarter: formData.isBarter,
+          campaignStartDate: formData.campaignStartDate || 'Immediate',
+          validUntil: formData.validUntil,
+          customInstructions: formData.customInstructions,
+        });
+
+        setSubmittedId(campId);
+
         confetti({
           particleCount: 70,
           spread: 60,
           origin: { y: 0.6 },
         });
       } catch (err) {
-        // silent
+        setFormError(err instanceof Error ? err.message : 'Campaign save nahi hua. Please dobara try karein.');
+      } finally {
+        setIsSubmitting(false);
       }
     }, 500);
   };
