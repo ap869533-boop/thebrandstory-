@@ -42,20 +42,20 @@ export const TrustProofStrip: React.FC = () => {
   ];
 
   return (
-    <div className="bg-black text-white border-b border-zinc-900 py-3.5 sm:py-4 relative overflow-hidden font-sans shrink-0">
+    <div className="bg-white/90 backdrop-blur-md text-slate-900 border-t border-b border-slate-200/80 py-3.5 sm:py-4 relative overflow-hidden font-sans shrink-0">
       <div className="max-w-7xl mx-auto px-1 sm:px-6 lg:px-8 overflow-hidden">
         {/* 5 Core Credibility Metrics */}
-        <div className="grid grid-cols-5 gap-0 divide-x divide-white/10 text-center overflow-hidden">
+        <div className="grid grid-cols-5 gap-0 divide-x divide-slate-200/80 text-center overflow-hidden">
           {stats.map((stat, idx) => {
             return (
               <div key={idx} className="space-y-0.5 px-0.5 sm:px-4 py-1 overflow-hidden">
                 <div className="text-[10px] sm:text-2xl md:text-3xl font-black text-[#D4A338] tracking-tight leading-tight truncate">
                   {stat.value}
                 </div>
-                <div className="text-[6px] sm:text-[11px] uppercase font-bold text-white tracking-wide leading-tight truncate">
+                <div className="text-[6px] sm:text-[11px] uppercase font-bold text-slate-800 tracking-wide leading-tight truncate">
                   {stat.label}
                 </div>
-                <div className="hidden sm:block text-[11px] font-medium text-zinc-400">
+                <div className="hidden sm:block text-[11px] font-medium text-slate-500">
                   {stat.desc}
                 </div>
               </div>

@@ -4,8 +4,7 @@ import {
   Sparkles,
   MapPin,
   Layers,
-  ShieldCheck,
-  Flame,
+  Briefcase,
   ChevronDown,
   Check,
 } from 'lucide-react';
@@ -20,6 +19,7 @@ export const HomeHero: React.FC = () => {
     categories,
     cities,
     requireRole,
+    authUser,
   } = usePlatform();
 
   const [keyword, setKeyword] = useState('');
@@ -75,50 +75,39 @@ export const HomeHero: React.FC = () => {
   };
 
   return (
-    <section className="relative overflow-hidden bg-transparent text-white flex-1 flex flex-col justify-center py-4 xs:py-5 sm:py-10 min-h-0 border-b border-zinc-900/60 font-sans w-full max-w-full">
+    <section className="relative overflow-hidden bg-transparent text-slate-900 flex-1 flex flex-col justify-center py-4 xs:py-5 sm:py-10 min-h-0 border-b border-slate-200/80 font-sans w-full max-w-full">
       {/* Subtle Premium Background Glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-full overflow-hidden pointer-events-none z-0">
-        <div className="absolute -top-32 left-1/4 w-[600px] h-[450px] bg-[#D4A338]/10 rounded-full blur-[140px]" />
-        <div className="absolute top-1/4 right-1/4 w-[500px] h-[400px] bg-[#D4A338]/5 rounded-full blur-[140px]" />
+        <div className="absolute -top-32 left-1/4 w-[600px] h-[450px] bg-[#D4A338]/20 rounded-full blur-[140px]" />
+        <div className="absolute top-1/4 right-1/4 w-[500px] h-[400px] bg-[#D4A338]/12 rounded-full blur-[140px]" />
       </div>
 
       <div className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 text-center relative z-10 space-y-3 xs:space-y-3.5 sm:space-y-8 my-auto w-full max-w-full">
-        {/* 1. Verified Network Badge */}
-        <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-0.5 sm:py-1.5 bg-black text-zinc-300 text-[9.5px] sm:text-xs font-semibold rounded-full border border-zinc-800 shadow-md max-w-full">
-          <span className="w-2 h-2 rounded-full bg-[#D4A338] animate-pulse shrink-0" />
-          <ShieldCheck className="w-3.5 h-3.5 text-[#D4A338] shrink-0" />
-
-          <span className="hidden xs:inline text-[#D4A338] font-bold">50,000+ Verified Creators</span>
-        </div>
-
-        {/* 2. Responsive Headline & Subtitle */}
-        <div className="space-y-1 sm:space-y-2.5 max-w-3xl mx-auto w-full">
-          <h1 className="text-xl xs:text-2xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight">
-            India's Biggest Influencer Marketplace
+        {/* Headline */}
+        <div className="max-w-5xl mx-auto w-full pt-0 pb-2.5 xs:pb-3.5 sm:pb-4">
+          <h1 className="font-sans text-[22px] xs:text-[27px] sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tighter leading-none whitespace-nowrap text-slate-900">
+            Biggest Influencer Marketplace
           </h1>
-          <p className="text-[9.5px] xs:text-[11px] sm:text-sm md:text-base text-zinc-400 font-medium max-w-2xl mx-auto leading-snug sm:leading-relaxed">
-            Create Profile in Seconds <span className="text-[#D4A338] font-bold">•</span> 100% Free <span className="text-[#D4A338] font-bold">•</span> Trusted Profile
-          </p>
         </div>
 
         {/* 3. 🎯 Fully Responsive Smart Search Bar */}
-        <div className="max-w-4xl sm:max-w-5xl mx-auto w-full bg-black/95 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-2 sm:p-3.5 shadow-2xl border border-[#D4A338]/40 relative z-30">
+        <div className="max-w-4xl sm:max-w-5xl mx-auto w-full bg-white/95 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-2 sm:p-3.5 shadow-[0_12px_40px_rgba(0,0,0,0.06)] border border-slate-200 relative z-30">
           <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row items-center gap-2 sm:gap-2.5 w-full">
             {/* Keyword Input */}
-            <div className="relative flex-1 w-full flex items-center bg-zinc-950 rounded-xl sm:rounded-2xl border border-zinc-800 hover:border-zinc-700 transition px-3 sm:px-4">
-              <Search className="w-4 h-4 text-zinc-500 absolute left-3 pointer-events-none" />
+            <div className="relative flex-1 w-full flex items-center bg-slate-50 rounded-xl sm:rounded-2xl border border-slate-200 hover:border-slate-300 transition px-3 sm:px-4">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
               <input
                 type="text"
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
                 placeholder="Search Influencers by name, category or city..."
-                className="w-full pl-6 sm:pl-7 pr-3 py-2.5 sm:py-4 bg-transparent text-xs sm:text-sm text-white placeholder:text-zinc-500 focus:outline-none"
+                className="w-full pl-6 sm:pl-7 pr-3 py-2.5 sm:py-4 bg-transparent text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none"
               />
               {keyword && (
                 <button
                   type="button"
                   onClick={() => setKeyword('')}
-                  className="text-xs text-zinc-400 hover:text-white font-bold p-1 cursor-pointer"
+                  className="text-xs text-slate-400 hover:text-slate-600 font-bold p-1 cursor-pointer"
                 >
                   ✕
                 </button>
@@ -135,8 +124,8 @@ export const HomeHero: React.FC = () => {
                     setCategoryDropdownOpen(!categoryDropdownOpen);
                     setCityDropdownOpen(false);
                   }}
-                  className={`w-full bg-zinc-950 rounded-xl sm:rounded-2xl border px-2.5 sm:px-4 py-2.5 sm:py-4 text-[11px] sm:text-xs font-semibold text-zinc-200 flex items-center justify-between gap-1 sm:gap-2 transition cursor-pointer ${
-                    categoryDropdownOpen ? 'border-[#D4A338] text-white bg-black' : 'border-zinc-800 hover:border-zinc-700 hover:text-white'
+                  className={`w-full bg-slate-50 rounded-xl sm:rounded-2xl border px-2.5 sm:px-4 py-2.5 sm:py-4 text-[11px] sm:text-xs font-semibold text-slate-700 flex items-center justify-between gap-1 sm:gap-2 transition cursor-pointer ${
+                    categoryDropdownOpen ? 'border-[#D4A338] text-slate-900 bg-white ring-2 ring-[#D4A338]/10' : 'border-slate-200 hover:border-slate-300'
                   }`}
                 >
                   <div className="flex items-center gap-1.5 sm:gap-2 truncate">
@@ -144,7 +133,7 @@ export const HomeHero: React.FC = () => {
                     <span className="truncate">{getSelectedCategoryLabel()}</span>
                   </div>
                   <ChevronDown
-                    className={`w-3.5 h-3.5 text-zinc-400 shrink-0 transition-transform duration-200 ${
+                    className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform duration-200 ${
                       categoryDropdownOpen ? 'rotate-180 text-[#D4A338]' : ''
                     }`}
                   />
@@ -152,8 +141,8 @@ export const HomeHero: React.FC = () => {
 
                 {/* Popover Menu */}
                 {categoryDropdownOpen && (
-                  <div className="absolute top-full left-0 mt-2 w-56 sm:w-72 bg-black text-white rounded-2xl shadow-2xl border border-zinc-800 p-2 z-50 max-h-64 sm:max-h-72 overflow-y-auto text-left space-y-1 animate-fadeIn">
-                    <div className="px-3 py-1 text-[10px] font-bold text-zinc-400 uppercase tracking-wider border-b border-zinc-800 mb-1">
+                  <div className="absolute top-full left-0 mt-2 w-56 sm:w-72 bg-white text-slate-900 rounded-2xl shadow-2xl border border-slate-200 p-2 z-50 max-h-64 sm:max-h-72 overflow-y-auto text-left space-y-1 animate-fadeIn">
+                    <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 mb-1">
                       Select Category
                     </div>
 
@@ -165,8 +154,8 @@ export const HomeHero: React.FC = () => {
                       }}
                       className={`w-full px-3 py-1.5 sm:py-2 rounded-xl text-xs font-medium flex items-center justify-between transition cursor-pointer ${
                         selectedCategory === 'all'
-                          ? 'bg-[#D4A338] text-black font-bold'
-                          : 'text-zinc-300 hover:bg-zinc-900 hover:text-white'
+                          ? 'bg-[#D4A338] text-white font-bold'
+                          : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
                       }`}
                     >
                       <span>All Categories</span>
@@ -183,8 +172,8 @@ export const HomeHero: React.FC = () => {
                         }}
                         className={`w-full px-3 py-1.5 sm:py-2 rounded-xl text-xs font-medium flex items-center justify-between transition cursor-pointer ${
                           selectedCategory === cat.name
-                            ? 'bg-[#D4A338] text-black font-bold'
-                            : 'text-zinc-300 hover:bg-zinc-900 hover:text-white'
+                            ? 'bg-[#D4A338] text-white font-bold'
+                            : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
                         }`}
                       >
                         <span className="truncate">{cat.name}</span>
@@ -203,8 +192,8 @@ export const HomeHero: React.FC = () => {
                     setCityDropdownOpen(!cityDropdownOpen);
                     setCategoryDropdownOpen(false);
                   }}
-                  className={`w-full bg-zinc-950 rounded-xl sm:rounded-2xl border px-2.5 sm:px-4 py-2.5 sm:py-4 text-[11px] sm:text-xs font-semibold text-zinc-200 flex items-center justify-between gap-1 sm:gap-2 transition cursor-pointer ${
-                    cityDropdownOpen ? 'border-[#D4A338] text-white bg-black' : 'border-zinc-800 hover:border-zinc-700 hover:text-white'
+                  className={`w-full bg-slate-50 rounded-xl sm:rounded-2xl border px-2.5 sm:px-4 py-2.5 sm:py-4 text-[11px] sm:text-xs font-semibold text-slate-700 flex items-center justify-between gap-1 sm:gap-2 transition cursor-pointer ${
+                    cityDropdownOpen ? 'border-[#D4A338] text-slate-900 bg-white ring-2 ring-[#D4A338]/10' : 'border-slate-200 hover:border-slate-300'
                   }`}
                 >
                   <div className="flex items-center gap-1.5 sm:gap-2 truncate">
@@ -212,15 +201,15 @@ export const HomeHero: React.FC = () => {
                     <span className="truncate">{getSelectedCityLabel()}</span>
                   </div>
                   <ChevronDown
-                    className={`w-3.5 h-3.5 text-zinc-400 shrink-0 transition-transform duration-200 ${
+                    className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform duration-200 ${
                       cityDropdownOpen ? 'rotate-180 text-[#D4A338]' : ''
                     }`}
                   />
                 </button>
 
                 {cityDropdownOpen && (
-                  <div className="absolute top-full right-0 sm:left-0 mt-2 w-56 sm:w-72 bg-black text-white rounded-2xl shadow-2xl border border-zinc-800 p-2 z-50 max-h-64 sm:max-h-80 overflow-y-auto text-left space-y-1 animate-fadeIn">
-                    <div className="px-3 py-1 text-[10px] font-bold text-zinc-400 uppercase tracking-wider border-b border-zinc-800 mb-1">
+                  <div className="absolute top-full right-0 sm:left-0 mt-2 w-56 sm:w-72 bg-white text-slate-900 rounded-2xl shadow-2xl border border-slate-200 p-2 z-50 max-h-64 sm:max-h-80 overflow-y-auto text-left space-y-1 animate-fadeIn">
+                    <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 mb-1">
                       Select City
                     </div>
 
@@ -232,8 +221,8 @@ export const HomeHero: React.FC = () => {
                       }}
                       className={`w-full px-3 py-1.5 sm:py-2 rounded-xl text-xs font-medium flex items-center justify-between transition cursor-pointer ${
                         selectedCity === 'all'
-                          ? 'bg-[#D4A338] text-black font-bold'
-                          : 'text-zinc-300 hover:bg-zinc-900 hover:text-white'
+                          ? 'bg-[#D4A338] text-white font-bold'
+                          : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
                       }`}
                     >
                       <span>All India</span>
@@ -250,8 +239,8 @@ export const HomeHero: React.FC = () => {
                         }}
                         className={`w-full px-3 py-1.5 sm:py-2 rounded-xl text-xs font-medium flex items-center justify-between transition cursor-pointer ${
                           selectedCity === c.name
-                            ? 'bg-[#D4A338] text-black font-bold'
-                            : 'text-zinc-300 hover:bg-zinc-900 hover:text-white'
+                            ? 'bg-[#D4A338] text-white font-bold'
+                            : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
                         }`}
                       >
                         <span className="truncate">{c.name}</span>
@@ -268,10 +257,10 @@ export const HomeHero: React.FC = () => {
               type="submit"
               id="hero-search-btn"
               title="Search Influencers"
-              className="w-full sm:w-12 sm:h-12 py-2.5 sm:py-0 bg-[#D4A338] hover:bg-[#b88628] text-black rounded-xl sm:rounded-2xl transition flex items-center justify-center shrink-0 cursor-pointer shadow-md shadow-[#D4A338]/30 gap-2 font-bold text-xs sm:text-base"
+              className="w-full sm:w-12 sm:h-12 py-2.5 sm:py-0 bg-[#D4A338] hover:bg-[#b88628] text-white rounded-xl sm:rounded-2xl transition flex items-center justify-center shrink-0 cursor-pointer shadow-md shadow-[#D4A338]/30 gap-2 font-bold text-xs sm:text-base"
             >
-              <Search className="w-4 h-4 sm:w-5 sm:h-5 text-black shrink-0" />
-              <span className="sm:hidden text-black font-bold">Search Influencers</span>
+              <Search className="w-4 h-4 sm:w-5 sm:h-5 text-white shrink-0" />
+              <span className="sm:hidden text-white font-bold">Search Influencers</span>
             </button>
           </form>
         </div>
@@ -280,24 +269,27 @@ export const HomeHero: React.FC = () => {
         <div className="pt-0.5 sm:pt-1 flex flex-row items-center justify-center gap-1.5 sm:gap-3 relative z-10 w-full max-w-md mx-auto">
           <button
             type="button"
-            id="hero-post-brief-btn"
+            id="hero-join-brand-btn"
             onClick={() => {
-              if (!requireRole('BRAND', 'post a campaign brief', 'post-requirement')) return;
-              navigateTo('post-requirement');
+              if (authUser?.role === 'BRAND') {
+                navigateTo('brand-dashboard');
+                return;
+              }
+              navigateTo('login', { mode: 'signup', role: 'BRAND' });
             }}
-            className="flex-1 sm:flex-none sm:w-auto px-2 sm:px-6 py-2 sm:py-2.5 rounded-xl bg-[#D4A338] hover:bg-[#b88628] text-black font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-[#D4A338]/25 transition cursor-pointer whitespace-nowrap"
+            className="flex-1 sm:flex-none sm:w-auto px-2 sm:px-6 py-2 sm:py-2.5 rounded-xl bg-[#D4A338] hover:bg-[#b88628] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-[#D4A338]/25 transition cursor-pointer whitespace-nowrap"
           >
-            <Flame className="w-3.5 h-3.5 text-black shrink-0" />
-            <span>Post Campaign</span>
+            <Briefcase className="w-3.5 h-3.5 text-white shrink-0" />
+            <span>Join as a Brand</span>
           </button>
 
           <button
             type="button"
             id="hero-list-free-btn"
             onClick={() => navigateTo('login', { mode: 'signup', role: 'CREATOR' })}
-            className="flex-1 sm:flex-none sm:w-auto px-2 sm:px-6 py-2 sm:py-2.5 rounded-xl bg-[#D4A338] hover:bg-[#b88628] text-black font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-[#D4A338]/25 transition cursor-pointer whitespace-nowrap"
+            className="flex-1 sm:flex-none sm:w-auto px-2 sm:px-6 py-2 sm:py-2.5 rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-slate-900/15 transition cursor-pointer whitespace-nowrap"
           >
-            <Sparkles className="w-3.5 h-3.5 text-black shrink-0" />
+            <Sparkles className="w-3.5 h-3.5 text-[#D4A338] shrink-0" />
             <span>Join as Influencer</span>
           </button>
         </div>

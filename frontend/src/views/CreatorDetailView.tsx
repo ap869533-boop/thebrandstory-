@@ -272,12 +272,12 @@ export const CreatorDetailView: React.FC = () => {
                   <p className="mt-0.5 text-sm sm:text-base font-black text-slate-900">{(creator.avgLikes || 0).toLocaleString('en-IN')}</p>
                 </div>
                 <div className="rounded-2xl border border-slate-200/90 bg-white px-4 py-3 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">CATEGORY</p>
-                  <p className="mt-0.5 text-sm sm:text-base font-black text-slate-900 truncate">{creator.primaryCategory || '—'}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">AVG. COMMENTS</p>
+                  <p className="mt-0.5 text-sm sm:text-base font-black text-slate-900">{formatCount(creator.avgComments || 0)}</p>
                 </div>
                 <div className="rounded-2xl border border-slate-200/90 bg-white px-4 py-3 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">CITY</p>
-                  <p className="mt-0.5 text-sm sm:text-base font-black text-slate-900 truncate">{creator.currentCity || '—'}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">AVG. VIDEO PLAYS</p>
+                  <p className="mt-0.5 text-sm sm:text-base font-black text-slate-900">{formatCount(creator.avgViews || 0)}</p>
                 </div>
               </div>
 
@@ -330,107 +330,6 @@ export const CreatorDetailView: React.FC = () => {
             </div>
           </div>
         </section>
-
-        {/* 3. Key Performance Metrics Grid */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-[#D4A338]" />
-              <span>Key Performance Metrics</span>
-            </h2>
-            <span className="text-xs text-slate-400 font-medium">
-              Verified 30-Day Instagram API Activity
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Metric 1: Engagement Rate */}
-            <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between space-y-3">
-              <div className="flex items-center justify-between text-xs font-bold text-slate-500">
-                <span className="flex items-center gap-1.5">
-                  <TrendingUp className="w-4 h-4 text-[#D4A338]" />
-                  <span>Avg Views</span>
-                </span>
-                <span className="px-2 py-0.5 rounded-md bg-blue-50 text-[#b88628] text-[10px] font-bold">
-                  30-Day Avg
-                </span>
-              </div>
-              <div>
-                <span className="text-3xl font-black text-slate-900 tracking-tight block">
-                  {(creator.avgViews || 0).toLocaleString('en-IN')}
-                </span>
-                <span className="text-xs text-slate-400 font-medium block mt-0.5">
-                  Per post / reel average
-                </span>
-              </div>
-            </div>
-
-            {/* Metric 2: Avg Likes */}
-            <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between space-y-3">
-              <div className="flex items-center justify-between text-xs font-bold text-slate-500">
-                <span className="flex items-center gap-1.5">
-                  <Heart className="w-4 h-4 text-rose-500" />
-                  <span>Avg Likes</span>
-                </span>
-                <span className="px-2 py-0.5 rounded-md bg-rose-50 text-rose-600 text-[10px] font-bold">
-                  Organic
-                </span>
-              </div>
-              <div>
-                <span className="text-3xl font-black text-slate-900 tracking-tight block">
-                  {formatCount(creator.avgLikes || 0)}
-                </span>
-                <span className="text-xs text-slate-400 font-medium block mt-0.5">
-                  Likes per reel / post
-                </span>
-              </div>
-            </div>
-
-            {/* Metric 3: Avg Comments */}
-            <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between space-y-3">
-              <div className="flex items-center justify-between text-xs font-bold text-slate-500">
-                <span className="flex items-center gap-1.5">
-                  <MessageCircle className="w-4 h-4 text-indigo-500" />
-                  <span>Avg Comments</span>
-                </span>
-                <span className="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[10px] font-bold">
-                  High Reply
-                </span>
-              </div>
-              <div>
-                <span className="text-3xl font-black text-slate-900 tracking-tight block">
-                  {formatCount(creator.avgComments || 0)}
-                </span>
-                <span className="text-xs text-slate-400 font-medium block mt-0.5">
-                  Comments per publication
-                </span>
-              </div>
-            </div>
-
-            {/* Metric 4: Avg Video Plays */}
-            <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between space-y-3">
-              <div className="flex items-center justify-between text-xs font-bold text-slate-500">
-                <span className="flex items-center gap-1.5">
-                  <Play className="w-4 h-4 text-emerald-500 fill-emerald-500" />
-                  <span>Avg Video Plays</span>
-                </span>
-                <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold">
-                  Reels Reach
-                </span>
-              </div>
-              <div>
-                <span className="text-3xl font-black text-slate-900 tracking-tight block">
-                  {formatCount(creator.avgViews || 0)}
-                </span>
-                <span className="text-xs text-slate-400 font-medium block mt-0.5">
-                  Average plays per video
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-
 
         {/* 5. Commercial Deliverable Rates & Assurance Terms */}
         <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-xs space-y-4">

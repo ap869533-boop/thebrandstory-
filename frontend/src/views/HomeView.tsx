@@ -16,11 +16,11 @@ export const HomeView: React.FC = () => {
   return (
     <div className="min-h-screen bg-white w-full max-w-full overflow-x-hidden">
       {/* 1 & 2. Hero Section + Trust Proof Strip: Exactly fills mobile screen height with TrustProofStrip as the last element */}
-      <div className="min-h-[calc(100dvh-4rem)] h-[calc(100dvh-4rem)] flex flex-col justify-between bg-black relative overflow-hidden">
-        <div className="absolute inset-0 z-0 pointer-events-none opacity-70" aria-hidden="true">
+      <div className="min-h-[calc(100dvh-4rem)] h-[calc(100dvh-4rem)] flex flex-col justify-between bg-white relative overflow-hidden">
+        <div className="absolute inset-0 z-0 pointer-events-none opacity-95" aria-hidden="true">
           <PredictiveArcCanvas
             variant="signal-particles"
-            mode="dark"
+            mode="light"
             speed={1}
             hue={0}
             saturation={1}
