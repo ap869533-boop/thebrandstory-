@@ -78,8 +78,8 @@ export const HomeHero: React.FC = () => {
     <section className="relative overflow-hidden bg-transparent text-slate-900 flex-1 flex flex-col justify-center py-4 xs:py-5 sm:py-10 min-h-0 border-b border-slate-200/80 font-sans w-full max-w-full">
       {/* Subtle Premium Background Glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-full overflow-hidden pointer-events-none z-0">
-        <div className="absolute -top-32 left-1/4 w-[600px] h-[450px] bg-[#D4A338]/20 rounded-full blur-[140px]" />
-        <div className="absolute top-1/4 right-1/4 w-[500px] h-[400px] bg-[#D4A338]/12 rounded-full blur-[140px]" />
+        <div className="absolute -top-32 left-1/4 w-[600px] h-[450px] bg-[#D4A338]/10 rounded-full blur-[140px]" />
+        <div className="absolute top-1/4 right-1/4 w-[500px] h-[400px] bg-[#D4A338]/5 rounded-full blur-[140px]" />
       </div>
 
       <div className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 text-center relative z-10 space-y-3 xs:space-y-3.5 sm:space-y-8 my-auto w-full max-w-full">
