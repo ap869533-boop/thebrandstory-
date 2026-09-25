@@ -7,7 +7,7 @@ import { creatorsStore } from './creatorController';
 import { AuthenticatedRequest } from '../middleware/authMiddleware';
 
 const uploadsDir = path.resolve(__dirname, '../uploads');
-const allowedTypes = new Set(['avatar', 'cover', 'reel_video', 'reel_thumbnail']);
+const allowedTypes = new Set(['avatar', 'cover', 'reel_video', 'reel_thumbnail', 'brand_logo']);
 
 function ensureUploadsDirectory() {
   fs.mkdirSync(uploadsDir, { recursive: true });
@@ -63,6 +63,10 @@ export async function uploadImage(req: AuthenticatedRequest, res: Response) {
     }
     if (!allowedTypes.has(type)) {
       return res.status(400).json({ success: false, error: 'Unsupported upload type' });
+    }
+
+    if (type === 'brand_logo' && req.user?.role !== 'BRAND') {
+      return res.status(403).json({ success: false, error: 'Only brand accounts can upload a brand logo' });
     }
 
     // Media is attached to a profile, so an authenticated creator may only

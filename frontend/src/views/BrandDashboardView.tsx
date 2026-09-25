@@ -942,6 +942,7 @@ export const BrandDashboardView: React.FC = () => {
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (!file) return;
+                            const previousLogoUrl = bpLogoUrl;
                             const reader = new FileReader();
                             reader.onloadend = async () => {
                               const base64Image = reader.result as string;
@@ -951,14 +952,15 @@ export const BrandDashboardView: React.FC = () => {
                                 const res = await fetch(apiUrl('/api/upload'), {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                                  body: JSON.stringify({ image: base64Image, type: 'avatar', creatorId: authUser?.id })
+                                  body: JSON.stringify({ image: base64Image, type: 'brand_logo' })
                                 });
                                 const data = await res.json();
-                                if (data.success) {
-                                  setBpLogoUrl(data.url);
-                                }
+                                if (!res.ok || !data.success || !data.url) throw new Error(data.error || 'Logo upload failed');
+                                setBpLogoUrl(data.url);
                               } catch (err) {
                                 console.error('Upload failed', err);
+                                setBpLogoUrl(previousLogoUrl);
+                                setBpSaveMsg(err instanceof Error ? err.message : 'Logo upload failed. Please try again.');
                               }
                             };
                             reader.readAsDataURL(file);
