@@ -5,6 +5,7 @@ import { CATEGORIES_LIST, CITIES_LIST, INDUSTRIES_LIST, CAMPAIGN_TYPES } from '.
 import confetti from 'canvas-confetti';
 
 const INDIAN_LANGUAGES = [
+  'English — अंग्रेज़ी',
   'Hindi — हिंदी', 'Bengali — বাংলা', 'Telugu — తెలుగు', 'Marathi — मराठी',
   'Tamil — தமிழ்', 'Gujarati — ગુજરાતી', 'Urdu — اردو', 'Kannada — ಕನ್ನಡ',
   'Odia — ଓଡ଼ିଆ', 'Malayalam — മലയാളം', 'Punjabi — ਪੰਜਾਬੀ', 'Assamese — অসমীয়া',
