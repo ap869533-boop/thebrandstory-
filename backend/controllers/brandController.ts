@@ -314,7 +314,7 @@ export async function updateBrandProfile(req: AuthenticatedRequest, res: Respons
     await dbQuery(
       `UPDATE brand_profiles SET brand_name=?, gst_number=?, logo_url=?, cover_url=?, description=?, website=?, facebook_url=?, instagram_url=?, youtube_url=?, linkedin_url=?, industry=?, city=?, contact_person=?, phone=?, email=? WHERE user_id=?`,
       [brandName, gstNumber || null, logoUrl || null, coverUrl || null, description || null, website || null, facebookUrl || null, instagramUrl || null, youtubeUrl || null, linkedinUrl || null, industry || null, city || null, contactPerson || null, phone || null, email || null, userId]
-    ).catch(err => console.warn('MySQL brand profile update notice:', err));
+    );
 
     // Update in memory
     const memIdx = brandProfilesStore.findIndex(p => p.userId === userId);
