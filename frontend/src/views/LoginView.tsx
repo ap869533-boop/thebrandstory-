@@ -14,7 +14,8 @@ import {
   Eye,
   EyeOff,
   FileText,
-  Clock
+  Clock,
+  ArrowLeft
 } from 'lucide-react';
 import { ImageCropperModal } from '../components/common/ImageCropperModal';
 import { usePlatform } from '../context/PlatformContext';
@@ -69,179 +70,117 @@ export const LoginView: React.FC = () => {
   const [otp, setOtp] = useState('');
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [resetOtpSent, setResetOtpSent] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+
+  // UI State
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [contextualNotice, setContextualNotice] = useState<string | null>(null);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  // Creator Profile Setup
   const [creatorProfileSetup, setCreatorProfileSetup] = useState(false);
-  const [creatorSetupStep, setCreatorSetupStep] = useState<1 | 2>(1);
+  const [creatorSetupStep, setCreatorSetupStep] = useState(1);
   const [signupCreator, setSignupCreator] = useState<any>(null);
-  const [pendingSignupToken, setPendingSignupToken] = useState('');
+  const [pendingSignupToken, setPendingSignupToken] = useState<string | null>(null);
+
+  // Creator Setup Step 1 Fields
   const [gender, setGender] = useState('');
+  const [ageGroup, setAgeGroup] = useState('');
   const [creatorState, setCreatorState] = useState('');
   const [languages, setLanguages] = useState('');
-  const [ageGroup, setAgeGroup] = useState('');
-  const [startingPrice, setStartingPrice] = useState('');
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState('');
+  const [bannerUrl, setBannerUrl] = useState('');
+  const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [showCropper, setShowCropper] = useState(false);
+  const [cropTarget, setCropTarget] = useState<'avatar' | 'cover'>('avatar');
+  const [cropSrc, setCropSrc] = useState('');
+
+  // Creator Setup Step 2 Fields
   const [followers, setFollowers] = useState('');
   const [totalPosts, setTotalPosts] = useState('');
   const [avgViews, setAvgViews] = useState('');
   const [avgLikes, setAvgLikes] = useState('');
   const [avgComments, setAvgComments] = useState('');
-  const [profilePhotoUrl, setProfilePhotoUrl] = useState('');
-  const [bannerUrl, setBannerUrl] = useState('');
-  const [uploadingMedia, setUploadingMedia] = useState<'avatar' | 'cover' | null>(null);
-  const [cropModalData, setCropModalData] = useState<{ src: string, type: 'avatar' | 'cover' } | null>(null);
+  const [startingPrice, setStartingPrice] = useState('');
 
-  // Status & Feedback
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
-  const [touched, setTouched] = useState<{ [key: string]: boolean }>({});
+  const fieldClass = (field: string, extra = '') =>
+    `w-full px-4 py-3 bg-white/5 border ${touched[field] && !eval(field) ? 'border-rose-500/50 bg-rose-500/5' : 'border-white/10'} rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#D4A338]/60 focus:bg-white/8 text-xs font-medium transition ${extra}`;
 
-  // Sync role and mode if passed in viewParams
+  const creatorFieldClass = (field: string, value: string, extra = '') =>
+    `w-full px-4 py-3 bg-white/5 border ${touched[field] && !value ? 'border-rose-500/50 bg-rose-500/5' : 'border-white/10'} rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#D4A338]/60 focus:bg-white/8 text-xs font-medium transition ${extra}`;
+
   useEffect(() => {
-    if (viewParams.role) {
-      setRole(viewParams.role as UserRole);
+    if (viewParams.message) {
+      setContextualNotice(viewParams.message as string);
     }
-    if (viewParams.mode) {
-      setMode(viewParams.mode as 'login' | 'signup');
-    }
-  }, [viewParams.role, viewParams.mode]);
+  }, [viewParams.message]);
 
-  // Destination after login
-  const redirectAfter = viewParams.redirectAfter;
-  const contextualNotice = viewParams.message;
-
-  const validate = () => {
-    const errors: { [key: string]: string } = {};
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (!email.trim()) {
-      errors.email = 'Email address is required';
-    } else if (!emailRegex.test(email.trim())) {
-      errors.email = 'Please enter a valid email address';
-    }
-
-    if (!password) {
-      errors.password = 'Password is required';
-    } else if (password.length < 6 && mode === 'signup') {
-      errors.password = 'Password must be at least 6 characters';
-    }
-
-    if (mode === 'signup' && !otpSent) {
-      if (!name.trim()) {
-        errors.name = 'Full name is required';
-      }
-      const cleanPhone = phone.replace(/\D/g, '');
-      if (!phone.trim()) {
-        errors.phone = 'Mobile number is required';
-      } else if (!/^\d{10}$/.test(cleanPhone)) {
-        errors.phone = 'Please enter exactly 10 digits';
-      }
-      if (role === 'BRAND' && !companyName.trim()) {
-        errors.companyName = 'Company / Brand name is required';
-      }
-    }
-
-    if (mode === 'signup' && otpSent) {
-      if (!otp.trim() || otp.trim().length !== 6) {
-        errors.otp = 'Please enter a valid 6-digit OTP';
-      }
-    }
-
-    setFieldErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleBlur = (field: string) => {
-    setTouched((prev) => ({ ...prev, [field]: true }));
-    validate();
-  };
-
-  const handlePostAuthRedirect = (userRole: UserRole) => {
-    if (redirectAfter) {
-      navigateTo(redirectAfter);
-    } else if (userRole === 'CREATOR') {
-      navigateTo('creator-dashboard');
-    } else if (userRole === 'BRAND') {
+  const handlePostAuthRedirect = (effectiveRole: UserRole) => {
+    const redirectTarget = viewParams.redirectAfter as string;
+    if (redirectTarget) {
+      navigateTo(redirectTarget as any);
+    } else if (effectiveRole === 'BRAND') {
       navigateTo('brand-dashboard');
-    } else if (userRole === 'ADMIN' || userRole === 'SALES') {
+    } else if (effectiveRole === 'CREATOR') {
+      navigateTo('creator-dashboard');
+    } else if (effectiveRole === 'ADMIN' || effectiveRole === 'SALES') {
       navigateTo('admin-dashboard');
     } else {
       navigateTo('home');
     }
   };
 
-  const uploadCreatorMedia = (file: File, type: 'avatar' | 'cover') => {
-    const creatorId = signupCreator?.creatorProfile?.id;
-    const token = localStorage.getItem('sc_auth_token');
-    if (!file.type.startsWith('image/')) { setErrorMsg('Please choose an image file.'); return; }
-    if (file.size > 10 * 1024 * 1024) { setErrorMsg('Please choose an image smaller than 10 MB.'); return; }
-    // Before the fourth step files remain only in browser memory; no upload or
-    // database write occurs during onboarding.
-    if (!creatorId || !token) {
-      const reader = new FileReader();
-      reader.onload = () => { if (type === 'avatar') setProfilePhotoUrl(String(reader.result)); else setBannerUrl(String(reader.result)); };
-      reader.readAsDataURL(file);
-      return;
+  const validate = () => {
+    if (isForgotPassword) return email.trim().length > 0;
+    if (!email.trim() || !password.trim()) return false;
+    if (mode === 'signup') {
+      if (role === 'CREATOR' && (!name.trim() || !phone.trim())) return false;
+      if (role === 'BRAND' && (!companyName.trim() || !phone.trim())) return false;
     }
-    setUploadingMedia(type);
-    const reader = new FileReader();
-    reader.onload = async () => {
-      try {
-        const res = await fetch(apiUrl('/api/upload'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ image: reader.result, creatorId, type }),
-        });
-        const data = await readApiResponse(res);
-        if (!res.ok || !data.success || !data.url) throw new Error(data.error || 'Image upload failed');
-        const url = apiUrl(data.url);
-        if (type === 'avatar') setProfilePhotoUrl(url); else setBannerUrl(url);
-      } catch (err: any) { setErrorMsg(err.message || 'Image upload failed.'); }
-      finally { setUploadingMedia(null); }
-    };
-    reader.readAsDataURL(file);
+    return true;
   };
 
-  const completeCreatorSetup = async () => {
+  const validateCreatorSetup = () => {
     if (creatorSetupStep === 1) {
-      if (!profilePhotoUrl || !bannerUrl || !gender || !creatorState.trim() || !category || !languages.trim() || !ageGroup) {
-        throw new Error('Please complete every basic information field, including profile photo and display card photo.');
-      }
+      return gender && ageGroup && creatorState && category;
+    }
+    if (creatorSetupStep === 2) {
+      return username.trim() && followers && startingPrice;
+    }
+    return true;
+  };
+
+  const fileToBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const completeCreatorSetup = async () => {
+    const creatorUser = signupCreator;
+    if (!creatorUser) throw new Error('No creator session found');
+
+    if (creatorSetupStep === 1) {
       setCreatorSetupStep(2);
+      setSuccessMsg(null);
       return;
     }
-    if (!/^https?:\/\/(www\.)?instagram\.com\/[^/]+/i.test(username.trim())) throw new Error('Please enter a valid Instagram profile URL.');
-    const metrics = [
-      ['followers', followers],
-      ['total posts', totalPosts],
-      ['average views', avgViews],
-      ['average likes', avgLikes],
-      ['average comments', avgComments],
-    ];
-    const invalidMetric = metrics.find(([, value]) => !value.trim() || !Number.isFinite(Number(value)) || Number(value) < 0);
-    if (invalidMetric) {
-      throw new Error(`Please enter a valid ${invalidMetric[0]} count. Enter 0 when the count is zero.`);
-    }
+
+    // Step 2: Save Instagram profile data
+    const token = pendingSignupToken || localStorage.getItem('sc_auth_token');
+    const creatorId = creatorUser.creatorProfile?.id || creatorUser.id;
+    if (!token || !creatorId) throw new Error('Authentication session expired. Please sign up again.');
+
     const parsedStartingPrice = parseStartingPrice(startingPrice);
-    if (!parsedStartingPrice) {
-      throw new Error('Enter a valid starting price, for example ₹2000 or ₹2000-10000.');
-    }
-    let creatorUser = signupCreator;
-    let token = localStorage.getItem('sc_auth_token') || '';
-    if (!creatorUser) {
-      const createResponse = await fetch(apiUrl('/api/auth/verify-otp'), {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), password, name: name.trim(), role: 'CREATOR', phone: phone.trim(), countryCode, signupToken: pendingSignupToken }),
-      });
-      const createData = await readApiResponse(createResponse);
-      if (!createResponse.ok || !createData.success || !createData.user?.creatorProfile || !createData.token) throw new Error(createData.error || 'Could not create creator profile');
-      token = createData.token;
-      localStorage.setItem('sc_auth_token', token);
-      creatorUser = createData.user;
-      setSignupCreator(creatorUser);
-    }
-    const creatorId = creatorUser.creatorProfile.id;
-    const persistImage = async (image: string, type: 'avatar' | 'cover') => {
-      if (!image.startsWith('data:')) return image;
+
+    const persistImage = async (dataUrl: string, type: 'avatar' | 'cover'): Promise<string | null> => {
+      if (!dataUrl || !dataUrl.startsWith('data:')) return null;
+      const image = dataUrl;
       const imageResponse = await fetch(apiUrl('/api/upload'), {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ image, creatorId, type }),
@@ -278,12 +217,16 @@ export const LoginView: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (creatorProfileSetup) {
+      if (!validateCreatorSetup()) {
+        setErrorMsg('Please correct the highlighted fields before continuing.');
+        return;
+      }
       setIsLoading(true); setErrorMsg(null);
       try { await completeCreatorSetup(); } catch (err: any) { setErrorMsg(err.message || 'Could not save profile details.'); }
       finally { setIsLoading(false); }
       return;
     }
-    setTouched({ email: true, password: true, name: true, companyName: true, otp: true });
+    setTouched({ email: true, password: true, name: true, companyName: true, phone: true, otp: true });
 
     if (!validate()) {
       setErrorMsg('Please correct the highlighted fields before submitting.');
@@ -297,7 +240,6 @@ export const LoginView: React.FC = () => {
     try {
       if (isForgotPassword) {
         if (!resetOtpSent) {
-          // Request OTP for password reset
           const res = await fetch(apiUrl('/api/auth/forgot-password-otp'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -310,25 +252,17 @@ export const LoginView: React.FC = () => {
           setResetOtpSent(true);
           setSuccessMsg(`OTP sent to ${email.trim()} for password reset.`);
         } else {
-          // Verify OTP and reset password
           const res = await fetch(apiUrl('/api/auth/reset-password'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: email.trim(), otp: otp.trim(), newPassword: password }),
+            body: JSON.stringify({ email: email.trim(), otp: otp.trim(), newPassword }),
           });
           const data = await readApiResponse(res);
-          if (!res.ok || !data.success) {
-            throw new Error(data.error || 'Password reset failed');
-          }
-          setSuccessMsg('Password successfully reset! You can now login.');
-          setTimeout(() => {
-            setIsForgotPassword(false);
-            setResetOtpSent(false);
-            setMode('login');
-            setPassword('');
-            setOtp('');
-            setSuccessMsg(null);
-          }, 2000);
+          if (!res.ok || !data.success) throw new Error(data.error || 'Password reset failed');
+          setSuccessMsg('Password reset successfully! You can now sign in.');
+          setIsForgotPassword(false);
+          setResetOtpSent(false);
+          setMode('login');
         }
       } else if (mode === 'login') {
         const res = await fetch(apiUrl('/api/auth/login'), {
@@ -336,77 +270,58 @@ export const LoginView: React.FC = () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: email.trim(), password }),
         });
-
         const data = await readApiResponse(res);
+        if (!res.ok || !data.success) throw new Error(data.error || 'Login failed. Check your credentials.');
 
-        if (!res.ok || !data.success) {
-          throw new Error(data.error || 'Invalid email or password');
-        }
+        const effectiveRole: UserRole = data.user?.role || role;
+        const userWithCorrectRole = data.user ? { ...data.user, role: effectiveRole } : null;
 
         if (data.token) localStorage.setItem('sc_auth_token', data.token);
-        if (data.user) {
-          localStorage.setItem('sc_auth_user', JSON.stringify(data.user));
-          setAuthUser(data.user);
-          setCurrentRole(data.user.role);
-
-          if (data.user.creatorProfile) {
-            setCreators((prev) => {
-              const exists = prev.some(
-                (c) => c.id === data.user.creatorProfile.id || c.email?.toLowerCase() === data.user.creatorProfile.email?.toLowerCase()
-              );
-              if (exists) {
-                return prev.map((c) =>
-                  c.id === data.user.creatorProfile.id || c.email?.toLowerCase() === data.user.creatorProfile.email?.toLowerCase()
-                    ? data.user.creatorProfile
-                    : c
-                );
-              }
-              return [data.user.creatorProfile, ...prev];
-            });
-            setActiveCreatorId(data.user.creatorProfile.id);
+        if (userWithCorrectRole) {
+          localStorage.setItem('sc_auth_user', JSON.stringify(userWithCorrectRole));
+          setAuthUser(userWithCorrectRole);
+          setCurrentRole(effectiveRole);
+          if (userWithCorrectRole.creatorProfile && effectiveRole === 'CREATOR') {
+            setCreators((prev) => [userWithCorrectRole.creatorProfile, ...prev]);
+            setActiveCreatorId(userWithCorrectRole.creatorProfile.id);
           }
-
-          setSuccessMsg('Login successful! Redirecting...');
-          setTimeout(() => {
-            handlePostAuthRedirect(data.user.role);
-          }, 600);
         }
+
+        setSuccessMsg('Welcome back! Redirecting...');
+        setTimeout(() => handlePostAuthRedirect(effectiveRole), 700);
       } else {
-        // Sign up flow
+        // Signup flow
         if (!otpSent) {
-          const res = await fetch(apiUrl('/api/auth/request-otp'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: email.trim() }),
+          const signupPayload: any = {
+            email: email.trim(), password, name: role === 'CREATOR' ? name.trim() : companyName.trim(),
+            role, phone: `${countryCode}${phone.trim()}`,
+          };
+          if (role === 'BRAND') {
+            signupPayload.companyName = companyName.trim();
+            signupPayload.gstNumber = gstNumber.trim();
+          }
+          if (role === 'CREATOR') signupPayload.category = category;
+
+          const res = await fetch(apiUrl('/api/auth/send-otp'), {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(signupPayload),
           });
           const data = await readApiResponse(res);
-          if (!res.ok || !data.success) {
-            throw new Error(data.error || 'Failed to send OTP');
-          }
+          if (!res.ok || !data.success) throw new Error(data.error || 'Failed to send OTP');
           setOtpSent(true);
-          setSuccessMsg(`OTP sent to ${email.trim()}`);
+          setSuccessMsg(`OTP sent to ${email.trim()}. Please check your inbox.`);
         } else {
-          // Verify OTP & Complete Signup
-          const payload = {
-            email: email.trim(),
-            password,
-            name: name.trim(),
-            role,
-            phone: phone.trim() || undefined,
-            countryCode,
-            companyName: role === 'BRAND' ? companyName.trim() : undefined,
-            gstNumber: role === 'BRAND' ? gstNumber.trim() : undefined,
-            username: role === 'CREATOR' ? username.trim() : undefined,
-            category: role === 'BRAND' ? category : undefined,
-            city: role === 'BRAND' ? city : undefined,
-            otp: otp.trim(),
-            deferCreatorSignup: role === 'CREATOR',
+          const verifyPayload: any = {
+            email: email.trim(), otp: otp.trim(), password, name: role === 'CREATOR' ? name.trim() : companyName.trim(),
+            role, phone: `${countryCode}${phone.trim()}`,
           };
+          if (role === 'BRAND') {
+            verifyPayload.companyName = companyName.trim();
+            verifyPayload.gstNumber = gstNumber.trim();
+          }
+          if (role === 'CREATOR') verifyPayload.category = category;
 
           const res = await fetch(apiUrl('/api/auth/verify-otp'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(verifyPayload),
           });
 
           const data = await readApiResponse(res);
@@ -423,8 +338,6 @@ export const LoginView: React.FC = () => {
             return;
           }
 
-          // Use the role the user SELECTED on signup form as authoritative source
-          // (backend may return stale role if DB insert was delayed)
           const effectiveRole: UserRole = role;
           const userWithCorrectRole = data.user ? { ...data.user, role: effectiveRole } : null;
 
@@ -461,7 +374,18 @@ export const LoginView: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/70 py-12 px-4 sm:px-6 lg:px-8 flex flex-col justify-center items-center font-sans">
+    <div className="min-h-screen bg-[#051126] py-12 px-4 sm:px-6 lg:px-8 flex flex-col justify-center items-center font-sans">
+      {/* Back to Home button */}
+      <div className="w-full max-w-md mb-4">
+        <button
+          onClick={() => navigateTo('home')}
+          className="inline-flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-white transition cursor-pointer group"
+        >
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+          <span>Back to Home</span>
+        </button>
+      </div>
+
       <div className="max-w-md w-full space-y-6">
         {/* Brand Header */}
         <div className="text-center space-y-3">
@@ -470,18 +394,18 @@ export const LoginView: React.FC = () => {
             className="cursor-pointer inline-flex items-center group"
           >
             <div className="text-3xl sm:text-4xl tracking-tighter">
-              <span className="font-normal text-black">the</span>
-              <span className="font-bold text-[#D4A338]">brands</span>
-              <span className="font-normal text-black">story</span>
-              <span className="font-bold text-[#D4A338]">.</span>
+              <span className="font-light text-white">the</span>
+              <span className="font-black text-[#D4A338]">brands</span>
+              <span className="font-light text-white">story</span>
+              <span className="font-black text-[#D4A338]">.</span>
             </div>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
             {creatorProfileSetup
               ? creatorSetupStep === 1 ? 'Complete your basic profile' : 'Add your Instagram details'
               : isForgotPassword ? 'Reset Password' : mode === 'login' ? 'Sign In to Your Workspace' : 'Create Your Account'}
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 max-w-sm mx-auto">
+          <p className="text-xs sm:text-sm text-slate-400 max-w-sm mx-auto">
             {creatorProfileSetup
               ? 'This information can be changed any time from Edit Profile.'
               : mode === 'login'
@@ -490,22 +414,22 @@ export const LoginView: React.FC = () => {
           </p>
         </div>
 
-        {/* Contextual Notice Banner (if user was redirected) */}
+        {/* Contextual Notice Banner */}
         {contextualNotice && (
-          <div className="p-4 rounded-2xl bg-amber-50 border border-amber-300/80 text-amber-950 text-xs sm:text-sm flex items-start gap-3 shadow-xs animate-fadeIn">
-            <ShieldCheck className="w-5 h-5 text-[#b88628] shrink-0 mt-0.5" />
+          <div className="p-4 rounded-2xl bg-[#D4A338]/10 border border-[#D4A338]/30 text-amber-200 text-xs sm:text-sm flex items-start gap-3 animate-fadeIn">
+            <ShieldCheck className="w-5 h-5 text-[#D4A338] shrink-0 mt-0.5" />
             <div>
-              <strong className="block font-bold text-amber-900 mb-0.5">Authentication Required</strong>
+              <strong className="block font-bold text-[#D4A338] mb-0.5">Authentication Required</strong>
               <span>{contextualNotice}</span>
             </div>
           </div>
         )}
 
         {/* Main Card */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xl shadow-slate-200/50 space-y-5">
+        <div className="bg-white/5 rounded-3xl p-6 sm:p-8 border border-white/10 shadow-xl space-y-5 backdrop-blur-sm">
           {/* Mode Switcher: Login / Signup */}
           {!isForgotPassword && !creatorProfileSetup && (
-          <div className="flex p-1 bg-slate-100 rounded-xl">
+          <div className="flex p-1 bg-white/5 rounded-xl border border-white/10">
             <button
               type="button"
               onClick={() => {
@@ -516,8 +440,8 @@ export const LoginView: React.FC = () => {
               }}
               className={`flex-1 py-2 text-xs font-bold rounded-lg transition cursor-pointer ${
                 mode === 'login'
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-500 hover:text-slate-900'
+                  ? 'bg-[#D4A338] text-slate-950 shadow-sm'
+                  : 'text-slate-400 hover:text-white'
               }`}
             >
               Sign In
@@ -532,8 +456,8 @@ export const LoginView: React.FC = () => {
               }}
               className={`flex-1 py-2 text-xs font-bold rounded-lg transition cursor-pointer ${
                 mode === 'signup'
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-500 hover:text-slate-900'
+                  ? 'bg-[#D4A338] text-slate-950 shadow-sm'
+                  : 'text-slate-400 hover:text-white'
               }`}
             >
               Sign Up
@@ -544,7 +468,7 @@ export const LoginView: React.FC = () => {
           {/* Role Selector Buttons */}
           {!isForgotPassword && mode === 'signup' && !creatorProfileSetup && (
           <div>
-            <label className="block text-slate-700 font-bold mb-1.5 text-xs">
+            <label className="block text-slate-300 font-bold mb-1.5 text-xs">
                 I am registering as:
             </label>
             <div className="grid grid-cols-2 gap-2.5">
@@ -556,11 +480,11 @@ export const LoginView: React.FC = () => {
                 }}
                 className={`p-3 rounded-xl border text-center font-bold text-xs transition cursor-pointer flex flex-col items-center gap-1.5 ${
                   role === 'CREATOR'
-                    ? 'border-[#D4A338] bg-amber-50/60 text-[#8e6819] shadow-xs ring-2 ring-[#D4A338]/30'
-                    : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
+                    ? 'border-[#D4A338] bg-[#D4A338]/10 text-[#D4A338] ring-2 ring-[#D4A338]/30'
+                    : 'border-white/10 bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'
                 }`}
               >
-                <Sparkles className={`w-4 h-4 ${role === 'CREATOR' ? 'text-[#D4A338]' : 'text-slate-400'}`} />
+                <Sparkles className={`w-4 h-4 ${role === 'CREATOR' ? 'text-[#D4A338]' : 'text-slate-500'}`} />
                 <span>Influencer / Creator</span>
               </button>
 
@@ -572,11 +496,11 @@ export const LoginView: React.FC = () => {
                 }}
                 className={`p-3 rounded-xl border text-center font-bold text-xs transition cursor-pointer flex flex-col items-center gap-1.5 ${
                   role === 'BRAND'
-                    ? 'border-[#D4A338] bg-amber-50/60 text-[#8e6819] shadow-xs ring-2 ring-[#D4A338]/30'
-                    : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
+                    ? 'border-[#D4A338] bg-[#D4A338]/10 text-[#D4A338] ring-2 ring-[#D4A338]/30'
+                    : 'border-white/10 bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'
                 }`}
               >
-                <Building2 className={`w-4 h-4 ${role === 'BRAND' ? 'text-[#D4A338]' : 'text-slate-400'}`} />
+                <Building2 className={`w-4 h-4 ${role === 'BRAND' ? 'text-[#D4A338]' : 'text-slate-500'}`} />
                 <span>Brand / Agency</span>
               </button>
             </div>
@@ -585,16 +509,16 @@ export const LoginView: React.FC = () => {
 
           {/* Error Alert */}
           {errorMsg && (
-            <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl font-medium flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <div className="p-3 bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs rounded-xl font-medium flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
               <span>{errorMsg}</span>
             </div>
           )}
 
           {/* Success Alert */}
           {successMsg && (
-            <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl font-medium flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs rounded-xl font-medium flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
               <span>{successMsg}</span>
             </div>
           )}
@@ -602,12 +526,12 @@ export const LoginView: React.FC = () => {
           {/* Auth Form */}
           <form onSubmit={handleSubmit} noValidate className="space-y-3.5 text-xs">
             {mode === 'signup' && role === 'CREATOR' && !isForgotPassword && (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
-                <div className="flex justify-between font-bold text-amber-900">
+              <div className="rounded-xl border border-[#D4A338]/30 bg-[#D4A338]/5 px-3 py-2.5">
+                <div className="flex justify-between font-bold text-[#D4A338]">
                   <span>Influencer signup</span>
                   <span>Step {creatorProfileSetup ? creatorSetupStep + 2 : otpSent ? 2 : 1} of 4</span>
                 </div>
-                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-amber-100">
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
                   <div className="h-full rounded-full bg-[#D4A338] transition-all" style={{ width: `${creatorProfileSetup ? creatorSetupStep === 1 ? 75 : 100 : otpSent ? 50 : 25}%` }} />
                 </div>
               </div>
@@ -619,333 +543,351 @@ export const LoginView: React.FC = () => {
                   onClick={() => {
                     if (creatorSetupStep === 2) setCreatorSetupStep(1);
                     else { setCreatorProfileSetup(false); setOtpSent(true); }
-                    setErrorMsg(null);
                   }}
-                  className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-slate-800"
+                  className="flex items-center gap-1 text-xs font-bold text-slate-400 hover:text-white transition cursor-pointer"
                 >
-                  ← Back
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  Back
                 </button>
-                {creatorSetupStep === 1 ? <>
-                  <div className="flex gap-6 justify-center items-center py-2">
-                      <label className="relative flex h-28 w-28 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-slate-300 bg-slate-50 text-center text-slate-500 hover:bg-slate-100 transition-colors">
-                        {profilePhotoUrl ? <img src={profilePhotoUrl} alt="Profile photo preview" className="h-full w-full object-cover" /> : <span className="px-2 text-xs">{uploadingMedia === 'avatar' ? 'Uploading...' : 'Profile photo'}</span>}
-                        <input type="file" accept="image/*" className="absolute inset-0 opacity-0" disabled={uploadingMedia !== null} onChange={e => { const file = e.target.files?.[0]; if (file) { setCropModalData({ src: URL.createObjectURL(file), type: 'avatar' }); e.target.value = ''; } }} />
-                      </label>
-                      <label className="relative flex h-[160px] w-[90px] shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 text-center text-slate-500 hover:bg-slate-100 transition-colors shadow-sm">
-                        {bannerUrl ? <img src={bannerUrl} alt="Display story photo preview" className="h-full w-full object-cover" /> : <span className="px-2 text-xs">{uploadingMedia === 'cover' ? 'Uploading...' : 'Display story photo'}</span>}
-                        <input type="file" accept="image/*" className="absolute inset-0 opacity-0" disabled={uploadingMedia !== null} onChange={e => { const file = e.target.files?.[0]; if (file) { setCropModalData({ src: URL.createObjectURL(file), type: 'cover' }); e.target.value = ''; } }} />
-                      </label>
-                    </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <select value={gender} onChange={e => setGender(e.target.value)} className="rounded-xl border border-slate-200 bg-slate-50 p-3"><option value="">Gender *</option><option>Female</option><option>Male</option><option>Non-binary</option></select>
-                    <input type="number" min="13" max="100" value={ageGroup} onChange={e => setAgeGroup(e.target.value)} placeholder="Age *" className="rounded-xl border border-slate-200 bg-slate-50 p-3" />
-                  </div>
-                  <input value={creatorState} onChange={e => setCreatorState(e.target.value)} placeholder="City * (e.g. Mumbai, Delhi)" className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3" />
-                  <select value={category} onChange={e => setCategory(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3"><option value="">Category *</option>{CATEGORIES_LIST.map(item => <option key={item.id} value={item.name}>{item.name}</option>)}</select>
-                  <input value={languages} onChange={e => setLanguages(e.target.value)} placeholder="Languages * (e.g. Hindi, English)" className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3" />
-                </> : <>
-                  <input value={username} onChange={e => setUsername(e.target.value)} placeholder="Instagram URL * (https://instagram.com/yourhandle)" className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3" />
-                  <input type="text" inputMode="numeric" value={startingPrice} onChange={e => setStartingPrice(e.target.value)} placeholder="Starting price or range (₹) *" className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3" />
-                  <div className="grid grid-cols-2 gap-3">{[
-                    ['Followers count', followers, setFollowers], ['Total posts', totalPosts, setTotalPosts], ['Average likes', avgLikes, setAvgLikes], ['Average views', avgViews, setAvgViews], ['Average comments', avgComments, setAvgComments],
-                  ].map(([label, value, setter]: any) => <input key={label} type="number" min="0" value={value} onChange={e => setter(e.target.value)} placeholder={label} className="rounded-xl border border-slate-200 bg-slate-50 p-3" />)}</div>
-                </>}
-              </div>
-            )}
-            {/* Signup Only: Name and Brand/Creator Specific Fields */}
-            {!creatorProfileSetup && mode === 'signup' && !otpSent && (
-              <>
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1">Full Name *</label>
-                  <div className="relative">
-                    <User className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5" />
-                    <input
-                      type="text"
-                      placeholder="e.g. Priya Sharma"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      onBlur={() => handleBlur('name')}
-                      className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] transition"
-                    />
-                  </div>
-                  {touched.name && fieldErrors.name && (
-                    <span className="text-[11px] text-rose-600 font-semibold mt-1 block">{fieldErrors.name}</span>
-                  )}
-                </div>
 
-                {role === 'BRAND' ? (
+                {creatorSetupStep === 1 ? (
                   <>
-                  <div>
-                    <label className="block text-slate-700 font-bold mb-1">Company / Brand Name *</label>
-                    <div className="relative">
-                      <Building2 className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5" />
+                    {/* Profile Photo */}
+                    <div>
+                      <label className="block font-bold text-slate-300 mb-1.5">Profile Photo</label>
+                      <div className="flex items-center gap-3">
+                        <div className="w-14 h-14 rounded-full overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                          {profilePhotoUrl
+                            ? <img src={profilePhotoUrl} alt="Profile" className="w-full h-full object-cover" />
+                            : <User className="w-6 h-6 text-slate-500" />}
+                        </div>
+                        <label className="cursor-pointer px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 transition text-xs font-bold">
+                          Upload Photo
+                          <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            setProfilePhotoFile(file);
+                            const url = URL.createObjectURL(file);
+                            setCropSrc(url); setCropTarget('avatar'); setShowCropper(true);
+                          }} />
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Basic Fields */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block font-bold text-slate-300 mb-1">Gender *</label>
+                        <select value={gender} onChange={e => setGender(e.target.value)}
+                          className={creatorFieldClass('gender', gender, 'bg-white/5 text-white border-white/10')}>
+                          <option value="" className="bg-[#051126]">Select</option>
+                          {['Male', 'Female', 'Non-binary', 'Prefer not to say'].map(g => <option key={g} value={g} className="bg-[#051126]">{g}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block font-bold text-slate-300 mb-1">Age Group *</label>
+                        <select value={ageGroup} onChange={e => setAgeGroup(e.target.value)}
+                          className={creatorFieldClass('ageGroup', ageGroup, 'bg-white/5 text-white border-white/10')}>
+                          <option value="" className="bg-[#051126]">Select</option>
+                          {['18-21', '22-25', '26-30', '31-35', '36-40', '41+'].map(a => <option key={a} value={a} className="bg-[#051126]">{a}</option>)}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-300 mb-1">Primary Category *</label>
+                      <select value={category} onChange={e => setCategory(e.target.value)}
+                        className={creatorFieldClass('category', category, 'bg-white/5 text-white border-white/10')}>
+                        <option value="" className="bg-[#051126]">Select category</option>
+                        {CATEGORIES_LIST.map(c => <option key={c.slug} value={c.name} className="bg-[#051126]">{c.name}</option>)}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-300 mb-1">City / Location *</label>
+                      <select value={creatorState} onChange={e => setCreatorState(e.target.value)}
+                        className={creatorFieldClass('creatorState', creatorState, 'bg-white/5 text-white border-white/10')}>
+                        <option value="" className="bg-[#051126]">Select city</option>
+                        {CITIES_LIST.map(c => <option key={c.slug} value={c.name} className="bg-[#051126]">{c.name}</option>)}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-300 mb-1">Languages (comma-separated)</label>
                       <input
                         type="text"
-                        placeholder="e.g. Nykaa Beauty"
-                        value={companyName}
-                        onChange={(e) => setCompanyName(e.target.value)}
-                        onBlur={() => handleBlur('companyName')}
-                        className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] transition"
+                        value={languages}
+                        onChange={e => setLanguages(e.target.value)}
+                        placeholder="e.g. Hindi, English, Punjabi"
+                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#D4A338]/60 text-xs font-medium transition"
                       />
                     </div>
-                    {touched.companyName && fieldErrors.companyName && (
-                      <span className="text-[11px] text-rose-600 font-semibold mt-1 block">{fieldErrors.companyName}</span>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-slate-700 font-bold mb-1">GST Number <span className="text-slate-400 font-normal">(optional)</span></label>
-                    <div className="relative">
-                      <FileText className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5" />
-                      <input
-                        type="text"
-                        placeholder="e.g. 22AAAAA0000A1Z5"
-                        value={gstNumber}
-                        onChange={(e) => setGstNumber(e.target.value.toUpperCase())}
-                        maxLength={15}
-                        className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] transition font-mono text-xs tracking-wider"
-                      />
-                    </div>
-                    <p className="text-[10px] text-slate-400 mt-0.5">Your GST number for verified brand badge</p>
-                  </div>
                   </>
-                ) : null}
-
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1">WhatsApp / Contact Number *</label>
-                  <div className="flex gap-2">
-                    <select value={countryCode} onChange={(e) => setCountryCode(e.target.value)} aria-label="Country code" className="w-24 shrink-0 px-2 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] font-medium cursor-pointer">
-                      {COUNTRY_CODES.map(({ code, label }) => <option key={code} value={code}>{label}</option>)}
-                    </select>
-                    <div className="relative flex-1">
-                      <Phone className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5" />
+                ) : (
+                  <>
+                    {/* Step 2: Instagram Stats */}
+                    <div>
+                      <label className="block font-bold text-slate-300 mb-1">Instagram Profile URL or Handle *</label>
                       <input
-                      type="tel"
-                      inputMode="numeric"
-                      autoComplete="tel"
-                      maxLength={10}
-                      placeholder="98765 43210"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                      onBlur={() => handleBlur('phone')}
-                      className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] transition"
+                        type="text"
+                        value={username}
+                        onChange={e => setUsername(e.target.value)}
+                        placeholder="@yourhandle or instagram.com/yourhandle"
+                        className={creatorFieldClass('username', username)}
                       />
                     </div>
-                  </div>
-                  {touched.phone && fieldErrors.phone && (
-                    <span className="text-[11px] text-rose-600 font-semibold mt-1 block">{fieldErrors.phone}</span>
-                  )}
-                </div>
-              </>
-            )}
-
-            {/* Email Field */}
-            {!creatorProfileSetup && <div>
-              <label className="block text-slate-700 font-bold mb-1">Email Address *</label>
-              <div className="relative">
-                <Mail className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5" />
-                <input
-                  type="email"
-                  placeholder={role === 'BRAND' ? 'brand@company.com' : 'creator@example.com'}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  onBlur={() => handleBlur('email')}
-                  className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] transition"
-                />
-              </div>
-              {touched.email && fieldErrors.email && (
-                <span className="text-[11px] text-rose-600 font-semibold mt-1 block">{fieldErrors.email}</span>
-              )}
-            </div>}
-
-            {/* Password Field */}
-            {!creatorProfileSetup && (!isForgotPassword && (!otpSent || mode === 'login')) && (
-              <div>
-                <label className="block text-slate-700 font-bold mb-1">Password *</label>
-                <div className="relative">
-                  <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5 pointer-events-none" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    onBlur={() => handleBlur('password')}
-                    className="w-full pl-9 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] transition"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-700 transition cursor-pointer p-0.5"
-                    title={showPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-                {touched.password && fieldErrors.password && (
-                  <span className="text-[11px] text-rose-600 font-semibold mt-1 block">{fieldErrors.password}</span>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block font-bold text-slate-300 mb-1">Followers *</label>
+                        <input type="number" value={followers} onChange={e => setFollowers(e.target.value)}
+                          placeholder="e.g. 50000"
+                          className={creatorFieldClass('followers', followers)} />
+                      </div>
+                      <div>
+                        <label className="block font-bold text-slate-300 mb-1">Total Posts</label>
+                        <input type="number" value={totalPosts} onChange={e => setTotalPosts(e.target.value)}
+                          placeholder="e.g. 120"
+                          className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#D4A338]/60 text-xs font-medium transition" />
+                      </div>
+                      <div>
+                        <label className="block font-bold text-slate-300 mb-1">Avg Views</label>
+                        <input type="number" value={avgViews} onChange={e => setAvgViews(e.target.value)}
+                          placeholder="e.g. 10000"
+                          className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#D4A338]/60 text-xs font-medium transition" />
+                      </div>
+                      <div>
+                        <label className="block font-bold text-slate-300 mb-1">Avg Likes</label>
+                        <input type="number" value={avgLikes} onChange={e => setAvgLikes(e.target.value)}
+                          placeholder="e.g. 2000"
+                          className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#D4A338]/60 text-xs font-medium transition" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block font-bold text-slate-300 mb-1">Starting Price (₹) *</label>
+                      <input
+                        type="text"
+                        value={startingPrice}
+                        onChange={e => setStartingPrice(e.target.value)}
+                        placeholder="e.g. 5000 or 5000-15000"
+                        className={creatorFieldClass('startingPrice', startingPrice)}
+                      />
+                      <p className="text-slate-500 mt-1 text-[10px]">Minimum fee per brand collaboration</p>
+                    </div>
+                  </>
                 )}
               </div>
             )}
 
-            {mode === 'login' && !isForgotPassword && (
-              <div className="flex justify-end mt-1">
-                <button type="button" onClick={() => { setIsForgotPassword(true); setFieldErrors({}); }} className="text-[11px] font-bold text-[#b88628] hover:text-[#916a1f] cursor-pointer">
-                  Forgot Password?
-                </button>
-              </div>
-            )}
-            
-            {isForgotPassword && !resetOtpSent && (
-              <div className="flex justify-center mt-2">
-                <button type="button" onClick={() => { setIsForgotPassword(false); setFieldErrors({}); }} className="text-[11px] font-bold text-slate-500 hover:text-slate-800 cursor-pointer">
-                  Back to Sign In
-                </button>
-              </div>
-            )}
-
-            {/* OTP Field (Signup Step 2) */}
-            {( (mode === 'signup' && otpSent) || (isForgotPassword && resetOtpSent) ) && (
+            {!creatorProfileSetup && (
               <>
-              <button 
-                type="button"
-                onClick={() => {
-                  if (isForgotPassword) setResetOtpSent(false);
-                  else setOtpSent(false);
-                  setSuccessMsg(null);
-                  setErrorMsg(null);
-                  setOtp('');
-                }}
-                className="flex items-center text-[11px] font-semibold text-slate-500 hover:text-slate-800 transition cursor-pointer mb-2"
-              >
-                 ← Back to Edit Email
-              </button>
-              <div>
-                <label className="block text-slate-700 font-bold mb-1">Enter 6-Digit OTP *</label>
-                <input
-                  type="text"
-                  maxLength={6}
-                  placeholder="123456"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  className="w-full px-4 py-2.5 text-center text-base tracking-widest font-mono bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338]"
-                />
-                {fieldErrors.otp && (
-                  <span className="text-[11px] text-rose-600 font-semibold mt-1 block">{fieldErrors.otp}</span>
-                )}
-              </div>
+                {/* Email */}
+                <div className="relative">
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                  <input
+                    type="email"
+                    autoComplete="email"
+                    required
+                    placeholder="Email address"
+                    value={email}
+                    onChange={e => { setEmail(e.target.value); setTouched(t => ({ ...t, email: true })); }}
+                    className={`${fieldClass('email')} pl-10`}
+                  />
+                </div>
 
-              {isForgotPassword && (
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1 mt-3">New Password *</label>
+                {/* Password */}
+                {!isForgotPassword && (
                   <div className="relative">
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                     <input
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="Create a strong password"
+                      autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                      required
+                      placeholder="Password"
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-4 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-[#D4A338] transition"
+                      onChange={e => { setPassword(e.target.value); setTouched(t => ({ ...t, password: true })); }}
+                      className={`${fieldClass('password')} pl-10 pr-10`}
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-700 transition cursor-pointer p-0.5"
-                    >
-                      {showPassword ? "Hide" : "Show"}
+                    <button type="button" onClick={() => setShowPassword(s => !s)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition cursor-pointer">
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
-                </div>
-              )}
+                )}
+
+                {/* Signup only fields */}
+                {mode === 'signup' && !otpSent && !isForgotPassword && (
+                  <>
+                    {role === 'CREATOR' ? (
+                      <div className="relative">
+                        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                        <input
+                          type="text"
+                          placeholder="Your Full Name *"
+                          value={name}
+                          onChange={e => { setName(e.target.value); setTouched(t => ({ ...t, name: true })); }}
+                          className={`${fieldClass('name')} pl-10`}
+                        />
+                      </div>
+                    ) : (
+                      <>
+                        <div className="relative">
+                          <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                          <input
+                            type="text"
+                            placeholder="Company / Brand Name *"
+                            value={companyName}
+                            onChange={e => { setCompanyName(e.target.value); setTouched(t => ({ ...t, companyName: true })); }}
+                            className={`${fieldClass('companyName')} pl-10`}
+                          />
+                        </div>
+                        <div className="relative">
+                          <FileText className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                          <input
+                            type="text"
+                            placeholder="GST Number (optional)"
+                            value={gstNumber}
+                            onChange={e => setGstNumber(e.target.value)}
+                            className="w-full pl-10 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#D4A338]/60 text-xs font-medium transition"
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    {/* Phone */}
+                    <div className="flex gap-2">
+                      <select
+                        value={countryCode}
+                        onChange={e => setCountryCode(e.target.value)}
+                        className="px-3 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-xs font-bold focus:outline-none focus:border-[#D4A338]/60 transition cursor-pointer w-28"
+                      >
+                        {COUNTRY_CODES.map(c => (
+                          <option key={c.code} value={c.code} className="bg-[#051126]">{c.label}</option>
+                        ))}
+                      </select>
+                      <div className="relative flex-1">
+                        <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                        <input
+                          type="tel"
+                          placeholder="Phone number *"
+                          value={phone}
+                          onChange={e => { setPhone(e.target.value); setTouched(t => ({ ...t, phone: true })); }}
+                          className={`${fieldClass('phone')} pl-10`}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* OTP Input */}
+                {(otpSent || resetOtpSent) && !isForgotPassword || (isForgotPassword && resetOtpSent) ? (
+                  <div className="space-y-3">
+                    <div className="relative">
+                      <ShieldCheck className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={6}
+                        placeholder="Enter 6-digit OTP"
+                        value={otp}
+                        onChange={e => { setOtp(e.target.value); setTouched(t => ({ ...t, otp: true })); }}
+                        className={`${fieldClass('otp')} pl-10 tracking-[0.3em] font-mono`}
+                      />
+                    </div>
+                    {isForgotPassword && resetOtpSent && (
+                      <div className="relative">
+                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                        <input
+                          type="password"
+                          placeholder="New password"
+                          value={newPassword}
+                          onChange={e => setNewPassword(e.target.value)}
+                          className={`${fieldClass('newPassword')} pl-10`}
+                        />
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+
+                {/* Forgot Password link */}
+                {mode === 'login' && !isForgotPassword && (
+                  <div className="text-right">
+                    <button
+                      type="button"
+                      onClick={() => { setIsForgotPassword(true); setErrorMsg(null); setSuccessMsg(null); }}
+                      className="text-[10px] text-[#D4A338] hover:text-amber-300 font-bold cursor-pointer transition"
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
+                )}
               </>
             )}
 
-            {/* Submit Button */}
+            {/* Submit */}
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full mt-2 py-3 bg-[#D4A338] hover:bg-[#b88628] text-black font-extrabold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+              className="w-full flex items-center justify-center gap-2 py-3 bg-[#D4A338] hover:bg-[#b88628] text-slate-950 font-black text-xs rounded-xl transition cursor-pointer shadow-lg shadow-[#D4A338]/20 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isLoading ? (
-                <span>Processing...</span>
-              ) : isForgotPassword ? (
-                <span>{resetOtpSent ? 'Verify & Reset Password' : 'Send Reset Link'}</span>
-              ) : mode === 'login' ? (
-                <>
-                  <span>Sign In</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              ) : creatorProfileSetup ? (
-                <>
-                  <span>{creatorSetupStep === 1 ? 'Continue to Instagram Details' : 'Sign Up & Open Dashboard'}</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              ) : otpSent ? (
-                <>
-                  <span>Verify OTP & Create Account</span>
-                  <Check className="w-4 h-4" />
-                </>
+                <span className="inline-block w-4 h-4 border-2 border-slate-950/30 border-t-slate-950 rounded-full animate-spin" />
               ) : (
                 <>
-                  <span>Request Verification OTP</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <span>
+                    {creatorProfileSetup
+                      ? creatorSetupStep === 1 ? 'Next Step →' : 'Complete Profile'
+                      : isForgotPassword
+                        ? resetOtpSent ? 'Reset Password' : 'Send OTP'
+                        : mode === 'login' ? 'Sign In' : otpSent ? 'Verify & Create Account' : 'Send OTP'}
+                  </span>
+                  {!isLoading && <ArrowRight className="w-3.5 h-3.5" />}
                 </>
               )}
             </button>
+
+            {isForgotPassword && (
+              <button
+                type="button"
+                onClick={() => { setIsForgotPassword(false); setResetOtpSent(false); setErrorMsg(null); setSuccessMsg(null); }}
+                className="w-full text-center text-[10px] text-slate-500 hover:text-slate-300 font-bold cursor-pointer transition py-1"
+              >
+                ← Back to Sign In
+              </button>
+            )}
           </form>
 
-          {/* Footer switch */}
-          <div className="pt-2 text-center text-xs text-slate-500">
-            {mode === 'login' ? (
-              <p>
-                Don't have an account?{' '}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMode('signup');
-                    setErrorMsg(null);
-                  }}
-                  className="font-bold text-[#b88628] hover:underline cursor-pointer"
-                >
-                  Create one now
-                </button>
+          {/* Divider and Terms */}
+          {!creatorProfileSetup && (
+            <div className="pt-2 border-t border-white/10 text-center space-y-2">
+              <p className="text-[10px] text-slate-500">
+                By continuing, you agree to our{' '}
+                <span className="text-[#D4A338] cursor-pointer hover:underline font-bold">Terms of Service</span>{' '}
+                and{' '}
+                <span className="text-[#D4A338] cursor-pointer hover:underline font-bold">Privacy Policy</span>
               </p>
-            ) : (
-              <p>
-                Already have an account?{' '}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMode('login');
-                    setErrorMsg(null);
-                  }}
-                  className="font-bold text-[#b88628] hover:underline cursor-pointer"
-                >
-                  Sign in here
-                </button>
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Back to Home Link */}
-        <div className="text-center">
-          <button
-            type="button"
-            onClick={() => navigateTo('home')}
-            className="text-xs text-slate-500 hover:text-slate-800 font-semibold transition cursor-pointer"
-          >
-            ← Back to Homepage
-          </button>
-        </div>
+              <div className="flex items-center justify-center gap-3 text-[10px] text-slate-500">
+                <span className="flex items-center gap-1"><ShieldCheck className="w-3 h-3 text-emerald-500" /> SSL Secured</span>
+                <span>•</span>
+                <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-blue-400" /> Zero Commission</span>
+                <span>•</span>
+                <span className="flex items-center gap-1"><Check className="w-3 h-3 text-[#D4A338]" /> Verified Profiles</span>
+              </div>
             </div>
-      {cropModalData && (
+          )}
+        </div>
+      </div>
+
+      {/* Image Cropper Modal */}
+      {showCropper && (
         <ImageCropperModal
-          imageSrc={cropModalData.src}
-          aspect={cropModalData.type === 'avatar' ? 1 : 9 / 16}
-          shape={cropModalData.type === 'avatar' ? 'round' : 'rect'}
-          onCropDone={(file) => {
-            uploadCreatorMedia(file, cropModalData.type);
-            setCropModalData(null);
+          src={cropSrc}
+          aspect={cropTarget === 'avatar' ? 1 : 3}
+          onCrop={(croppedDataUrl) => {
+            if (cropTarget === 'avatar') setProfilePhotoUrl(croppedDataUrl);
+            else setBannerUrl(croppedDataUrl);
+            setShowCropper(false);
           }}
-          onCancel={() => setCropModalData(null)}
+          onClose={() => setShowCropper(false)}
         />
       )}
     </div>

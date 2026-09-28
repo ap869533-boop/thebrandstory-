@@ -155,7 +155,9 @@ async function startServer() {
   try {
     await getDbPool();
     console.log('✅ MySQL Database pool ready');
-    await runAutoMigrations();
+    if (process.env.RUN_AUTO_MIGRATIONS === 'true' && process.env.NODE_ENV !== 'production') {
+      await runAutoMigrations();
+    }
   } catch (err: any) {
     console.warn('⚠️ MySQL connection notice:', err.message);
   }

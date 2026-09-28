@@ -45,7 +45,6 @@ import { apiUrl, authHeaders } from '../config/api';
 export const BrandDashboardView: React.FC = () => {
   const {
     activeBrandName,
-    campaigns,
     enquiries,
     savedFolders,
     creators,
@@ -62,6 +61,17 @@ export const BrandDashboardView: React.FC = () => {
   } = usePlatform();
 
   const [activeTab, setActiveTab] = useState<'briefs' | 'enquiries' | 'chat' | 'deals' | 'profile' | 'settings'>('briefs');
+  const [brandCampaigns, setBrandCampaigns] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (authUser?.role !== 'BRAND') return;
+    fetch(apiUrl('/api/campaigns?scope=mine'), { headers: authHeaders() })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.campaigns)) setBrandCampaigns(data.campaigns);
+      })
+      .catch((error) => console.error('Failed to load brand campaigns:', error));
+  }, [authUser?.id, authUser?.role]);
 
   // Brand Profile State
   const [bpBrandName, setBpBrandName] = useState(authUser?.companyName || '');
@@ -277,14 +287,7 @@ export const BrandDashboardView: React.FC = () => {
   }, [approvalStatus, activeTab]);
 
   // Match briefs belonging to the brand
-  const myBrandBriefs = campaigns.filter(
-    (c) =>
-      (c.companyName && brandDisplayName && c.companyName.toLowerCase().trim() === brandDisplayName.toLowerCase().trim()) ||
-      (c.companyName && brandDisplayName && c.companyName.toLowerCase().includes(brandDisplayName.toLowerCase().trim())) ||
-      (c.companyName && brandDisplayName && brandDisplayName.toLowerCase().includes(c.companyName.toLowerCase().trim())) ||
-      (c.email && authUser?.email && c.email.toLowerCase() === authUser.email.toLowerCase()) ||
-      c.companyName === 'thebrandsstory. Client'
-  );
+  const myBrandBriefs = brandCampaigns;
 
   // If brand has no direct briefs yet, or selected 'all', show all campaigns with pitches so nothing is ever missed
   const myBriefs = myBrandBriefs;
@@ -740,8 +743,10 @@ export const BrandDashboardView: React.FC = () => {
                             <span className="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-black rounded-lg">{camp.budget}</span>
                             {(() => {
                               const isExpired = camp.validUntil && new Date(camp.validUntil) < new Date(new Date().setHours(0, 0, 0, 0));
-                              const displayStatus = isExpired ? `Expired (${new Date(camp.validUntil as string).toLocaleString('en-IN', { day: '2-digit', month: 'short' })})` : camp.status;
-                              const statusColor = isExpired ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-blue-50 text-[#b88628]';
+                              const isPending = camp.approvalStatus === 'pending';
+                              const isRejected = camp.approvalStatus === 'rejected';
+                              const displayStatus = isPending ? 'Under Review' : isRejected ? 'Rejected' : isExpired ? `Expired (${new Date(camp.validUntil as string).toLocaleString('en-IN', { day: '2-digit', month: 'short' })})` : camp.status;
+                              const statusColor = isPending ? 'bg-amber-50 text-amber-700 border border-amber-200' : isRejected || isExpired ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-blue-50 text-[#b88628]';
                               return (
                                 <span className={`px-2.5 py-1 text-xs font-bold rounded-lg ${statusColor}`}>
                                   {displayStatus}
@@ -1338,7 +1343,7 @@ export const BrandDashboardView: React.FC = () => {
       )}
       {/* Pitches Modal */}
       {activePitchesCampaignId && (() => {
-        const campaign = campaigns.find(c => c.id === activePitchesCampaignId);
+        const campaign = brandCampaigns.find(c => c.id === activePitchesCampaignId);
         if (!campaign) return null;
         const campPitches = campaign.applicants || [];
         

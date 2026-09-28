@@ -9,7 +9,11 @@ import { sendOtpEmail, sendWelcomeEmail } from '../utils/mailer';
 import { cleanInstagramHandle } from '../utils/sanitize';
 import { ensurePendingBrandProfile } from './brandController';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'social_cults_super_secret_jwt_key_2026';
+const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV !== 'production' ? 'development-only-jwt-secret' : '');
+
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET must be configured when NODE_ENV=production');
+}
 
 function normalizeMobile(phone: unknown, countryCode: unknown = '+91'): string | null {
   const code = String(countryCode || '+91').trim();
@@ -100,7 +104,7 @@ export async function signup(req: Request, res: Response) {
       name,
       email,
       password,
-      role = 'BRAND',
+      role: requestedRole = 'BRAND',
       phone,
       companyName,
       gstNumber,
@@ -108,6 +112,11 @@ export async function signup(req: Request, res: Response) {
       category = '',
       city = '',
     } = req.body;
+
+    const role = String(requestedRole).toUpperCase();
+    if (role !== 'BRAND' && role !== 'CREATOR') {
+      return res.status(400).json({ success: false, error: 'Only BRAND or CREATOR accounts can be registered publicly' });
+    }
 
     if (!name || !email || !password) {
       return res.status(400).json({ success: false, error: 'Name, email and password are required' });
@@ -614,7 +623,12 @@ export async function requestOtp(req: Request, res: Response) {
 
 export async function verifyOtp(req: Request, res: Response) {
   try {
-    const { email, otp, name, role, phone, companyName, gstNumber, username, category, city, password, countryCode, deferCreatorSignup, signupToken } = req.body;
+    const { email, otp, name, role: requestedRole, phone, companyName, gstNumber, username, category, city, password, countryCode, deferCreatorSignup, signupToken } = req.body;
+    const role = String(requestedRole || '').toUpperCase();
+
+    if (requestedRole && role !== 'BRAND' && role !== 'CREATOR') {
+      return res.status(400).json({ success: false, error: 'Only BRAND or CREATOR accounts can be registered publicly' });
+    }
 
     if (!email || (!otp && !signupToken)) {
       return res.status(400).json({ success: false, error: 'Email and OTP are required' });

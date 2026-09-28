@@ -36,7 +36,7 @@ export const getTransporter = () => {
       pass: cleanPass,
     },
     tls: {
-      rejectUnauthorized: false,
+      rejectUnauthorized: true,
     },
   });
 };

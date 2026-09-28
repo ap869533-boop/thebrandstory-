@@ -214,7 +214,7 @@ export const BrandDetailView: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-[#051126] flex items-center justify-center p-6">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
       </div>
     );
@@ -242,9 +242,9 @@ export const BrandDetailView: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50/60 pb-16 font-sans">
+    <div className="min-h-screen bg-[#051126] pb-16 font-sans text-white">
       {/* Top Navigation Back Bar - Placed cleanly above the profile with no overlap */}
-      <div className="relative z-10 bg-white border-b border-slate-200/80 px-4 sm:px-6 lg:px-8 py-2.5 shadow-2xs">
+      <div className="sticky top-0 z-40 bg-[#051126]/95 backdrop-blur-md border-b border-white/10 px-4 sm:px-6 lg:px-8 py-2.5 shadow-lg">
         <div className="max-w-6xl mx-auto flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <button
@@ -262,8 +262,8 @@ export const BrandDetailView: React.FC = () => {
               onClick={() => toggleSaveBrand(brandId)}
               className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-xs font-bold transition cursor-pointer shadow-xs whitespace-nowrap ${
                 isSaved
-                  ? 'bg-rose-50 border-rose-200 text-rose-600 hover:bg-rose-100'
-                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900'
+                  ? 'bg-rose-500/20 border-rose-500/30 text-rose-300 hover:bg-rose-500/30'
+                  : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10 hover:text-white'
               }`}
             >
               <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-rose-500 text-rose-500' : ''}`} />
@@ -300,10 +300,10 @@ export const BrandDetailView: React.FC = () => {
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
         {/* Brand Header / Profile Card */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div className="bg-white/5 rounded-3xl p-6 sm:p-8 border border-white/10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 min-w-0 flex-1">
             {/* Logo */}
-            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-white border border-slate-200 p-2 shadow-sm shrink-0 flex items-center justify-center overflow-hidden">
+            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-white/10 border border-white/20 p-2 shrink-0 flex items-center justify-center overflow-hidden">
               {brand?.logoUrl ? (
                 <img
                   src={brand.logoUrl}

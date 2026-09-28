@@ -143,6 +143,10 @@ export const AdminDashboardView: React.FC = () => {
   };
   const [creatorFilterTab, setCreatorFilterTab] = useState<'all' | 'pending' | 'active' | 'suspended'>('all');
   const [creatorSearch, setCreatorSearch] = useState('');
+  const [creatorPage, setCreatorPage] = useState(0);
+  const [creatorTotal, setCreatorTotal] = useState(0);
+  const [creatorStatusCounts, setCreatorStatusCounts] = useState({ pending: 0, active: 0, suspended: 0 });
+  const creatorPageSize = 25;
   const [emailMenuCreatorId, setEmailMenuCreatorId] = useState<string | null>(null);
   const [sendingEmail, setSendingEmail] = useState<{ creatorId: string; type: 'complete_profile' | 'information_warning' } | null>(null);
   const [brandSearch, setBrandSearch] = useState('');
@@ -151,21 +155,36 @@ export const AdminDashboardView: React.FC = () => {
   const refreshCreators = async () => {
     setIsRefreshingCreators(true);
     try {
-      const response = await fetch(apiUrl(`/api/creators?includePending=true&_refresh=${Date.now()}`));
+      const params = new URLSearchParams({
+        includePending: 'true',
+        limit: String(creatorPageSize),
+        offset: String(creatorPage * creatorPageSize),
+        _refresh: String(Date.now()),
+      });
+      if (creatorFilterTab !== 'all') params.set('status', creatorFilterTab);
+      if (creatorSearch.trim()) params.set('searchQuery', creatorSearch.trim());
+      const response = await fetch(apiUrl(`/api/creators?${params.toString()}`));
       if (!response.ok) throw new Error('Unable to refresh creators');
       const data = await response.json();
       if (!Array.isArray(data.creators)) throw new Error('Invalid creators response');
       setCreators(data.creators);
+      setCreatorTotal(Number(data.total) || 0);
+      if (data.statusCounts) setCreatorStatusCounts(data.statusCounts);
     } finally {
       setIsRefreshingCreators(false);
     }
   };
 
   useEffect(() => {
-    void refreshCreators().catch((error) => {
-      console.error('Failed to refresh admin creators:', error);
-    });
-  }, []);
+    const timer = window.setTimeout(() => {
+      void refreshCreators().catch((error) => {
+        console.error('Failed to refresh admin creators:', error);
+      });
+    }, 200);
+    return () => window.clearTimeout(timer);
+  }, [creatorFilterTab, creatorSearch, creatorPage]);
+
+  useEffect(() => setCreatorPage(0), [creatorFilterTab, creatorSearch]);
 
   // Selected Creator for Detailed Review Modal
   const [reviewModalCreator, setReviewModalCreator] = useState<Creator | null>(null);
@@ -412,30 +431,11 @@ export const AdminDashboardView: React.FC = () => {
   };
 
   // Filtered Creators calculation
-  const pendingCreators = creators.filter((c) => c.status === 'pending' || c.verificationRequested);
-  const activeCreators = creators.filter((c) => c.status === 'active' && !c.verificationRequested);
-  const suspendedCreators = creators.filter((c) => c.status === 'suspended');
-
-  const displayedCreators = creators.filter((c) => {
-    if (creatorFilterTab === 'pending') {
-      if (c.status !== 'pending' && !c.verificationRequested) return false;
-    } else if (creatorFilterTab === 'active') {
-      if (c.status !== 'active') return false;
-    } else if (creatorFilterTab === 'suspended') {
-      if (c.status !== 'suspended') return false;
-    }
-
-    if (creatorSearch.trim()) {
-      const q = creatorSearch.toLowerCase();
-      return (
-        c.name.toLowerCase().includes(q) ||
-        c.username.toLowerCase().includes(q) ||
-        c.currentCity.toLowerCase().includes(q) ||
-        c.primaryCategory.toLowerCase().includes(q)
-      );
-    }
-    return true;
-  });
+  const pendingCreators = { length: creatorStatusCounts.pending };
+  const activeCreators = { length: creatorStatusCounts.active };
+  const suspendedCreators = { length: creatorStatusCounts.suspended };
+  const allCreatorsCount = pendingCreators.length + activeCreators.length + suspendedCreators.length;
+  const displayedCreators = creators;
 
   return (
     <div className="min-h-screen bg-slate-50/60 py-8 font-sans">
@@ -460,7 +460,7 @@ export const AdminDashboardView: React.FC = () => {
           <div className="flex items-center gap-3 text-xs">
             <div className="p-3 bg-slate-800/80 rounded-2xl border border-slate-700/80 text-center">
               <span className="text-[10px] text-slate-400 uppercase font-bold block">Live Creators</span>
-              <span className="text-base font-black text-white">{creators.length}</span>
+              <span className="text-base font-black text-white">{allCreatorsCount}</span>
             </div>
             <div className="p-3 bg-slate-800/80 rounded-2xl border border-slate-700/80 text-center">
               <span className="text-[10px] text-amber-400 uppercase font-bold block">Pending Approval</span>
@@ -482,7 +482,7 @@ export const AdminDashboardView: React.FC = () => {
             }`}
           >
             <Users className="w-3.5 h-3.5" />
-            <span>Influencer Approvals & Directory ({creators.length})</span>
+            <span>Influencer Approvals & Directory ({allCreatorsCount})</span>
             {pendingCreators.length > 0 && (
               <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-white text-[10px] font-black">
                 {pendingCreators.length}
@@ -570,7 +570,7 @@ export const AdminDashboardView: React.FC = () => {
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
-                  All Influencers ({creators.length})
+                  All Influencers ({allCreatorsCount})
                 </button>
 
                 <button
@@ -875,6 +875,13 @@ export const AdminDashboardView: React.FC = () => {
                 </table>
               </div>
             </div>
+            {creatorTotal > creatorPageSize && (
+              <div className="flex items-center justify-center gap-3 py-3">
+                <button type="button" onClick={() => setCreatorPage((current) => Math.max(0, current - 1))} disabled={creatorPage === 0 || isRefreshingCreators} className="px-4 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold disabled:opacity-40">Previous</button>
+                <span className="text-xs font-medium text-slate-500">Page {creatorPage + 1} of {Math.ceil(creatorTotal / creatorPageSize)}</span>
+                <button type="button" onClick={() => setCreatorPage((current) => current + 1)} disabled={(creatorPage + 1) * creatorPageSize >= creatorTotal || isRefreshingCreators} className="px-4 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold disabled:opacity-40">Next</button>
+              </div>
+            )}
           </div>
         )}
 

@@ -40,6 +40,7 @@ export function mapDbRowToCreator(row: any): Creator {
     gender: row.gender || undefined,
     ageGroup: row.age_group || '',
     followers: Number(row.followers) || 0,
+    rating: Number(row.rating) || 0,
     totalPosts: Number(row.total_posts) || 0,
     avgViews: Number(row.avg_views) || 0,
     avgLikes: Number(row.avg_likes) || 0,
@@ -77,8 +78,9 @@ export function mapDbRowToCreator(row: any): Creator {
       }] : [])),
     audience: typeof row.audience === 'string' ? JSON.parse(row.audience) : (row.audience || {}),
     portfolio: typeof row.portfolio === 'string' ? JSON.parse(row.portfolio) : (row.portfolio || []),
-    phone: row.phone,
-    email: row.email,
+    // Contact details stay private and are shared through authenticated enquiries.
+    phone: '',
+    email: '',
     verificationStepsCompleted: [],
     previousCollaborations: [],
     reviews: [],
@@ -86,6 +88,10 @@ export function mapDbRowToCreator(row: any): Creator {
     savedCount: Number(row.saved_count) || 0,
     createdAt: row.created_at,
   };
+}
+
+function withoutPrivateContact(creator: Creator): Creator {
+  return { ...creator, phone: '', email: '' };
 }
 
 export async function getCreators(req: Request, res: Response) {
@@ -97,6 +103,7 @@ export async function getCreators(req: Request, res: Response) {
       minFollowers,
       maxFollowers,
       maxPrice,
+      minPrice,
       minEngagement,
       collaborationType,
       isVerified,
@@ -105,10 +112,19 @@ export async function getCreators(req: Request, res: Response) {
       sortBy,
       limit,
       offset,
+      status,
     } = req.query;
 
     // 1. Build Optimized Indexed SQL Query for MySQL
-    const sqlConditions: string[] = [req.query.includePending === 'true' ? "status != 'suspended'" : "status = 'active'"];
+    const includePending = req.query.includePending === 'true';
+    const sqlConditions: string[] = [];
+    if (includePending) {
+      if (status === 'pending') sqlConditions.push("(status = 'pending' OR verification_requested = 1)");
+      else if (status === 'active') sqlConditions.push("status = 'active' AND verification_requested = 0");
+      else if (status === 'suspended') sqlConditions.push("status = 'suspended'");
+    } else {
+      sqlConditions.push("status = 'active'");
+    }
     const sqlParams: any[] = [];
 
     if (category && category !== 'all') {
@@ -124,9 +140,24 @@ export async function getCreators(req: Request, res: Response) {
     }
 
     if (searchQuery && typeof searchQuery === 'string' && searchQuery.trim()) {
-      const q = `%${searchQuery.toLowerCase().trim()}%`;
-      sqlConditions.push('(LOWER(name) LIKE ? OR LOWER(username) LIKE ? OR LOWER(primary_category) LIKE ? OR LOWER(current_city) LIKE ?)');
+      const rawQuery = searchQuery.toLowerCase().trim();
+      const q = `%${rawQuery}%`;
+      const numericMatch = rawQuery.match(/(\d+(?:\.\d+)?)\s*(k|m)?/i);
+      const numericValue = numericMatch ? Number(numericMatch[1]) * (numericMatch[2]?.toLowerCase() === 'm' ? 1_000_000 : numericMatch[2]?.toLowerCase() === 'k' ? 1_000 : 1) : null;
+      const isRatingSearch = /rating|star/.test(rawQuery);
+      const searchable = ['LOWER(name) LIKE ?', 'LOWER(username) LIKE ?', 'LOWER(primary_category) LIKE ?', 'LOWER(current_city) LIKE ?'];
       sqlParams.push(q, q, q, q);
+      const isNumericSearch = /rating|star|follower/.test(rawQuery) || /^\d+(?:\.\d+)?\s*(?:k|m)?$/i.test(rawQuery);
+      if (numericValue !== null && Number.isFinite(numericValue) && isNumericSearch) {
+        if (isRatingSearch) {
+          searchable.push('(SELECT COALESCE(AVG(rv.rating), 0) FROM creator_reviews rv WHERE rv.creator_id = creators.id) >= ?');
+          sqlParams.push(numericValue);
+        } else {
+          searchable.push('followers >= ?');
+          sqlParams.push(numericValue);
+        }
+      }
+      sqlConditions.push(`(${searchable.join(' OR ')})`);
     }
 
     if (minFollowers) {
@@ -142,6 +173,10 @@ export async function getCreators(req: Request, res: Response) {
     if (maxPrice) {
       sqlConditions.push('(starting_price <= ? OR is_barter_available = 1)');
       sqlParams.push(parseInt(maxPrice as string, 10));
+    }
+    if (minPrice) {
+      sqlConditions.push('starting_price >= ?');
+      sqlParams.push(parseInt(minPrice as string, 10));
     }
 
 
@@ -178,22 +213,50 @@ export async function getCreators(req: Request, res: Response) {
     }
 
     const whereClause = sqlConditions.length > 0 ? `WHERE ${sqlConditions.join(' AND ')}` : '';
-    const fullSql = `SELECT * FROM creators ${whereClause} ${orderByClause}`;
+    const pageSize = Math.min(Math.max(parseInt(String(limit || '20'), 10) || 20, 1), 100);
+    const pageOffset = Math.max(parseInt(String(offset || '0'), 10) || 0, 0);
+    if (sortBy === 'rating') orderByClause = 'ORDER BY rating DESC, followers DESC';
+    const fullSql = `SELECT creators.*, (SELECT COALESCE(AVG(rv.rating), 0) FROM creator_reviews rv WHERE rv.creator_id = creators.id) AS rating FROM creators ${whereClause} ${orderByClause} LIMIT ? OFFSET ?`;
 
-    const dbRows = await dbQuery(fullSql, sqlParams);
+    const [dbRows, countRows, statusCountRows] = await Promise.all([
+      dbQuery(fullSql, [...sqlParams, pageSize, pageOffset]),
+      dbQuery(`SELECT COUNT(*) as total FROM creators ${whereClause}`, sqlParams),
+      includePending ? dbQuery(`SELECT
+        SUM(status = 'pending' OR verification_requested = 1) as pending,
+        SUM(status = 'active' AND verification_requested = 0) as active,
+        SUM(status = 'suspended') as suspended
+        FROM creators`) : Promise.resolve(null),
+    ]);
+
+    const statusCounts = statusCountRows?.[0] ? {
+      pending: Number(statusCountRows[0].pending) || 0,
+      active: Number(statusCountRows[0].active) || 0,
+      suspended: Number(statusCountRows[0].suspended) || 0,
+    } : undefined;
 
     if (dbRows) {
       const creators = dbRows.map(mapDbRowToCreator);
       return res.json({
         success: true,
         source: 'mysql_indexed',
-        total: creators.length,
+        total: Number((countRows as any)?.[0]?.total) || creators.length,
+        page: Math.floor(pageOffset / pageSize) + 1,
+        pageSize,
+        statusCounts,
         creators,
       });
     }
 
     // 2. Resilient In-Memory Fallback if MySQL is offline
     let result: Creator[] = [...creatorsStore];
+
+    if (includePending) {
+      if (status === 'pending') result = result.filter((creator) => creator.status === 'pending' || creator.verificationRequested);
+      else if (status === 'active') result = result.filter((creator) => creator.status === 'active' && !creator.verificationRequested);
+      else if (status === 'suspended') result = result.filter((creator) => creator.status === 'suspended');
+    } else {
+      result = result.filter((creator) => creator.status === 'active');
+    }
 
     if (category && category !== 'all') {
       const catLower = (category as string).toLowerCase();
@@ -215,12 +278,16 @@ export async function getCreators(req: Request, res: Response) {
 
     if (searchQuery && typeof searchQuery === 'string') {
       const q = searchQuery.toLowerCase().trim();
+      const numericMatch = q.match(/(\d+(?:\.\d+)?)\s*(k|m)?/i);
+      const numericValue = numericMatch ? Number(numericMatch[1]) * (numericMatch[2]?.toLowerCase() === 'm' ? 1_000_000 : numericMatch[2]?.toLowerCase() === 'k' ? 1_000 : 1) : null;
+      const rating = (c: Creator) => c.reviews?.length ? c.reviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) / c.reviews.length : Number((c as any).rating) || 0;
       result = result.filter(
         (c) =>
           c.name.toLowerCase().includes(q) ||
           c.username.toLowerCase().includes(q) ||
           c.primaryCategory.toLowerCase().includes(q) ||
-          c.currentCity.toLowerCase().includes(q)
+          c.currentCity.toLowerCase().includes(q) ||
+          (numericValue !== null && (/rating|star|follower/.test(q) || /^\d+(?:\.\d+)?\s*(?:k|m)?$/i.test(q)) && (/rating|star/.test(q) ? rating(c) >= numericValue : c.followers >= numericValue))
       );
     }
 
@@ -255,6 +322,9 @@ export async function getCreators(req: Request, res: Response) {
 
     if (sortBy === 'followers') {
       result.sort((a, b) => b.followers - a.followers);
+    } else if (sortBy === 'rating') {
+      const rating = (c: Creator) => c.reviews?.length ? c.reviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) / c.reviews.length : Number((c as any).rating) || 0;
+      result.sort((a, b) => rating(b) - rating(a));
     } else if (sortBy === 'engagement') {
       result.sort((a, b) => b.followers - a.followers);
     } else if (sortBy === 'lowest_price') {
@@ -263,11 +333,19 @@ export async function getCreators(req: Request, res: Response) {
       result.sort((a, b) => b.trustScore - a.trustScore);
     }
 
+    const pagedResult = result.slice(pageOffset, pageOffset + pageSize);
     res.json({
       success: true,
       source: 'memory_fallback',
       total: result.length,
-      creators: result,
+      page: Math.floor(pageOffset / pageSize) + 1,
+      pageSize,
+      statusCounts: includePending ? {
+        pending: creatorsStore.filter((creator) => creator.status === 'pending' || creator.verificationRequested).length,
+        active: creatorsStore.filter((creator) => creator.status === 'active' && !creator.verificationRequested).length,
+        suspended: creatorsStore.filter((creator) => creator.status === 'suspended').length,
+      } : undefined,
+      creators: pagedResult.map(withoutPrivateContact),
     });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Failed to fetch creators' });
@@ -326,7 +404,7 @@ export async function getCreatorByIdOrUsername(req: Request, res: Response) {
     return res.status(404).json({ success: false, error: 'Creator not found' });
   }
 
-  res.json({ success: true, creator });
+  res.json({ success: true, creator: withoutPrivateContact(creator) });
 }
 
 export async function createCreator(req: Request, res: Response) {

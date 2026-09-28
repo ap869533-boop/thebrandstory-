@@ -57,82 +57,77 @@ export const TestimonialsAndFAQ: React.FC = () => {
     },
     {
       question: "How do brands contact and collaborate with creators?",
-      answer: "Brands can browse creator profiles, click 'Contact Creator', and submit a structured campaign brief with deliverables and proposed budget. A unique tracking reference ID (e.g. SC-ENQ-102938) is generated, and the brief is delivered directly to the creator.",
+      answer: "Brands can browse creator profiles, click 'Contact Creator', and submit a structured campaign brief with deliverables and proposed budget. A unique tracking reference ID is generated, and the brief is delivered directly to the creator.",
     },
     {
-      question: "Can startups and local businesses hire creators for Barter or Gifting collaborations?",
-      answer: "Absolutely. Many creators on thebrandsstory. explicitly display the 'Barter Available' badge. Brands can filter specifically for barter-friendly influencers in their city for restaurant launches, product unboxings, and gifting campaigns.",
-    },
-    {
-      question: "Does thebrandsstory. take a commission cut from creator fees?",
-      answer: "For standard direct marketplace connections and free creator profiles, thebrandsstory. charges 0% commission. Full commercial payments agreed upon between the brand and creator go directly to the creator.",
+      question: "Do creators pay any fees when receiving deals or payments?",
+      answer: "No, creators keep 100% of their agreed campaign compensation. thebrandsstory. does not take a percentage cut from creator payouts.",
     },
   ];
 
   return (
-    <div className="py-16 bg-slate-900 text-white border-b border-slate-800">
+    <section className="py-14 sm:py-20 bg-[#071328] text-white border-b border-slate-800/80 font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
+        
         {/* Testimonials */}
-        <div className="space-y-8">
-          <div className="mx-auto flex max-w-2xl items-end justify-between gap-4">
-            <div className="space-y-2 text-left sm:text-center sm:mx-auto">
-              <span className="text-xs font-bold text-blue-400 uppercase tracking-wider">
-                Verified Brand & Creator Stories
-              </span>
-              <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-                Trusted by India's Top Marketers & Creators
+        <div>
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-3">
+            <div>
+              <div className="flex items-center gap-1.5 text-[#D4A338] text-xs font-extrabold uppercase tracking-wider mb-1.5">
+                <Quote className="w-3.5 h-3.5" />
+                <span>USER EXPERIENCES</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight">
+                Trusted by Top Brands & Creators
               </h2>
             </div>
-            <div className="flex shrink-0 gap-2">
+
+            <div className="flex items-center gap-1.5">
               <button
                 type="button"
                 onClick={() => scrollTestimonials('previous')}
-                aria-label="Previous review"
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:bg-white/20"
+                className="w-9 h-9 rounded-full bg-[#0d224b] border border-slate-700/80 flex items-center justify-center text-slate-300 hover:text-white transition"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="w-4 h-4" />
               </button>
               <button
                 type="button"
                 onClick={() => scrollTestimonials('next')}
-                aria-label="Next review"
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:bg-white/20"
+                className="w-9 h-9 rounded-full bg-[#0d224b] border border-slate-700/80 flex items-center justify-center text-slate-300 hover:text-white transition"
               >
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           </div>
 
           <div
             ref={testimonialsScrollRef}
-            className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-6"
+            className="flex gap-5 overflow-x-auto snap-x no-scrollbar pb-4"
           >
-            {testimonials.map((test, idx) => (
+            {testimonials.map((item, idx) => (
               <div
                 key={idx}
-                className="w-full shrink-0 snap-start p-6 rounded-3xl backdrop-blur-md bg-white/5 border border-white/10 hover:border-blue-500/40 hover:bg-white/10 transition duration-300 flex flex-col justify-between space-y-4 sm:w-[calc(50%-0.75rem)]"
+                className="w-[85vw] sm:w-[360px] md:w-[380px] bg-[#091b3b]/70 rounded-3xl p-6 border border-slate-700/80 flex flex-col justify-between shrink-0 snap-start space-y-4"
               >
-                <div className="space-y-3">
-                  <div className="flex text-amber-400 text-sm">
-                    {'★'.repeat(test.rating)}
-                  </div>
-                  <p className="text-xs text-slate-300 leading-relaxed font-medium italic">
-                    "{test.quote}"
-                  </p>
+                <div className="flex items-center gap-1 text-amber-400">
+                  {[...Array(item.rating)].map((_, i) => (
+                    <Star key={i} className="w-4 h-4 fill-amber-400" />
+                  ))}
                 </div>
 
-                <div className="flex items-center gap-3 pt-4 border-t border-white/10">
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed italic">
+                  "{item.quote}"
+                </p>
+
+                <div className="flex items-center gap-3 pt-2 border-t border-slate-700/50">
                   <img
-                    src={test.avatar}
-                    alt={test.author}
-                    className="w-10 h-10 rounded-full object-cover border border-white/20"
+                    src={item.avatar}
+                    alt={item.author}
+                    className="w-10 h-10 rounded-full object-cover border border-[#D4A338]/40"
                   />
                   <div>
-                    <h4 className="text-xs font-bold text-white leading-tight">
-                      {test.author}
-                    </h4>
-                    <p className="text-[11px] text-slate-400">{test.role}</p>
-                    <span className="text-[10px] text-blue-400 font-semibold">{test.city}</span>
+                    <h4 className="font-extrabold text-white text-xs">{item.author}</h4>
+                    <p className="text-[10px] text-slate-400 font-medium">{item.role} · {item.city}</p>
                   </div>
                 </div>
               </div>
@@ -141,36 +136,37 @@ export const TestimonialsAndFAQ: React.FC = () => {
         </div>
 
         {/* FAQs */}
-        <div className="space-y-8 pt-8 border-t border-white/10 max-w-4xl mx-auto">
-          <div className="text-center space-y-2">
-            <span className="text-xs font-bold text-blue-400 uppercase tracking-wider">
-              Clear Answers
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-              Frequently Asked Questions
+        <div>
+          <div className="text-center max-w-2xl mx-auto mb-10 space-y-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#D4A338]/15 text-[#D4A338] text-xs font-bold uppercase tracking-wider border border-[#D4A338]/30">
+              <HelpCircle className="w-3.5 h-3.5" />
+              <span>FREQUENTLY ASKED QUESTIONS</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight">
+              Everything You Need to Know
             </h2>
           </div>
 
-          <div className="space-y-3">
+          <div className="max-w-3xl mx-auto space-y-3">
             {faqs.map((faq, idx) => (
               <div
                 key={idx}
-                className="rounded-2xl backdrop-blur-md bg-white/5 border border-white/10 overflow-hidden transition"
+                className="bg-[#091b3b]/70 rounded-2xl border border-slate-700/80 overflow-hidden transition-all"
               >
                 <button
+                  type="button"
                   onClick={() => setOpenFaqIndex(openFaqIndex === idx ? null : idx)}
-                  className="w-full p-4 sm:p-5 text-left flex items-center justify-between gap-4 font-bold text-sm text-white hover:text-blue-300 transition cursor-pointer"
+                  className="w-full p-4 sm:p-5 flex items-center justify-between text-left font-bold text-xs sm:text-sm text-white hover:text-[#D4A338] transition cursor-pointer"
                 >
                   <span>{faq.question}</span>
                   {openFaqIndex === idx ? (
-                    <ChevronUp className="w-4 h-4 text-blue-400 shrink-0" />
+                    <ChevronUp className="w-4 h-4 text-[#D4A338] shrink-0" />
                   ) : (
                     <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
                   )}
                 </button>
-
                 {openFaqIndex === idx && (
-                  <div className="p-5 pt-0 text-xs text-slate-300 leading-relaxed border-t border-white/5 font-normal">
+                  <div className="px-4 sm:px-5 pb-5 text-xs text-slate-300 leading-relaxed border-t border-slate-700/50 pt-3">
                     {faq.answer}
                   </div>
                 )}
@@ -178,7 +174,8 @@ export const TestimonialsAndFAQ: React.FC = () => {
             ))}
           </div>
         </div>
+
       </div>
-    </div>
+    </section>
   );
 };

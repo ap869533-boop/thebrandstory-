@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useParams } from 'react-router-dom';
 import {
   ArrowLeft,
   Heart,
@@ -38,6 +39,7 @@ import { cleanInstagramHandle } from '../utils/sanitize';
 import { CreatorCard } from '../components/common/CreatorCard';
 
 export const CreatorDetailView: React.FC = () => {
+  const { username: routeUsername } = useParams<{ username: string }>();
   const {
     creators,
     viewParams,
@@ -50,13 +52,16 @@ export const CreatorDetailView: React.FC = () => {
     addCreatorReview,
   } = usePlatform();
 
-  // Find creator by ID or username
-  const creator: Creator =
+  // Resolve the profile from the URL so a reload preserves the creator that was opened.
+  // `viewParams` only exists during in-app navigation and is empty after a browser refresh.
+  const requestedUsername = routeUsername || viewParams.username;
+  const creator: Creator | undefined =
     creators.find(
       (c) =>
-        (viewParams.id && c.id === viewParams.id) ||
-        (viewParams.username && c.username.toLowerCase() === (viewParams.username as string).toLowerCase())
-    ) || (authUser?.role === 'CREATOR' ? authUser.creatorProfile : creators[0]);
+        requestedUsername
+          ? c.username.toLowerCase() === requestedUsername.toLowerCase()
+          : Boolean(viewParams.id && c.id === viewParams.id)
+    ) || (authUser?.role === 'CREATOR' && !requestedUsername ? authUser.creatorProfile : undefined);
 
   if (!creator) {
     return (
@@ -173,9 +178,9 @@ export const CreatorDetailView: React.FC = () => {
     : `https://instagram.com/${cleanHandle}`;
 
   return (
-    <div className="min-h-screen bg-slate-50/60 pb-16 font-sans">
+    <div className="min-h-screen bg-[#051126] pb-16 font-sans text-white">
       {/* 1. Sub-Header Navigation Bar - Clean & Top-Aligned */}
-      <div className="relative z-10 bg-white border-b border-slate-200/80 px-4 sm:px-6 lg:px-8 py-2 sm:py-2.5 shadow-2xs">
+      <div className="sticky top-0 z-40 bg-[#051126]/95 backdrop-blur-md border-b border-white/10 px-4 sm:px-6 lg:px-8 py-2 sm:py-2.5 shadow-lg">
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
           <button
             onClick={() => navigateTo('explore')}
@@ -190,11 +195,11 @@ export const CreatorDetailView: React.FC = () => {
               onClick={() => toggleSaveCreator(creator.id)}
               className={`px-3.5 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
                 isSaved
-                  ? 'bg-rose-50 text-rose-600 border-rose-200'
-                  : 'bg-white text-slate-700 hover:bg-slate-50 border-slate-200'
+                  ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                  : 'bg-white/5 text-slate-300 hover:bg-white/10 border-white/10'
               }`}
             >
-              <Heart className={`w-3.5 h-3.5 ${isSaved ? 'fill-rose-600 text-rose-600' : ''}`} />
+              <Heart className={`w-3.5 h-3.5 ${isSaved ? 'fill-rose-400 text-rose-400' : ''}`} />
               <span>{isSaved ? 'Saved' : 'Save'}</span>
             </button>
 
@@ -226,7 +231,7 @@ export const CreatorDetailView: React.FC = () => {
       {/* Main Content Container */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 sm:pt-4 pb-8 space-y-6">
         {/* Profile Hero Section */}
-        <section className="rounded-3xl border border-slate-200/90 bg-white p-5 sm:rounded-[2.5rem] sm:p-8 lg:p-10 shadow-[0_4px_24px_rgba(0,0,0,0.02)]">
+        <section className="rounded-3xl border border-white/10 bg-white/5 p-5 sm:rounded-[2.5rem] sm:p-8 lg:p-10">
           <div className="flex flex-col md:flex-row items-center md:items-stretch gap-6 lg:gap-10">
             {/* Creator Card – Left Column */}
             <div className="w-full sm:w-[320px] md:w-[320px] lg:w-[340px] shrink-0">
@@ -251,40 +256,40 @@ export const CreatorDetailView: React.FC = () => {
 
               {/* Stats Grid – 6 Metric Boxes */}
               <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-3.5 max-w-2xl">
-                <div className="rounded-2xl border border-slate-200/90 bg-white px-4 py-3 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">FOLLOWERS</p>
-                  <p className="mt-0.5 text-sm sm:text-base font-black text-slate-900">{(creator.followers || 0).toLocaleString('en-IN')}</p>
+                  <p className="mt-0.5 text-sm sm:text-base font-black text-white">{(creator.followers || 0).toLocaleString('en-IN')}</p>
                 </div>
-                <div className="rounded-2xl border border-slate-200/90 bg-white px-4 py-3 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">POSTS</p>
-                  <p className="mt-0.5 text-sm sm:text-base font-black text-slate-900">
+                  <p className="mt-0.5 text-sm sm:text-base font-black text-white">
                     {creator.totalPosts !== undefined && creator.totalPosts > 0
                       ? creator.totalPosts.toLocaleString('en-IN')
                       : (creator.portfolio && creator.portfolio.length > 0 ? creator.portfolio.length.toString() : '0')}
                   </p>
                 </div>
-                <div className="rounded-2xl border border-slate-200/90 bg-white px-4 py-3 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">AVG. VIEWS</p>
-                  <p className="mt-0.5 text-sm sm:text-base font-black text-slate-900">{(creator.avgViews || 0).toLocaleString('en-IN')}</p>
+                  <p className="mt-0.5 text-sm sm:text-base font-black text-white">{(creator.avgViews || 0).toLocaleString('en-IN')}</p>
                 </div>
-                <div className="rounded-2xl border border-slate-200/90 bg-white px-4 py-3 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">AVG. LIKES</p>
-                  <p className="mt-0.5 text-sm sm:text-base font-black text-slate-900">{(creator.avgLikes || 0).toLocaleString('en-IN')}</p>
+                  <p className="mt-0.5 text-sm sm:text-base font-black text-white">{(creator.avgLikes || 0).toLocaleString('en-IN')}</p>
                 </div>
-                <div className="rounded-2xl border border-slate-200/90 bg-white px-4 py-3 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">AVG. COMMENTS</p>
-                  <p className="mt-0.5 text-sm sm:text-base font-black text-slate-900">{formatCount(creator.avgComments || 0)}</p>
+                  <p className="mt-0.5 text-sm sm:text-base font-black text-white">{formatCount(creator.avgComments || 0)}</p>
                 </div>
-                <div className="rounded-2xl border border-slate-200/90 bg-white px-4 py-3 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">AVG. VIDEO PLAYS</p>
-                  <p className="mt-0.5 text-sm sm:text-base font-black text-slate-900">{formatCount(creator.avgViews || 0)}</p>
+                  <p className="mt-0.5 text-sm sm:text-base font-black text-white">{formatCount(creator.avgViews || 0)}</p>
                 </div>
               </div>
 
               {/* Bio */}
               <div className="mt-4 sm:mt-5 max-w-2xl">
                 <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">BIO</p>
-                <p className="mt-1 text-xs sm:text-sm leading-relaxed text-slate-600 font-normal line-clamp-3">
+                <p className="mt-1 text-xs sm:text-sm leading-relaxed text-slate-300 font-normal line-clamp-3">
                   {creator.bio?.trim() || 'Add a short bio to tell brands about your content and audience.'}
                 </p>
               </div>

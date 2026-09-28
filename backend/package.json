@@ -8,6 +8,7 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "seed": "tsx config/seed.ts",
+    "migrate": "tsx scripts/migrate.ts",
     "lint": "tsc --noEmit"
   },
   "dependencies": {

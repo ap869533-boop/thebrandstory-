@@ -1,30 +1,29 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Building2, Star, Users, Gift, Calendar, ArrowRight, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Building2, Star, Users, Gift, Calendar, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { apiUrl } from '../../config/api';
 import { usePlatform } from '../../context/PlatformContext';
 import { BrandProfile } from '../../types';
 
-// Fallback sample approved brands matching the user reference design if database is empty
 const SAMPLE_APPROVED_BRANDS: Partial<BrandProfile>[] = [
   {
     id: 'sample-1',
-    brandName: 'Infosys BPM',
-    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/9/95/Infosys_logo.svg',
-    description: 'Join us to navigate your next digital transformation journey.',
-    industry: 'Technology & IT Services',
-    city: 'Bangalore',
-    website: 'https://infosysbpm.com',
+    brandName: 'Virgo Photography',
+    logoUrl: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=300&q=80',
+    description: 'Media & publishing creator campaigns for photo & video creators.',
+    industry: 'MEDIA & PUBLISHING',
+    city: 'Delhi NCR',
+    website: 'https://virgophotography.com',
     approvalStatus: 'approved',
     isFeatured: true,
   },
   {
     id: 'sample-2',
-    brandName: 'NTT DATA, Inc.',
-    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/f/f9/NTT_Data_logo.svg',
-    description: 'This is the place where you grow and innovate together.',
-    industry: 'Enterprise Solutions',
+    brandName: 'Nykaa Beauty',
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/0/00/Nykaa_Logo.svg',
+    description: "India's premier online beauty and fashion destination for lifestyle creators.",
+    industry: 'BEAUTY & FASHION',
     city: 'Mumbai',
-    website: 'https://nttdata.com',
+    website: 'https://nykaa.com',
     approvalStatus: 'approved',
     isFeatured: true,
   },
@@ -33,7 +32,7 @@ const SAMPLE_APPROVED_BRANDS: Partial<BrandProfile>[] = [
     brandName: 'Reliance Retail',
     logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/5/52/Reliance_Retail_Logo.svg',
     description: "Building India's largest retail company with nationwide creator campaigns.",
-    industry: 'Retail & Consumer Products',
+    industry: 'RETAIL & E-COMMERCE',
     city: 'Mumbai',
     website: 'https://relianceretail.com',
     approvalStatus: 'approved',
@@ -41,12 +40,12 @@ const SAMPLE_APPROVED_BRANDS: Partial<BrandProfile>[] = [
   },
   {
     id: 'sample-4',
-    brandName: 'Nykaa Beauty',
-    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/0/00/Nykaa_Logo.svg',
-    description: "India's premier online beauty and fashion destination for lifestyle creators.",
-    industry: 'Beauty & Fashion',
-    city: 'Delhi NCR',
-    website: 'https://nykaa.com',
+    brandName: 'Infosys BPM',
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/9/95/Infosys_logo.svg',
+    description: 'Join us to navigate your next digital transformation journey.',
+    industry: 'TECHNOLOGY & IT',
+    city: 'Bangalore',
+    website: 'https://infosysbpm.com',
     approvalStatus: 'approved',
     isFeatured: true,
   }
@@ -63,7 +62,6 @@ export const FeaturedBrandsSection: React.FC = () => {
       .then(r => r.json())
       .then(d => {
         if (d.success && Array.isArray(d.brands) && d.brands.length > 0) {
-          // Filter to strictly ensure only admin-approved brands are rendered
           const approvedOnly = d.brands.filter((b: any) => b.approvalStatus === 'approved');
           setFeaturedBrands(approvedOnly.length > 0 ? approvedOnly : (SAMPLE_APPROVED_BRANDS as BrandProfile[]));
         } else {
@@ -78,123 +76,131 @@ export const FeaturedBrandsSection: React.FC = () => {
   }, []);
 
   const displayBrands = featuredBrands.length > 0 ? featuredBrands : (SAMPLE_APPROVED_BRANDS as BrandProfile[]);
+  
   const scrollBrands = (direction: 'left' | 'right') => {
     brandScrollRef.current?.scrollBy({ left: direction === 'left' ? -340 : 340, behavior: 'smooth' });
   };
 
   return (
-    <div className="py-16 md:py-24 bg-white relative overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        {/* Header Title */}
-        <div className="text-center max-w-3xl mx-auto space-y-3 mb-7">
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-700 text-xs font-bold tracking-wide uppercase border border-slate-200">
-            <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-            <span>Verified Brand Ecosystem</span>
-          </div>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight">
-            Top Brands Hiring Influencers
-          </h2>
-          <p className="text-sm md:text-base text-slate-600 font-medium">
-            Explore admin-approved enterprise brands hiring creators for active campaign briefs.
-          </p>
+    <section className="py-12 sm:py-20 bg-[#071328] border-b border-slate-800/80 text-white relative overflow-hidden font-sans">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+        
+        {/* ⭐ VERIFIED BRAND ECOSYSTEM Badge (Photo 3) */}
+        <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#0d224b]/90 text-[#D4A338] text-xs font-black tracking-wider uppercase border border-[#D4A338]/50 shadow-sm mb-3">
+          <Star className="w-3.5 h-3.5 text-[#D4A338] fill-[#D4A338]" />
+          <span>VERIFIED BRAND ECOSYSTEM</span>
         </div>
 
-        <div className="flex justify-center gap-2 mb-4">
-          <button type="button" onClick={() => scrollBrands('left')} aria-label="Previous brands" className="w-9 h-9 rounded-xl border border-slate-200 hover:bg-slate-100 flex items-center justify-center text-slate-600 transition">
+        {/* Heading */}
+        <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight mb-2">
+          Top Brands Hiring Influencers
+        </h2>
+
+        {/* Subtitle */}
+        <p className="text-xs sm:text-sm md:text-base text-slate-300 font-medium max-w-2xl mx-auto mb-6">
+          Explore admin-approved enterprise brands hiring creators for active campaign briefs.
+        </p>
+
+        {/* Carousel Arrow Buttons */}
+        <div className="flex justify-center gap-2 mb-6">
+          <button
+            type="button"
+            onClick={() => scrollBrands('left')}
+            aria-label="Previous brands"
+            className="w-10 h-10 rounded-full bg-[#0d224b] border border-slate-700 hover:border-slate-500 flex items-center justify-center text-slate-300 hover:text-white transition cursor-pointer"
+          >
             <ChevronLeft className="w-4 h-4" />
           </button>
-          <button type="button" onClick={() => scrollBrands('right')} aria-label="Next brands" className="w-9 h-9 rounded-xl border border-slate-200 hover:bg-slate-100 flex items-center justify-center text-slate-600 transition">
+          <button
+            type="button"
+            onClick={() => scrollBrands('right')}
+            aria-label="Next brands"
+            className="w-10 h-10 rounded-full bg-[#0d224b] border border-slate-700 hover:border-slate-500 flex items-center justify-center text-slate-300 hover:text-white transition cursor-pointer"
+          >
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Manual carousel: cards stay on screen until the visitor moves them. */}
-        <div ref={brandScrollRef} className="relative w-full overflow-x-auto scroll-smooth py-10 -mx-4 px-4 sm:mx-0 sm:px-0 no-scrollbar">
-          <div className="flex gap-6 items-stretch w-max">
+        {/* Brand Cards Carousel (Matching Photo 3) */}
+        <div
+          ref={brandScrollRef}
+          className="relative w-full overflow-x-auto scroll-smooth py-4 no-scrollbar flex justify-start sm:justify-center"
+        >
+          <div className="flex gap-6 items-stretch mx-auto">
             {displayBrands.map((brand, idx) => (
               <div
                 key={`${brand.id || 'brand'}-${idx}`}
-                className={`group snap-start bg-white rounded-[24px] border ${
-                  brand.brandName === 'Reliance Retail' ? 'border-red-50 hover:border-red-100 bg-gradient-to-b from-white to-red-50/10' : 'border-[#D4A338]/30 hover:border-[#D4A338]/80 hover:shadow-[0_20px_40px_rgba(212,163,56,0.15)]'
-                } p-5 shadow-[0_8px_30px_rgba(0,0,0,0.08)] hover:-translate-y-2 cursor-pointer transition-all duration-500 flex flex-col items-center text-center w-[280px] sm:w-[320px] shrink-0 relative overflow-hidden`}
+                className="group snap-start bg-white rounded-[28px] border-2 border-[#D4A338]/60 hover:border-[#D4A338] p-6 shadow-2xl hover:-translate-y-1.5 cursor-pointer transition-all duration-300 flex flex-col items-center text-center w-[300px] sm:w-[320px] shrink-0 relative overflow-hidden"
               >
-                {/* Premium Gradient Header */}
-                
-                {/* Hover side glow */}
-                <div className="absolute -left-16 top-1/4 w-40 h-40 bg-[#f4c95d]/30 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
-
-                {/* Logo Area with glow */}
-                <div className="relative flex items-center justify-center">
-                  <div className={`absolute inset-0 rounded-full blur-xl opacity-20 group-hover:opacity-40 transition-opacity duration-500 ${
-                    brand.brandName === 'Infosys BPM' ? 'bg-blue-500' :
-                    brand.brandName === 'Reliance Retail' ? 'bg-red-500' : 'bg-slate-500'
-                  }`}></div>
-                  <div className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center bg-white border overflow-hidden ${
-                    brand.brandName === 'Infosys BPM' ? 'border-blue-100 shadow-[0_0_15px_rgba(59,130,246,0.15)]' :
-                    brand.brandName === 'Reliance Retail' ? 'border-red-100 shadow-[0_0_15px_rgba(239,68,68,0.15)]' : 'border-slate-100 shadow-[0_0_15px_rgba(100,116,139,0.15)]'
-                  } group-hover:scale-105 transition-transform duration-500`}>
+                {/* Brand Logo with Gold Ring Halo */}
+                <div className="relative flex items-center justify-center mt-2">
+                  <div className="absolute inset-0 rounded-full bg-[#D4A338]/20 blur-xl"></div>
+                  <div className="relative w-20 h-20 rounded-full p-[3px] bg-gradient-to-b from-[#D4A338] via-amber-200 to-[#D4A338] shadow-md flex items-center justify-center overflow-hidden">
                     {brand.logoUrl ? (
                       <img
                         src={brand.logoUrl}
                         alt={brand.brandName}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full rounded-full object-cover bg-slate-900"
                         onError={(e) => {
                           (e.target as HTMLImageElement).onerror = null;
-                          (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(brand.brandName || 'Brand')}&background=f1f5f9&color=0f172a&bold=true`;
+                          (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(brand.brandName || 'Brand')}&background=0f172a&color=fff&bold=true`;
                         }}
                       />
                     ) : (
-                      <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                        <Building2 className="w-6 h-6" />
+                      <div className="w-full h-full rounded-full bg-[#0f172a] text-[#D4A338] flex items-center justify-center">
+                        <Building2 className="w-8 h-8" />
                       </div>
                     )}
                   </div>
                 </div>
 
-                {/* Title */}
-                <h3 className="font-bold text-slate-800 text-base sm:text-lg mt-4 mb-1">
+                {/* Brand Name */}
+                <h3 className="font-extrabold text-slate-900 text-lg sm:text-xl mt-4 mb-0.5 tracking-tight">
                   {brand.brandName}
                 </h3>
                 
-                {/* Subtitle */}
-                <p className="text-[10px] font-bold tracking-widest uppercase text-slate-400 mb-2 line-clamp-1">
-                  {brand.industry}
+                {/* Industry Subtitle */}
+                <p className="text-[11px] font-black tracking-wider uppercase text-slate-400 mb-4">
+                  {brand.industry || 'MEDIA & PUBLISHING'}
                 </p>
 
-                {/* 3-Column Stats UI */}
-                <div className="grid grid-cols-3 bg-slate-50 rounded-2xl border border-slate-100/80 mb-5 overflow-hidden w-full mt-2">
-                  <div className="p-3 border-r border-slate-100/80 text-left flex flex-col justify-center">
-                    <div className="flex items-center gap-1 text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
-                      <Users className="w-3 h-3" /> Hiring
+                {/* 3-Column Stats Box (Photo 3) */}
+                <div className="grid grid-cols-3 bg-slate-50/90 rounded-2xl border border-slate-200/80 mb-5 overflow-hidden w-full text-left divide-x divide-slate-200/80">
+                  {/* Hiring */}
+                  <div className="p-2.5 flex flex-col justify-center">
+                    <div className="flex items-center gap-1 text-[8px] font-black text-slate-400 uppercase tracking-wider mb-1">
+                      <Users className="w-2.5 h-2.5" /> HIRING
                     </div>
-                    <div className="font-black text-slate-800 text-[14px] leading-tight">
-                      {brand.totalHiringCount ? (brand.totalHiringCount > 999 ? (brand.totalHiringCount / 1000).toFixed(1).replace(/\.0$/, '') + 'K+' : brand.totalHiringCount + '+') : '10+'}
+                    <div className="font-black text-slate-900 text-sm leading-tight">
+                      25+
                     </div>
-                    <div className="text-[11px] font-bold text-slate-700 mt-0.5">Influencers</div>
+                    <div className="text-[10px] font-bold text-slate-500 mt-0.5">Influencers</div>
                   </div>
-                  <div className="p-3 border-r border-slate-100/80 text-left flex flex-col justify-center">
-                    <div className="flex items-center gap-1 text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
-                      <Gift className="w-3 h-3" /> Barter
+
+                  {/* Barter */}
+                  <div className="p-2.5 flex flex-col justify-center">
+                    <div className="flex items-center gap-1 text-[8px] font-black text-slate-400 uppercase tracking-wider mb-1">
+                      <Gift className="w-2.5 h-2.5" /> BARTER
                     </div>
-                    <div className="font-black text-emerald-600 text-[14px] leading-tight truncate">
+                    <div className="font-black text-emerald-600 text-sm leading-tight">
                       ₹5000
                     </div>
-                    <div className="text-[11px] font-medium text-emerald-500 truncate mt-0.5">+ products</div>
+                    <div className="text-[10px] font-bold text-emerald-600 mt-0.5">+ product</div>
                   </div>
-                  <div className="p-3 text-left flex flex-col justify-center">
-                    <div className="flex items-center gap-1 text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
-                      <Calendar className="w-3 h-3" /> Deadline
+
+                  {/* Deadline */}
+                  <div className="p-2.5 flex flex-col justify-center">
+                    <div className="flex items-center gap-1 text-[8px] font-black text-slate-400 uppercase tracking-wider mb-1">
+                      <Calendar className="w-2.5 h-2.5" /> DEADLINE
                     </div>
-                    <div className="font-black text-slate-800 text-[14px] leading-tight">
+                    <div className="font-black text-slate-900 text-sm leading-tight">
                       12 Sep
                     </div>
-                    <div className="text-[11px] font-bold text-slate-700 mt-0.5">
-                      2026
-                    </div>
+                    <div className="text-[10px] font-bold text-slate-500 mt-0.5">2026</div>
                   </div>
                 </div>
 
-                {/* Action */}
+                {/* View Brand Button */}
                 <button
                   onClick={() => {
                     navigateTo('brand-detail', {
@@ -208,16 +214,24 @@ export const FeaturedBrandsSection: React.FC = () => {
                       website: brand.website
                     });
                   }}
-                  className="mt-auto px-5 py-2.5 bg-[#0f172a] hover:bg-black text-white text-xs font-bold rounded-full transition flex items-center gap-1.5 shadow-md shadow-slate-900/10 group-hover:shadow-lg group-hover:-translate-y-0.5"
+                  className="w-full py-3 bg-[#0a1835] hover:bg-black text-white font-extrabold text-xs sm:text-sm rounded-full transition flex items-center justify-center gap-2 shadow-md shadow-slate-900/20 group-hover:shadow-lg cursor-pointer mt-auto"
                 >
-                  View Brand
-                  <ArrowRight className="w-3.5 h-3.5 opacity-70 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                  <span>View Brand</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
             ))}
           </div>
         </div>
+
+        {/* Bottom thebrandsstory.com badge (Photo 3) */}
+        <div className="pt-6">
+          <div className="inline-block px-6 py-2 rounded-full bg-[#0d224b]/90 border border-slate-700 text-slate-300 text-xs font-bold shadow-inner">
+            thebrandsstory.com
+          </div>
+        </div>
+
       </div>
-    </div>
+    </section>
   );
 };

@@ -25,7 +25,7 @@
   }
   body {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    @apply bg-slate-50/50 text-slate-900 antialiased selection:bg-[#D4A338]/30 selection:text-black;
+    @apply bg-[#051126] text-slate-100 antialiased selection:bg-[#D4A338]/30 selection:text-white;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 }
@@ -132,3 +132,127 @@ a.bg-blue-500 svg {
 .animate-pulse-subtle {
   animation: pulseSubtle 3s ease-in-out infinite;
 }
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleUp {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-scaleUp {
+  animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Application-wide dark palette. Existing page components retain their layout,
+   while legacy light cards, controls, borders, and text stay readable on dark surfaces. */
+.dark-theme {
+  color-scheme: dark;
+  background: #051126;
+}
+
+.dark-theme :is(
+  [class^="bg-white"], [class*=" bg-white"],
+  [class^="bg-slate-50"], [class*=" bg-slate-50"],
+  [class^="bg-slate-100"], [class*=" bg-slate-100"],
+  [class^="bg-slate-200"], [class*=" bg-slate-200"],
+  [class^="bg-gray-50"], [class*=" bg-gray-50"],
+  [class^="bg-gray-100"], [class*=" bg-gray-100"],
+  [class^="bg-gray-200"], [class*=" bg-gray-200"]
+) {
+  background-color: #17233a !important;
+}
+
+.dark-theme :is(
+  [class^="text-black"], [class*=" text-black"],
+  [class^="text-slate-950"], [class*=" text-slate-950"],
+  [class^="text-slate-900"], [class*=" text-slate-900"],
+  [class^="text-slate-800"], [class*=" text-slate-800"],
+  [class^="text-slate-700"], [class*=" text-slate-700"],
+  [class^="text-gray-900"], [class*=" text-gray-900"],
+  [class^="text-gray-800"], [class*=" text-gray-800"],
+  [class^="text-gray-700"], [class*=" text-gray-700"]
+) {
+  color: #e7eefc !important;
+}
+
+.dark-theme :is(
+  [class^="border-slate-"], [class*=" border-slate-"],
+  [class^="border-gray-"], [class*=" border-gray-"],
+  [class^="border-white"]:not([class*="border-white/"])
+) {
+  border-color: #31415d !important;
+}
+
+.dark-theme input,
+.dark-theme textarea,
+.dark-theme select {
+  color: #e7eefc;
+  background-color: #111c30;
+  border-color: #31415d;
+}
+
+.dark-theme input::placeholder,
+.dark-theme textarea::placeholder {
+  color: #94a3b8;
+}
+
+/* Partner logos keep their original white presentation surface for brand fidelity. */
+.dark-theme .brand-slider-card,
+.dark-theme .brand-slider-fallback {
+  background-color: #ffffff !important;
+}
+
+.dark-theme .brand-slider-card,
+.dark-theme .brand-slider-card .brand-slider-fallback {
+  color: #1e293b !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Intentional light hero controls provide a clear primary entry point. */
+.dark-theme .hero-search-form,
+.dark-theme .hero-signin-button {
+  background-color: #ffffff !important;
+  border-color: #ffffff !important;
+}
+
+.dark-theme .hero-search-input {
+  background-color: transparent !important;
+  color: #0f172a !important;
+}
+
+.dark-theme .hero-search-input::placeholder {
+  color: #64748b !important;
+}
+
+.dark-theme .hero-signin-button {
+  color: #0f172a !important;
+}
+
+@media (min-width: 768px) {
+  .dark-theme .hero-search-form {
+    background-color: #ffffff !important;
+    border-color: #ffffff !important;
+  }
+
+  .dark-theme .hero-search-input {
+    color: #0f172a !important;
+  }
+
+  .dark-theme .hero-search-input::placeholder {
+    color: #64748b !important;
+  }
+
+  .dark-theme .hero-menu-button {
+    background-color: transparent !important;
+  }
+}
+
+

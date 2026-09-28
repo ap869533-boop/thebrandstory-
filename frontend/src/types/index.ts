@@ -147,6 +147,7 @@ export interface Creator {
   
   // Metrics
   followers: number;
+  rating?: number;
   avgViews: number;
   avgLikes: number;
   avgComments: number;

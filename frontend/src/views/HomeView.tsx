@@ -1,7 +1,5 @@
 import React from 'react';
-import { PredictiveArcCanvas } from '@designcodeio/threeui';
 import { HomeHero } from '../components/home/HomeHero';
-import { TrustProofStrip } from '../components/home/TrustProofStrip';
 import { BrandPartnersSlider } from '../components/home/BrandPartnersSlider';
 import { TopCreatorsSection } from '../components/home/TopCreatorsSection';
 import { RegionalShowcases } from '../components/home/RegionalShowcases';
@@ -14,39 +12,16 @@ import { NearbyInfluencersSection } from '../components/home/NearbyInfluencersSe
 
 export const HomeView: React.FC = () => {
   return (
-    <div className="min-h-screen bg-white w-full max-w-full overflow-x-hidden">
-      {/* 1 & 2. Hero Section + Trust Proof Strip: Exactly fills mobile screen height with TrustProofStrip as the last element */}
-      <div className="min-h-[calc(100dvh-4rem)] h-[calc(100dvh-4rem)] flex flex-col justify-between bg-white relative overflow-hidden">
-        <div className="absolute inset-0 z-0 pointer-events-none opacity-50" aria-hidden="true">
-          <PredictiveArcCanvas
-            variant="signal-particles"
-            mode="light"
-            speed={1}
-            hue={0}
-            saturation={1}
-            brightness={1}
-            className="h-full w-full"
-          />
-        </div>
-        <div className="relative z-10 flex min-h-0 h-full flex-col justify-between">
+    <div className="min-h-screen bg-[#051126] text-white w-full max-w-full overflow-x-hidden">
+      {/* Hero Section */}
+      <div className="min-h-[calc(100dvh-4rem)] flex flex-col justify-between bg-[#051126] relative overflow-hidden">
+        <div className="relative z-10 flex min-h-0 h-full flex-col justify-between flex-1">
           <HomeHero />
-          <TrustProofStrip />
         </div>
       </div>
 
-      {/* 3. Brand Partners Slider (Placed right above Top Influencers in India) */}
-      <div className="relative overflow-hidden bg-white">
-        <div className="absolute inset-0 z-0 pointer-events-none opacity-45" aria-hidden="true">
-          <PredictiveArcCanvas
-            variant="signal-particles"
-            mode="light"
-            speed={1}
-            hue={0}
-            saturation={1}
-            brightness={1}
-            className="h-full w-full"
-          />
-        </div>
+      {/* 3. Brand Partners Slider & Body Sections */}
+      <div className="relative overflow-hidden bg-[#071328]">
         <div className="relative z-10">
           <BrandPartnersSlider />
 

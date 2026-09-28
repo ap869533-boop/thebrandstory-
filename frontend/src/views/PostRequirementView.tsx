@@ -5,7 +5,7 @@ import { CATEGORIES_LIST, CITIES_LIST, INDUSTRIES_LIST, CAMPAIGN_TYPES } from '.
 import confetti from 'canvas-confetti';
 
 const INDIAN_LANGUAGES = [
-  'English — अंग्रेज़ी',
+  'English',
   'Hindi — हिंदी', 'Bengali — বাংলা', 'Telugu — తెలుగు', 'Marathi — मराठी',
   'Tamil — தமிழ்', 'Gujarati — ગુજરાતી', 'Urdu — اردو', 'Kannada — ಕನ್ನಡ',
   'Odia — ଓଡ଼ିଆ', 'Malayalam — മലയാളം', 'Punjabi — ਪੰਜਾਬੀ', 'Assamese — অসমীয়া',
@@ -247,13 +247,13 @@ export const PostRequirementView: React.FC = () => {
 
   if (!authUser || authUser.role !== 'BRAND') {
     return (
-      <div className="min-h-screen bg-slate-50/70 py-20 flex flex-col items-center justify-center text-center px-4 font-sans">
-        <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-xl max-w-md w-full space-y-4">
+      <div className="min-h-screen bg-[#051126] py-20 flex flex-col items-center justify-center text-center px-4 font-sans">
+        <div className="bg-white/5 p-8 rounded-3xl border border-white/10 max-w-md w-full space-y-4">
           <div className="w-12 h-12 rounded-2xl bg-amber-100 text-[#8e6819] flex items-center justify-center mx-auto">
             <Building2 className="w-6 h-6" />
           </div>
-          <h2 className="text-xl font-black text-slate-900">Brand Authentication Required</h2>
-          <p className="text-xs text-slate-500 leading-relaxed">
+          <h2 className="text-xl font-black text-white">Brand Authentication Required</h2>
+          <p className="text-xs text-slate-400 leading-relaxed">
             Please sign in as a verified Brand or Agency to post campaign briefs and receive custom creator pitches.
           </p>
           <button
@@ -274,33 +274,33 @@ export const PostRequirementView: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50/60 py-10">
+    <div className="min-h-screen bg-[#051126] py-10">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         {/* Header - Removed as requested */}        {submittedId ? (
-          <div className="bg-white p-8 rounded-3xl border border-slate-200/80 shadow-md text-center space-y-5">
+          <div className="bg-white/5 p-8 rounded-3xl border border-white/10 text-center space-y-5">
             <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
               <CheckCircle2 className="w-10 h-10" />
             </div>
 
             <div className="space-y-1">
-              <h2 className="text-2xl font-black text-slate-900">Campaign Submitted for Approval!</h2>
+              <h2 className="text-2xl font-black text-white">Campaign Submitted for Approval!</h2>
               <p className="text-xs text-slate-500">
                 Your requirement has been sent to our team for verification. It will be live on the board once approved by admin.
               </p>
             </div>
 
-            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-left text-xs space-y-2 max-w-md mx-auto">
+            <div className="p-4 bg-white/5 rounded-2xl border border-white/10 text-left text-xs space-y-2 max-w-md mx-auto">
               <div className="flex justify-between">
                 <span className="text-slate-500 font-medium">Campaign Reference:</span>
                 <span className="font-mono font-bold text-[#b88628]">{submittedId}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500 font-medium">Title:</span>
-                <span className="font-bold text-slate-800">{formData.campaignTitle}</span>
+                <span className="font-bold text-white">{formData.campaignTitle}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500 font-medium">Target Region:</span>
-                <span className="font-semibold text-slate-800">{formData.city}</span>
+                <span className="font-semibold text-white">{formData.city}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500 font-medium">Allocated Budget:</span>
@@ -309,10 +309,10 @@ export const PostRequirementView: React.FC = () => {
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="bg-white p-8 rounded-3xl border border-slate-200/80 shadow-xs space-y-6 text-xs">
+          <form onSubmit={handleSubmit} className="bg-white/5 p-8 rounded-3xl border border-white/10 space-y-6 text-xs">
             {/* Step 1: Basic Campaign Brief */}
             <div className="space-y-4">
-              <h3 className="font-bold text-slate-900 text-sm border-b border-slate-100 pb-2">
+              <h3 className="font-bold text-white text-sm border-b border-white/10 pb-2">
                 1. Campaign Details
               </h3>
 
@@ -534,7 +534,7 @@ export const PostRequirementView: React.FC = () => {
 
             {/* Step 2: Deliverables & Specs */}
             <div className="space-y-4 pt-4 border-t border-slate-100">
-              <h3 className="font-bold text-slate-900 text-sm border-b border-slate-100 pb-2">
+              <h3 className="font-bold text-white text-sm border-b border-white/10 pb-2">
                 2. Deliverables & Creator Specifications
               </h3>
 
@@ -741,7 +741,7 @@ export const PostRequirementView: React.FC = () => {
 
             {/* Step 3: Contact Details */}
             <div className="space-y-4 pt-4 border-t border-slate-100">
-              <h3 className="font-bold text-slate-900 text-sm border-b border-slate-100 pb-2">
+              <h3 className="font-bold text-white text-sm border-b border-white/10 pb-2">
                 3. Brand Representative Contact
               </h3>
 
