@@ -621,7 +621,7 @@ export const HomeHero: React.FC = () => {
               )}
 
               {/* Primary Search */}
-              <div>
+              {authUser && <div>
                 <button
                   type="button"
                   onClick={handlePrimaryMobileSearch}
@@ -637,12 +637,12 @@ export const HomeHero: React.FC = () => {
                         : 'Explore'}
                   </span>
                 </button>
-              </div>
+              </div>}
 
               {/* Menu Items */}
               <div className="space-y-1 text-slate-200 text-xs sm:text-sm font-bold text-left">
                 {/* Wishlist */}
-                <button
+                {authUser && <button
                   type="button"
                   onClick={() => {
                     closeMobileMenu();
@@ -660,10 +660,10 @@ export const HomeHero: React.FC = () => {
                       {savedCreatorIds.length}
                     </span>
                   )}
-                </button>
+                </button>}
 
                 {/* Pitches */}
-                <button
+                {authUser && <button
                   type="button"
                   onClick={() => {
                     closeMobileMenu();
@@ -684,7 +684,7 @@ export const HomeHero: React.FC = () => {
                     <Megaphone className="w-4 h-4 text-white" />
                     <span>Pitches</span>
                   </div>
-                </button>
+                </button>}
 
                 {/* Chat is available to signed-in creators and brands. */}
                 {(isCreator || isBrand) && (
@@ -692,7 +692,11 @@ export const HomeHero: React.FC = () => {
                     type="button"
                     onClick={() => {
                       closeMobileMenu();
-                      navigateTo('chat');
+                      navigateTo('chat', {
+                        username: isCreator
+                          ? matchedCreator?.username || authUser?.name?.toLowerCase().replace(/\s+/g, '-')
+                          : displayName.toLowerCase().replace(/\s+/g, '-'),
+                      });
                     }}
                     className="w-full px-3 py-3 rounded-xl hover:bg-white/5 flex items-center gap-3 text-left transition cursor-pointer"
                   >
@@ -731,7 +735,7 @@ export const HomeHero: React.FC = () => {
                 )}
 
                 {/* Creator / Other Profile */}
-                {!isBrand && (
+                {authUser && !isBrand && (
                   <button
                     type="button"
                     onClick={handleProfileNavigation}
@@ -743,14 +747,14 @@ export const HomeHero: React.FC = () => {
                 )}
 
                 {/* Wallet / Billing */}
-                <button
+                {authUser && <button
                   type="button"
                   onClick={handleWalletNavigation}
                   className="w-full px-3 py-3 rounded-xl hover:bg-white/5 flex items-center gap-3 text-left transition cursor-pointer"
                 >
                   <CreditCard className="w-4 h-4 text-white" />
                   <span>Wallet / Billing</span>
-                </button>
+                </button>}
 
                 {/* Help */}
                 <button
@@ -765,8 +769,8 @@ export const HomeHero: React.FC = () => {
                   <span>Help and Support</span>
                 </button>
 
-                {/* Logout / Sign In */}
-                {authUser ? (
+                {/* Logout */}
+                {authUser && (
                   <button
                     type="button"
                     onClick={() => {
@@ -777,18 +781,6 @@ export const HomeHero: React.FC = () => {
                   >
                     <LogOut className="w-4 h-4 text-rose-400" />
                     <span>Log out</span>
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      closeMobileMenu();
-                      navigateTo('login', { mode: 'login' });
-                    }}
-                    className="w-full px-3 py-3 rounded-xl hover:bg-white/5 flex items-center gap-3 text-left text-white font-bold transition cursor-pointer mt-2"
-                  >
-                    <User className="w-4 h-4 text-white" />
-                    <span>Sign in</span>
                   </button>
                 )}
               </div>

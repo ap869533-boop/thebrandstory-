@@ -36,6 +36,7 @@ const MainAppContent: React.FC = () => {
             <Route path="/" element={<HomeView />} />
             <Route path="/login" element={<LoginView />} />
             <Route path="/chat" element={<ChatView />} />
+            <Route path="/:username/chat" element={<ChatView />} />
             <Route path="/explore" element={<ExploreView />} />
             <Route path="/creator/:username" element={<CreatorDetailView />} />
             <Route path="/brand/:brandId" element={<BrandDetailView />} />
