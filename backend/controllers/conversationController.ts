@@ -173,6 +173,9 @@ export async function getMessages(req: AuthenticatedRequest, res: Response) {
         body: m.body,
         isRead: Boolean(m.is_read),
         createdAt: m.created_at,
+        attachmentUrl: m.attachment_url,
+        attachmentType: m.attachment_type,
+        attachmentName: m.attachment_name,
       })),
     });
   } catch (error) {
@@ -189,7 +192,11 @@ export async function sendMessage(req: AuthenticatedRequest, res: Response) {
 
     const { id } = req.params;
     const body = String(req.body.body || req.body.message || '').trim();
-    if (!body) return res.status(400).json({ success: false, error: 'Message body is required' });
+    const attachmentUrl = req.body.attachmentUrl || null;
+    const attachmentType = req.body.attachmentType || null;
+    const attachmentName = req.body.attachmentName || null;
+
+    if (!body && !attachmentUrl) return res.status(400).json({ success: false, error: 'Message body or attachment is required' });
     if (body.length > 4000) return res.status(400).json({ success: false, error: 'Message too long' });
 
     const convRows: any = await dbQuery('SELECT * FROM conversations WHERE id = ? LIMIT 1', [id]);
@@ -209,13 +216,15 @@ export async function sendMessage(req: AuthenticatedRequest, res: Response) {
 
     const msgId = `msg_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
     await dbQuery(
-      `INSERT INTO messages (id, conversation_id, sender_id, sender_role, body, is_read)
-       VALUES (?, ?, ?, ?, ?, FALSE)`,
-      [msgId, id, req.user.id, req.user.role, body]
+      `INSERT INTO messages (id, conversation_id, sender_id, sender_role, body, is_read, attachment_url, attachment_type, attachment_name)
+       VALUES (?, ?, ?, ?, ?, FALSE, ?, ?, ?)`,
+      [msgId, id, req.user.id, req.user.role, body, attachmentUrl, attachmentType, attachmentName]
     );
+
+    const lastMsgStr = body ? body.slice(0, 500) : (attachmentType ? `[${attachmentType}]` : 'Attachment');
     await dbQuery(
       `UPDATE conversations SET last_message = ?, last_message_at = NOW() WHERE id = ?`,
-      [body.slice(0, 500), id]
+      [lastMsgStr, id]
     );
 
     const message = {
@@ -226,6 +235,9 @@ export async function sendMessage(req: AuthenticatedRequest, res: Response) {
       body,
       isRead: false,
       createdAt: new Date().toISOString(),
+      attachmentUrl,
+      attachmentType,
+      attachmentName,
     };
 
     res.status(201).json({ success: true, message });

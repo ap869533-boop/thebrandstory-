@@ -7,7 +7,7 @@ import { creatorsStore } from './creatorController';
 import { AuthenticatedRequest } from '../middleware/authMiddleware';
 
 const uploadsDir = path.resolve(__dirname, '../uploads');
-const allowedTypes = new Set(['avatar', 'cover', 'reel_video', 'reel_thumbnail', 'brand_logo']);
+const allowedTypes = new Set(['avatar', 'cover', 'reel_video', 'reel_thumbnail', 'brand_logo', 'chat_attachment']);
 
 function ensureUploadsDirectory() {
   fs.mkdirSync(uploadsDir, { recursive: true });
@@ -23,6 +23,7 @@ function getFileExtension(dataUri: string, type: string) {
     'video/mp4': '.mp4',
     'video/webm': '.webm',
     'video/quicktime': '.mov',
+    'application/pdf': '.pdf',
   };
   return extensions[mimeType || ''] || (type === 'reel_video' ? '.mp4' : '.jpg');
 }
@@ -43,7 +44,7 @@ function getPreviousUrl(creatorId: string, type: string) {
   return undefined;
 }
 
-export function saveBase64Media(dataUri: string, type: 'avatar' | 'cover' | 'reel_video' = 'avatar'): string {
+export function saveBase64Media(dataUri: string, type: 'avatar' | 'cover' | 'reel_video' | 'chat_attachment' = 'avatar'): string {
   if (!dataUri || typeof dataUri !== 'string' || !dataUri.startsWith('data:')) return dataUri || '';
   const encodedData = dataUri.split(',')[1];
   if (!encodedData) return '';

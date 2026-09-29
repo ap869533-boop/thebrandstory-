@@ -268,6 +268,9 @@ export interface ChatMessage {
   body: string;
   isRead: boolean;
   createdAt: string;
+  attachmentUrl?: string | null;
+  attachmentType?: string | null;
+  attachmentName?: string | null;
 }
 
 export interface CreatorPost {

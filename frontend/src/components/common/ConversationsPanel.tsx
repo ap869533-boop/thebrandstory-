@@ -14,6 +14,7 @@ import {
 import { apiUrl, authHeaders } from '../../config/api';
 import type { ChatMessage, ConversationThread } from '../../types';
 import { usePlatform } from '../../context/PlatformContext';
+import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 
 // WhatsApp-style clearly visible WHITE doodle SVG background pattern (high contrast)
 const WHATSAPP_DOODLE_WHITE_DATA_URL = `data:image/svg+xml;utf8,${encodeURIComponent(`
@@ -97,6 +98,12 @@ export const ConversationsPanel: React.FC<{
   const [reviewText, setReviewText] = useState('');
   const [reviewMsg, setReviewMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [savingReview, setSavingReview] = useState(false);
+
+  // Chat enhancements
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [attachment, setAttachment] = useState<File | null>(null);
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   // WhatsApp-style "Contact Info" Drawer State (View-Only)
   const [showContactInfo, setShowContactInfo] = useState(false);
@@ -226,25 +233,85 @@ export const ConversationsPanel: React.FC<{
     return () => clearTimeout(timer);
   }, [draft, activeId]);
 
-  const send = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!activeId || !draft.trim() || sending) return;
+  const send = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!activeId || sending || uploadingAttachment) return;
+    
+    // Allow sending if there's text OR an attachment
     const textToSend = draft.trim();
+    if (!textToSend && !attachment) return;
+    
     setSending(true);
+
     try {
+      let attachmentUrl = null;
+      let attachmentType = null;
+      let attachmentName = null;
+
+      if (attachment) {
+        setUploadingAttachment(true);
+        // Ensure size under 50MB
+        if (attachment.size > 50 * 1024 * 1024) {
+           alert("Attachment too large. Maximum size is 50MB.");
+           setUploadingAttachment(false);
+           setSending(false);
+           return;
+        }
+
+        const base64 = await new Promise<string>((resolve) => {
+           const reader = new FileReader();
+           reader.onload = () => resolve(reader.result as string);
+           reader.readAsDataURL(attachment);
+        });
+
+        const uploadRes = await fetch(apiUrl('/api/upload'), {
+           method: 'POST',
+           headers: authHeaders(),
+           body: JSON.stringify({
+              image: base64,
+              creatorId: authUser.id,
+              type: 'chat_attachment'
+           })
+        });
+        const uploadData = await uploadRes.json();
+        if (uploadData.success) {
+           attachmentUrl = uploadData.url;
+           attachmentName = attachment.name;
+           if (attachment.type.startsWith('image/')) attachmentType = 'image';
+           else if (attachment.type.startsWith('video/')) attachmentType = 'video';
+           else if (attachment.type === 'application/pdf') attachmentType = 'pdf';
+           else attachmentType = 'file';
+        }
+        setUploadingAttachment(false);
+      }
+
       const res = await fetch(apiUrl(`/api/conversations/${activeId}/messages`), {
         method: 'POST',
         headers: authHeaders(),
-        body: JSON.stringify({ body: textToSend }),
+        // Send 'body' as textToSend, which handles empty strings gracefully.
+        body: JSON.stringify({ body: textToSend || '', attachmentUrl, attachmentType, attachmentName }),
       });
       const data = await res.json();
       if (data.success && data.message) {
         setMessages((prev) => [...prev, data.message]);
         setDraft('');
+        setAttachment(null);
+        setShowEmojiPicker(false);
         void loadThreads();
+        setTimeout(() => {
+          listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
+        }, 100);
+      } else {
+        console.error("Message send failed:", data);
+        alert("Failed to send message.");
       }
+    } catch (err) {
+      console.error("Error sending message:", err);
+      // ignore
+      setUploadingAttachment(false);
     } finally {
       setSending(false);
+      setUploadingAttachment(false);
     }
   };
 
@@ -688,8 +755,27 @@ export const ConversationsPanel: React.FC<{
                             : 'bg-[#1f2c34] text-slate-100 rounded-tl-xs border border-white/5'
                         }`}
                       >
+                        {/* Attachment Rendering */}
+                        {m.attachmentUrl && (
+                          <div className="mb-2">
+                            {m.attachmentType === 'image' ? (
+                              <img src={apiUrl(m.attachmentUrl)} alt={m.attachmentName || 'Attachment'} className="max-w-full rounded-lg max-h-[300px] object-contain bg-black/20" />
+                            ) : m.attachmentType === 'video' ? (
+                              <video src={apiUrl(m.attachmentUrl)} controls className="max-w-full rounded-lg max-h-[300px] object-contain bg-black/20" />
+                            ) : (
+                              <a href={apiUrl(m.attachmentUrl)} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-blue-300 hover:underline break-all bg-black/20 p-2.5 rounded-lg">
+                                <Paperclip className="w-4 h-4 shrink-0" /> 
+                                <span className="line-clamp-2 font-medium">{m.attachmentName || 'Document'}</span>
+                              </a>
+                            )}
+                            <p className="text-[9px] text-white/50 mt-1.5 italic font-medium leading-tight opacity-80">
+                              (Auto-deletes in 15 days)
+                            </p>
+                          </div>
+                        )}
+
                         {/* Message Content */}
-                        <p className="leading-relaxed whitespace-pre-wrap break-words text-[13px]">{m.body}</p>
+                        {m.body && <p className="leading-relaxed whitespace-pre-wrap break-words text-[13px]">{m.body}</p>}
 
                         {/* Timestamp & Delivery status */}
                         <div className="flex items-center justify-end gap-1 mt-1 select-none">
@@ -776,48 +862,89 @@ export const ConversationsPanel: React.FC<{
             {/* ========================================================
                 BOTTOM INPUT BAR (WhatsApp Style)
             ======================================================== */}
-            <form
-              onSubmit={send}
-              className="p-2.5 sm:p-3 bg-[#0d172c] border-t border-white/10 flex items-center gap-2 sm:gap-3 shrink-0"
-            >
-              {/* Optional smile/attachment icons */}
-              <button
-                type="button"
-                className="text-slate-400 hover:text-white p-2 rounded-full hover:bg-white/5 transition hidden sm:inline-flex cursor-pointer"
-                title="Emoji"
-              >
-                <Smile className="w-5 h-5" />
-              </button>
+            <div className="relative">
+              {showEmojiPicker && (
+                <div className="absolute bottom-full left-0 z-50 mb-2">
+                  <EmojiPicker
+                    theme="dark"
+                    onEmojiClick={(emojiData: EmojiClickData) => {
+                      setDraft((prev) => prev + emojiData.emoji);
+                    }}
+                  />
+                </div>
+              )}
 
-              <button
-                type="button"
-                className="text-slate-400 hover:text-white p-2 rounded-full hover:bg-white/5 transition hidden sm:inline-flex cursor-pointer"
-                title="Attach"
-              >
-                <Paperclip className="w-5 h-5" />
-              </button>
+              {attachment && (
+                <div className="absolute bottom-full left-0 mb-2 p-2 mx-3 bg-[#1f2c34] rounded-xl border border-white/10 flex items-center gap-3 shadow-lg max-w-sm">
+                  <div className="flex flex-col flex-1 truncate">
+                    <span className="text-white text-xs font-bold truncate">{attachment.name}</span>
+                    <span className="text-slate-400 text-[10px]">{(attachment.size / 1024 / 1024).toFixed(2)} MB</span>
+                  </div>
+                  <button type="button" onClick={() => setAttachment(null)} className="text-slate-400 hover:text-white p-1 shrink-0">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
 
-              {/* Message Input Pill */}
-              <div className="flex-1 relative flex items-center">
-                <input
-                  type="text"
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  placeholder="Type a message..."
-                  className="w-full bg-[#182647] border border-white/10 focus:border-[#00a884] rounded-full px-4 sm:px-5 py-2.5 text-xs sm:text-sm text-white placeholder-slate-400 outline-none transition"
-                />
-              </div>
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/*,video/*,application/pdf"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    setAttachment(e.target.files[0]);
+                    setShowEmojiPicker(false);
+                  }
+                }}
+              />
 
-              {/* Send Button */}
-              <button
-                type="submit"
-                disabled={sending || !draft.trim()}
-                className="w-10 h-10 rounded-full bg-[#00a884] hover:bg-[#029070] text-black flex items-center justify-center shadow-lg transition disabled:opacity-40 disabled:hover:bg-[#00a884] shrink-0 cursor-pointer"
-                title="Send Message"
+              <form
+                onSubmit={send}
+                className="p-2.5 sm:p-3 bg-[#0d172c] border-t border-white/10 flex items-center gap-2 sm:gap-3 shrink-0 relative z-40"
               >
-                <Send className="w-4 h-4 fill-current ml-0.5" />
-              </button>
-            </form>
+                <button
+                  type="button"
+                  onClick={() => setShowEmojiPicker((prev) => !prev)}
+                  className={`p-2 rounded-full transition cursor-pointer flex-shrink-0 ${showEmojiPicker ? 'text-[#D4A338] bg-[#D4A338]/10' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                  title="Emoji"
+                >
+                  <Smile className="w-5 h-5" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="text-slate-400 hover:text-white p-2 rounded-full hover:bg-white/5 transition cursor-pointer flex-shrink-0"
+                  title="Attach File"
+                >
+                  <Paperclip className="w-5 h-5" />
+                </button>
+
+                <div className="flex-1 relative flex items-center">
+                  <input
+                    type="text"
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    placeholder="Type a message..."
+                    className="w-full bg-[#182647] border border-white/10 focus:border-[#D4A338] rounded-full px-4 sm:px-5 py-2.5 text-xs sm:text-sm text-white placeholder-slate-400 outline-none transition"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={sending || uploadingAttachment || (!draft.trim() && !attachment)}
+                  className="w-10 h-10 rounded-full bg-[#D4A338] hover:bg-[#b88628] text-black flex items-center justify-center shadow-lg transition disabled:opacity-40 disabled:hover:bg-[#D4A338] shrink-0 cursor-pointer"
+                  title="Send Message"
+                >
+                  {uploadingAttachment ? (
+                     <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                     <Send className="w-4 h-4 fill-current ml-0.5" />
+                  )}
+                </button>
+              </form>
+            </div>
           </>
         )}
       </section>
