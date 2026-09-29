@@ -3,7 +3,6 @@ import { Layers, ArrowLeft, Users } from 'lucide-react';
 import { usePlatform } from '../context/PlatformContext';
 import { CATEGORIES_LIST } from '../data/initialData';
 import { CreatorCard } from '../components/common/CreatorCard';
-import { SubPageHeader } from '../components/common/SubPageHeader';
 
 export const CategoryPageView: React.FC = () => {
   const { viewParams, creators, navigateTo, setFilters, categories } = usePlatform();
@@ -22,7 +21,7 @@ export const CategoryPageView: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#051126] text-white">
-      <SubPageHeader title={categoryData.name} subtitle={`${categoryData.count}+ Creators`} backTo="home" />
+      
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         {/* Realistic Category Header Hero with Big Image & Overlaid Text */}

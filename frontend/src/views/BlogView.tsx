@@ -2,7 +2,6 @@ import React from 'react';
 import { BookOpen, ArrowRight, ArrowLeft } from 'lucide-react';
 import { BLOG_POSTS_DATA } from '../data/initialData';
 import { usePlatform } from '../context/PlatformContext';
-import { SubPageHeader } from '../components/common/SubPageHeader';
 
 export const BlogView: React.FC = () => {
   const { navigateTo, blogPosts } = usePlatform();
@@ -10,7 +9,7 @@ export const BlogView: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#051126] text-white">
-      <SubPageHeader title="Blog" subtitle="Creator Economy Insights" />
+      
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
         {/* Header */}

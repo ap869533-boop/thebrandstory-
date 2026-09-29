@@ -22,7 +22,6 @@ import { usePlatform } from '../context/PlatformContext';
 import { CreatorCard } from '../components/common/CreatorCard';
 import { CATEGORIES_LIST, CITIES_LIST } from '../data/initialData';
 import { apiUrl } from '../config/api';
-import { SubPageHeader } from '../components/common/SubPageHeader';
 
 const CREATOR_PAGE_SIZE = 12;
 
@@ -187,7 +186,7 @@ export const ExploreView: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#051126] text-white">
       {/* Top Header */}
-      <SubPageHeader title="Discovery" subtitle="50,000+ Verified Creators" />
+      
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         {/* Top Header & Search Banner */}

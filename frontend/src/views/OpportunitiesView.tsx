@@ -4,10 +4,9 @@ import { usePlatform } from '../context/PlatformContext';
 import { CampaignRequirement } from '../types';
 import { CATEGORIES_LIST, CITIES_LIST } from '../data/initialData';
 import { apiUrl } from '../config/api';
-import { SubPageHeader } from '../components/common/SubPageHeader';
 
 export const OpportunitiesView: React.FC = () => {
-  const { applyToCampaign, activeCreatorId, authUser, navigateTo, categories, cities, requireRole } = usePlatform();
+  const { applyToCampaign, activeCreatorId, authUser, navigateTo, categories, cities, requireRole, viewParams } = usePlatform();
   const [selectedCampaign, setSelectedCampaign] = useState<CampaignRequirement | null>(null);
   const [pitchText, setPitchText] = useState('');
   const [hasApplied, setHasApplied] = useState<string | null>(null);
@@ -27,9 +26,13 @@ export const OpportunitiesView: React.FC = () => {
   };
 
   // Local filters
-  const [searchFilter, setSearchFilter] = useState('');
+  const [searchFilter, setSearchFilter] = useState(() => String(viewParams.searchQuery || ''));
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [cityFilter, setCityFilter] = useState('all');
+
+  useEffect(() => {
+    if (typeof viewParams.searchQuery === 'string') setSearchFilter(viewParams.searchQuery);
+  }, [viewParams.searchQuery]);
 
   useEffect(() => {
     let cancelled = false;
@@ -74,7 +77,7 @@ export const OpportunitiesView: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#051126] text-white">
       {/* SubPage Header */}
-      <SubPageHeader title="Opportunities" subtitle="Brand Deals & Live Briefs" />
+      
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         {/* Top Banner */}
