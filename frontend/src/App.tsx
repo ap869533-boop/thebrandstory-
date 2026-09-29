@@ -8,7 +8,7 @@ import { CompareDrawer } from './components/common/CompareDrawer';
 import { SavedShortlistDrawer } from './components/common/SavedShortlistDrawer';
 import { CreatorOnboardingModal } from './components/common/CreatorOnboardingModal';
 import { AuthModal } from './components/common/AuthModal';
-import { SubPageHeader } from './components/common/SubPageHeader';
+import { Navbar } from './components/common/Navbar';
 
 // Route views are code-split so visitors load only the page they open.
 const HomeView = lazy(() => import('./views/HomeView').then(({ HomeView }) => ({ default: HomeView })));
@@ -18,8 +18,9 @@ const CityPageView = lazy(() => import('./views/CityPageView').then(({ CityPageV
 const CategoryPageView = lazy(() => import('./views/CategoryPageView').then(({ CategoryPageView }) => ({ default: CategoryPageView })));
 const PostRequirementView = lazy(() => import('./views/PostRequirementView').then(({ PostRequirementView }) => ({ default: PostRequirementView })));
 const OpportunitiesView = lazy(() => import('./views/OpportunitiesView').then(({ OpportunitiesView }) => ({ default: OpportunitiesView })));
-const CreatorDashboardView = lazy(() => import('./views/CreatorDashboardView').then(({ CreatorDashboardView }) => ({ default: CreatorDashboardView })));
-const BrandDashboardView = lazy(() => import('./views/BrandDashboardView').then(({ BrandDashboardView }) => ({ default: BrandDashboardView })));
+const BrandCampaignsView = lazy(() => import('./views/BrandCampaignsView').then(({ BrandCampaignsView }) => ({ default: BrandCampaignsView })));
+const BrandProfileView = lazy(() => import('./views/BrandProfileView').then(({ BrandProfileView }) => ({ default: BrandProfileView })));
+const WalletView = lazy(() => import('./views/WalletView').then(({ WalletView }) => ({ default: WalletView })));
 const AdminDashboardView = lazy(() => import('./views/AdminDashboardView').then(({ AdminDashboardView }) => ({ default: AdminDashboardView })));
 const BlogView = lazy(() => import('./views/BlogView').then(({ BlogView }) => ({ default: BlogView })));
 const BlogPostView = lazy(() => import('./views/BlogPostView').then(({ BlogPostView }) => ({ default: BlogPostView })));
@@ -31,7 +32,7 @@ const MainAppContent: React.FC = () => {
   return (
     <div className="dark-theme min-h-screen flex flex-col bg-[#051126] text-slate-100 font-sans antialiased selection:bg-[#D4A338]/30 selection:text-white w-full max-w-full overflow-x-hidden">
       {/* Global Navbar — shown on every page */}
-      <SubPageHeader />
+      <Navbar />
 
       {/* Main Dynamic View */}
       <main className="flex-1 w-full max-w-full overflow-x-hidden">
@@ -48,8 +49,9 @@ const MainAppContent: React.FC = () => {
             <Route path="/category/:categorySlug" element={<CategoryPageView />} />
             <Route path="/post-requirement" element={<PostRequirementView />} />
             <Route path="/opportunities" element={<OpportunitiesView />} />
-            <Route path="/dashboard/creator" element={<CreatorDashboardView />} />
-            <Route path="/dashboard/brand" element={<BrandDashboardView />} />
+            <Route path="/brand/:brandSlug/campaigns" element={<BrandCampaignsView />} />
+            <Route path="/brand/:brandSlug/profile" element={<BrandProfileView />} />
+            <Route path="/wallet" element={<WalletView />} />
             <Route path="/admin" element={<AdminDashboardView />} />
             <Route path="/blog" element={<BlogView />} />
             <Route path="/blog/:blogSlug" element={<BlogPostView />} />

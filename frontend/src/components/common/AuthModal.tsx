@@ -348,7 +348,7 @@ export const AuthModal: React.FC = () => {
     const user = { ...creatorUser, creatorProfile: data.creator };
     localStorage.setItem('sc_auth_user', JSON.stringify(user));
     setAuthUser(user); setCreators((prev) => [data.creator, ...prev.filter((c) => c.id !== data.creator.id)]);
-    setActiveCreatorId(data.creator.id); closeAuthModal(); navigateTo('creator-dashboard');
+    setActiveCreatorId(data.creator.id); closeAuthModal(); navigateTo('opportunities');
   };
 
   const uploadCreatorMedia = (file: File, type: 'avatar' | 'cover') => {
@@ -488,9 +488,9 @@ export const AuthModal: React.FC = () => {
             if (authModalRedirectAfter) {
               navigateTo(authModalRedirectAfter);
             } else if (data.user.role === 'CREATOR') {
-              navigateTo('creator-dashboard');
+              navigateTo('opportunities');
             } else if (data.user.role === 'BRAND') {
-              navigateTo('brand-dashboard');
+              navigateTo('brand-campaigns', { slug: 'account' });
             } else if (data.user.role === 'ADMIN') {
               navigateTo('admin-dashboard');
             } else {
@@ -602,8 +602,8 @@ export const AuthModal: React.FC = () => {
             setTimeout(() => {
               setRegistrationSuccess(false);
               closeAuthModal();
-              if (data.user.role === 'CREATOR') navigateTo('creator-dashboard');
-              else if (data.user.role === 'BRAND') navigateTo('brand-dashboard');
+              if (data.user.role === 'CREATOR') navigateTo('opportunities');
+              else if (data.user.role === 'BRAND') navigateTo('brand-campaigns', { slug: 'account' });
               else if (data.user.role === 'ADMIN') navigateTo('admin-dashboard');
               else navigateTo('search');
             }, 800);

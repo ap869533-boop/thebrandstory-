@@ -14,7 +14,7 @@ import {
 import { apiUrl, authHeaders } from '../../config/api';
 import type { ChatMessage, ConversationThread } from '../../types';
 import { usePlatform } from '../../context/PlatformContext';
-import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
+import EmojiPicker, { EmojiClickData, Theme } from 'emoji-picker-react';
 
 // WhatsApp-style clearly visible WHITE doodle SVG background pattern (high contrast)
 const WHATSAPP_DOODLE_WHITE_DATA_URL = `data:image/svg+xml;utf8,${encodeURIComponent(`
@@ -866,7 +866,7 @@ export const ConversationsPanel: React.FC<{
               {showEmojiPicker && (
                 <div className="absolute bottom-full left-0 z-50 mb-2">
                   <EmojiPicker
-                    theme="dark"
+                    theme={Theme.DARK}
                     onEmojiClick={(emojiData: EmojiClickData) => {
                       setDraft((prev) => prev + emojiData.emoji);
                     }}

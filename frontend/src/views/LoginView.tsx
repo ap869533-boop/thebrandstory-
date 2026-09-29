@@ -123,9 +123,9 @@ export const LoginView: React.FC = () => {
     if (redirectTarget) {
       navigateTo(redirectTarget as any);
     } else if (effectiveRole === 'BRAND') {
-      navigateTo('brand-dashboard');
+      navigateTo('brand-campaigns', { slug: 'account' });
     } else if (effectiveRole === 'CREATOR') {
-      navigateTo('creator-dashboard');
+      navigateTo('opportunities');
     } else if (effectiveRole === 'ADMIN' || effectiveRole === 'SALES') {
       navigateTo('admin-dashboard');
     } else {
@@ -211,7 +211,7 @@ export const LoginView: React.FC = () => {
     localStorage.setItem('sc_auth_user', JSON.stringify(user));
     setAuthUser(user); setCreators(prev => [data.creator, ...prev.filter(c => c.id !== data.creator.id)]);
     setActiveCreatorId(data.creator.id);
-    navigateTo('creator-dashboard');
+    navigateTo('opportunities');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -880,14 +880,15 @@ export const LoginView: React.FC = () => {
       {/* Image Cropper Modal */}
       {showCropper && (
         <ImageCropperModal
-          src={cropSrc}
+          imageSrc={cropSrc}
           aspect={cropTarget === 'avatar' ? 1 : 3}
-          onCrop={(croppedDataUrl) => {
-            if (cropTarget === 'avatar') setProfilePhotoUrl(croppedDataUrl);
-            else setBannerUrl(croppedDataUrl);
+          onCropDone={(croppedFile) => {
+            const croppedImageUrl = URL.createObjectURL(croppedFile);
+            if (cropTarget === 'avatar') setProfilePhotoUrl(croppedImageUrl);
+            else setBannerUrl(croppedImageUrl);
             setShowCropper(false);
           }}
-          onClose={() => setShowCropper(false)}
+          onCancel={() => setShowCropper(false)}
         />
       )}
     </div>

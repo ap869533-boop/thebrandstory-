@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import {
-  ArrowLeft,
   Heart,
   Share2,
   MessageSquare,
@@ -51,6 +50,7 @@ export const CreatorDetailView: React.FC = () => {
     isCreatorSaved,
     toggleSaveCreator,
     addCreatorReview,
+    updateCreatorProfile,
   } = usePlatform();
 
   const requestedUsername = routeUsername || viewParams.username;
@@ -75,6 +75,8 @@ export const CreatorDetailView: React.FC = () => {
   const [ratingDeliverable, setRatingDeliverable] = useState('Instagram Reel (1x)');
   const [ratingComment, setRatingComment] = useState('');
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileDraft, setProfileDraft] = useState<Record<string, string>>({});
 
   // Protect direct profile URLs as well as navigation from creator cards.
   useEffect(() => {
@@ -119,7 +121,7 @@ export const CreatorDetailView: React.FC = () => {
           <h2 className="text-xl font-black">Profile preview unavailable</h2>
           <p className="text-sm text-slate-400">Your creator profile is still being prepared. Please return to your dashboard and try again.</p>
           <button
-            onClick={() => navigateTo('creator-dashboard')}
+            onClick={() => navigateTo('opportunities')}
             className="px-5 py-2.5 rounded-xl bg-[#D4A338] text-black font-bold text-sm"
           >
             Return to Dashboard
@@ -138,6 +140,28 @@ export const CreatorDetailView: React.FC = () => {
       (authUser.name && creator.name && authUser.name.toLowerCase() === creator.name.toLowerCase())
     )
   );
+
+  const startEditingProfile = () => {
+    setProfileDraft({
+      followers: String(creator.followers || 0), totalPosts: String(creator.totalPosts || 0),
+      avgViews: String(creator.avgViews || 0), avgLikes: String(creator.avgLikes || 0),
+      avgComments: String(creator.avgComments || 0), bio: creator.bio || '',
+    });
+    setIsEditingProfile(true);
+  };
+
+  const saveProfile = async () => {
+    await updateCreatorProfile(creator.id, {
+      followers: Number(profileDraft.followers || 0), totalPosts: Number(profileDraft.totalPosts || 0),
+      avgViews: Number(profileDraft.avgViews || 0), avgLikes: Number(profileDraft.avgLikes || 0),
+      avgComments: Number(profileDraft.avgComments || 0), bio: profileDraft.bio || '',
+    });
+    setIsEditingProfile(false);
+  };
+
+  const profileField = (key: string, value: string) => isEditingProfile
+    ? <input value={profileDraft[key] ?? value} onChange={(event) => setProfileDraft((draft) => ({ ...draft, [key]: event.target.value }))} className="mt-0.5 w-full rounded-lg border border-[#D4A338]/50 bg-[#071226] px-2 py-1 text-sm font-black text-white outline-none" />
+    : <p className="mt-0.5 text-sm sm:text-base font-black text-white">{value}</p>;
 
   const formatFollowers = (count?: number) => {
     if (!count) return '0';
@@ -218,53 +242,6 @@ export const CreatorDetailView: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#051126] pb-16 font-sans text-white">
       
-      {/* Quick Actions Bar */}
-      {/* Quick Creator Action Bar */}
-      <div className="bg-[#051126]/95 border-b border-white/10 px-4 sm:px-6 lg:px-8 py-2.5">
-        <div className="max-w-6xl mx-auto flex items-center justify-between gap-4 flex-wrap">
-          <button
-            onClick={() => navigateTo('explore')}
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-300 hover:text-white transition cursor-pointer"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back to Discovery</span>
-          </button>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => toggleSaveCreator(creator.id)}
-              className={`px-3.5 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
-                isSaved
-                  ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
-                  : 'bg-white/5 text-slate-300 hover:bg-white/10 border-white/10'
-              }`}
-            >
-              <Heart className={`w-3.5 h-3.5 ${isSaved ? 'fill-rose-400 text-rose-400' : ''}`} />
-              <span>{isSaved ? 'Saved' : 'Save'}</span>
-            </button>
-            <button
-              onClick={handleShare}
-              className="px-3.5 py-1.5 rounded-xl border border-white/10 text-xs font-bold text-slate-300 hover:bg-white/10 flex items-center gap-1.5 transition cursor-pointer"
-            >
-              <Share2 className="w-3.5 h-3.5" />
-              <span>{copiedLink ? 'Link Copied!' : 'Share'}</span>
-            </button>
-            <button
-              onClick={() => {
-                if (!authUser) {
-                  openAuthModal('login', 'BRAND', 'Please log in to send a booking enquiry.');
-                  return;
-                }
-                openEnquiryModal(creator);
-              }}
-              className="px-4 py-1.5 rounded-xl bg-[#D4A338] hover:bg-[#b88628] text-slate-950 text-xs font-bold shadow-sm transition flex items-center gap-1.5 cursor-pointer"
-            >
-              <MessageSquare className="w-3.5 h-3.5" />
-              <span>Book Enquiry</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* Main Content Container */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 sm:pt-4 pb-8 space-y-6">
         {/* Profile Hero Section */}
@@ -279,12 +256,24 @@ export const CreatorDetailView: React.FC = () => {
             <div className="flex min-w-0 w-full flex-1 flex-col justify-center">
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <span className="text-[11px] font-black uppercase tracking-[0.18em] text-[#b88628]">INSTAGRAM INFORMATION</span>
-                {creator.isVerified && (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    Verified Creator
-                  </span>
-                )}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => toggleSaveCreator(creator.id)}
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold transition cursor-pointer ${
+                      isSaved
+                        ? 'border-rose-500/30 bg-rose-500/20 text-rose-300'
+                        : 'border-white/10 bg-white/5 text-slate-200 hover:bg-white/10'
+                    }`}
+                  >
+                    <Heart className={`h-3.5 w-3.5 ${isSaved ? 'fill-rose-400 text-rose-400' : ''}`} />
+                    {isSaved ? 'Saved' : 'Save'}
+                  </button>
+                  <button type="button" onClick={handleShare} className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-slate-200 hover:bg-white/10 transition cursor-pointer">
+                    <Share2 className="h-3.5 w-3.5" />
+                    {copiedLink ? 'Link Copied!' : 'Share'}
+                  </button>
+                </div>
               </div>
 
               <h1 className="mt-1.5 text-2xl sm:text-3xl font-black text-slate-900 tracking-tight break-all">
@@ -336,7 +325,7 @@ export const CreatorDetailView: React.FC = () => {
                 {isOwner ? (
                   <button
                     type="button"
-                    onClick={() => navigateTo('creator-dashboard')}
+                    onClick={() => navigateTo('opportunities')}
                     className="inline-flex items-center gap-2 rounded-xl bg-[#D4A338] hover:bg-[#c2912a] px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md shadow-[#D4A338]/20 transition cursor-pointer active:scale-95"
                   >
                     <Edit3 className="w-4 h-4" />

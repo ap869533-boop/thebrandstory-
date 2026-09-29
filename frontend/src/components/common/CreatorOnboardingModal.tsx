@@ -69,7 +69,7 @@ export const CreatorOnboardingModal: React.FC = () => {
 
       closeOnboardingModal();
       setStep(1);
-      navigateTo('creator-dashboard');
+      navigateTo('opportunities');
     }
   };
 

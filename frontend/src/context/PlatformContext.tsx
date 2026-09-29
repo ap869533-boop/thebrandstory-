@@ -80,7 +80,7 @@ export interface AppNotification {
 
 interface PlatformContextType {
   // Navigation / Route View
-  currentView: string; // 'home' | 'login' | 'influencer-detail' | 'city-page' | 'category-page' | 'city-category-page' | 'explore' | 'post-requirement' | 'opportunities' | 'brand-dashboard' | 'creator-dashboard' | 'admin-dashboard' | 'blog' | 'blog-post'
+  currentView: string; // Current route state used for UI navigation.
   viewParams: { id?: string; slug?: string; username?: string; citySlug?: string; categorySlug?: string; blogSlug?: string; redirectAfter?: string; role?: UserRole; message?: string; mode?: 'login' | 'signup'; brandName?: string; companyName?: string; logoUrl?: string; description?: string; industry?: string; city?: string; website?: string; [key: string]: any };
   navigateTo: (view: string, params?: { id?: string; slug?: string; username?: string; citySlug?: string; categorySlug?: string; blogSlug?: string; redirectAfter?: string; role?: UserRole; message?: string; mode?: 'login' | 'signup'; brandName?: string; companyName?: string; logoUrl?: string; description?: string; industry?: string; city?: string; website?: string; [key: string]: any }) => void;
 
@@ -260,8 +260,9 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     else if (view === 'category-page' && params.categorySlug) path = `/category/${params.categorySlug}`;
     else if (view === 'post-requirement') path = '/post-requirement';
     else if (view === 'opportunities') path = '/opportunities';
-    else if (view === 'creator-dashboard') path = '/dashboard/creator';
-    else if (view === 'brand-dashboard') path = '/dashboard/brand';
+    else if (view === 'brand-campaigns' && params.slug) path = `/brand/${encodeURIComponent(params.slug)}/campaigns`;
+    else if (view === 'brand-profile' && params.slug) path = `/brand/${encodeURIComponent(params.slug)}/profile`;
+    else if (view === 'wallet') path = '/wallet';
     else if (view === 'admin-dashboard') path = '/admin';
     else if (view === 'blog') path = '/blog';
     else if (view === 'blog-post' && params.blogSlug) path = `/blog/${params.blogSlug}`;
@@ -1046,7 +1047,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       title: 'New Pitch Received!',
       message: `${creator.name} pitched for "${targetCamp?.campaignTitle || 'Campaign'}"`,
       type: 'campaign',
-      linkTo: 'brand-dashboard',
+      linkTo: 'brand-campaigns',
     });
   };
 

@@ -261,8 +261,8 @@ export const AdminDashboardView: React.FC = () => {
           <div className="pt-2 space-y-2">
             <button
               onClick={() => {
-                if (authUser?.role === 'CREATOR') navigateTo('creator-dashboard');
-                else if (authUser?.role === 'BRAND') navigateTo('brand-dashboard');
+                if (authUser?.role === 'CREATOR') navigateTo('opportunities');
+                else if (authUser?.role === 'BRAND') navigateTo('brand-campaigns', { slug: 'account' });
                 else navigateTo('home');
               }}
               className="w-full py-3 bg-slate-900 hover:bg-black text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer"

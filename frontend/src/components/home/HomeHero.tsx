@@ -1,144 +1,18 @@
-import React, { useMemo, useState } from 'react';
-import {
-  Search,
-  Menu,
-  Compass,
-  LayoutDashboard,
-  Users,
-  Heart,
-  Megaphone,
-  CreditCard,
-  HelpCircle,
-  MessageCircle,
-  LogOut,
-  Building2,
-  CheckCircle2,
-  User,
-} from 'lucide-react';
+import React from 'react';
+import { Compass, LayoutDashboard, Users } from 'lucide-react';
 import { usePlatform } from '../../context/PlatformContext';
 
 export const HomeHero: React.FC = () => {
   const {
-    filters,
-    setFilters,
     navigateTo,
     authUser,
     openAuthModal,
-    openSavedDrawer,
-    savedCreatorIds,
-    logout,
-    creators,
   } = usePlatform();
-
-  const [keyword, setKeyword] = useState('');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isCreator = authUser?.role === 'CREATOR';
   const isBrand = authUser?.role === 'BRAND';
   const isAdmin = authUser?.role === 'ADMIN';
   const isSales = authUser?.role === 'SALES';
-
-  /*
-   * --------------------------------------------------------------------------
-   * USER PROFILE
-   * --------------------------------------------------------------------------
-   */
-
-  const matchedCreator = useMemo(() => {
-    if (!isCreator) return null;
-
-    const creatorProfile = authUser?.creatorProfile;
-
-    if (creatorProfile) {
-      return creatorProfile;
-    }
-
-    if (!Array.isArray(creators) || !authUser) {
-      return null;
-    }
-
-    const authEmail = authUser.email?.toLowerCase();
-
-    return (
-      creators.find(
-        (creator) =>
-          (authEmail &&
-            creator.email?.toLowerCase() === authEmail) ||
-          creator.id === authUser.id
-      ) || null
-    );
-  }, [
-    isCreator,
-    creators,
-    authUser?.email,
-    authUser?.id,
-    authUser?.creatorProfile,
-  ]);
-
-  const displayName = isCreator
-    ? matchedCreator?.name || authUser?.name || 'Creator'
-    : isBrand
-      ? authUser?.brandProfile?.brandName ||
-        authUser?.name ||
-        'Brand Partner'
-      : authUser?.name || (isSales ? 'Sales' : 'Guest User');
-
-  const displayHandle = isCreator
-    ? `@${
-        matchedCreator?.username ||
-        authUser?.name?.toLowerCase().replace(/\s+/g, '') ||
-        'creator'
-      }`
-    : isBrand
-      ? `@${
-          authUser?.name?.toLowerCase().replace(/\s+/g, '') ||
-          'brand'
-        }`
-      : isSales
-        ? '@sales'
-        : '@guest';
-
-  const avatarSrc = isCreator
-    ? matchedCreator?.avatar ||
-      `https://ui-avatars.com/api/?name=${encodeURIComponent(
-        displayName
-      )}&background=D4A338&color=000&bold=true`
-    : isBrand
-      ? authUser?.brandProfile?.logoUrl ||
-        `https://ui-avatars.com/api/?name=${encodeURIComponent(
-          displayName
-        )}&background=0F172A&color=fff&bold=true`
-      : null;
-
-  /*
-   * --------------------------------------------------------------------------
-   * SEARCH
-   * --------------------------------------------------------------------------
-   */
-
-  const handleSearchSubmit = (e?: React.FormEvent) => {
-    e?.preventDefault();
-
-    const searchQuery = keyword.trim();
-
-    if (isCreator) {
-      navigateTo('opportunities', {
-        searchQuery,
-      });
-      return;
-    }
-
-    setFilters((previousFilters) => ({
-      ...previousFilters,
-      searchQuery,
-    }));
-
-    navigateTo('explore');
-  };
-
-  const searchPlaceholder = isCreator
-    ? 'Search brands here...'
-    : 'Search creators here...';
 
   /*
    * --------------------------------------------------------------------------
@@ -180,12 +54,12 @@ export const HomeHero: React.FC = () => {
 
           <button
             type="button"
-            id="hero-creator-dashboard-btn"
-            onClick={() => navigateTo('creator-dashboard')}
+            id="hero-creator-opportunities-btn"
+            onClick={() => navigateTo('opportunities')}
             className={`${heroSecondaryButton} flex-1 md:flex-none md:min-w-[180px]`}
           >
             <LayoutDashboard className="w-4 h-4 text-white shrink-0" />
-            <span>Go to Dashboard</span>
+            <span>View Opportunities</span>
           </button>
         </>
       );
@@ -206,12 +80,12 @@ export const HomeHero: React.FC = () => {
 
           <button
             type="button"
-            id="hero-brand-dashboard-btn"
-            onClick={() => navigateTo('brand-dashboard')}
+            id="hero-brand-campaigns-btn"
+            onClick={() => navigateTo('brand-campaigns', { slug: 'account' })}
             className={`${heroSecondaryButton} flex-1 md:flex-none md:min-w-[180px]`}
           >
             <LayoutDashboard className="w-4 h-4 text-white shrink-0" />
-            <span>Go to Dashboard</span>
+            <span>My Campaigns</span>
           </button>
         </>
       );
@@ -294,79 +168,6 @@ export const HomeHero: React.FC = () => {
 
   /*
    * --------------------------------------------------------------------------
-   * MOBILE MENU HELPERS
-   * --------------------------------------------------------------------------
-   */
-
-  const closeMobileMenu = () => {
-    setMobileMenuOpen(false);
-  };
-
-  const handleProfileNavigation = () => {
-    closeMobileMenu();
-
-    if (isCreator) {
-      navigateTo('creator-dashboard');
-      return;
-    }
-
-    if (isBrand) {
-      navigateTo('brand-dashboard');
-      return;
-    }
-
-    if (isAdmin) {
-      navigateTo('admin-dashboard');
-      return;
-    }
-
-    navigateTo('login');
-  };
-
-  const handlePrimaryMobileSearch = () => {
-    closeMobileMenu();
-
-    if (isBrand) {
-      navigateTo('explore');
-      return;
-    }
-
-    if (isCreator) {
-      navigateTo('opportunities');
-      return;
-    }
-
-    if (isAdmin || isSales) {
-      navigateTo('explore');
-      return;
-    }
-
-    navigateTo('explore');
-  };
-
-  const handleWalletNavigation = () => {
-    closeMobileMenu();
-
-    if (isCreator) {
-      navigateTo('creator-dashboard');
-      return;
-    }
-
-    if (isBrand) {
-      navigateTo('brand-dashboard');
-      return;
-    }
-
-    if (isAdmin) {
-      navigateTo('admin-dashboard');
-      return;
-    }
-
-    navigateTo('login');
-  };
-
-  /*
-   * --------------------------------------------------------------------------
    * RENDER
    * --------------------------------------------------------------------------
    */
@@ -378,66 +179,6 @@ export const HomeHero: React.FC = () => {
         <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[600px] h-[350px] bg-[#D4A338]/10 rounded-full blur-[120px]" />
 
         <div className="absolute top-1/3 left-1/4 w-[450px] h-[300px] bg-blue-600/10 rounded-full blur-[130px]" />
-      </div>
-
-      {/* ------------------------------------------------------------------ */}
-      {/* TOP HEADER */}
-      {/* ------------------------------------------------------------------ */}
-
-      <div className="w-full max-w-xl md:max-w-none mx-auto relative z-20 flex items-center justify-between gap-3 sm:gap-4 pt-2 pb-4 md:gap-5 md:pb-6">
-        {/* Desktop Logo */}
-        <button
-          type="button"
-          onClick={() => navigateTo('home')}
-          className="hidden md:block shrink-0 text-left cursor-pointer select-none"
-          aria-label="Go to home"
-        >
-          <span className="text-3xl lg:text-[3rem] tracking-tight leading-none">
-            <span className="text-white font-medium">the</span>
-            <span className="text-[#D4A338] font-black">brands</span>
-            <span className="text-white font-medium">story</span>
-            <span className="text-[#D4A338]">.</span>
-          </span>
-        </button>
-
-        {/* Search */}
-        <form
-          onSubmit={handleSearchSubmit}
-          className="hero-search-form flex-1 relative flex items-center bg-white backdrop-blur-md rounded-full border border-white px-4 sm:px-6 py-2.5 sm:py-3.5 md:ml-auto md:flex-none md:w-[580px] md:h-[54px] md:py-0 md:px-6 transition-all shadow-lg shadow-black/10 group"
-        >
-          <Search className="w-4 h-4 sm:w-5 sm:h-5 text-[#3977c9] shrink-0 mr-2.5 sm:mr-3.5" />
-
-          <input
-            type="text"
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            placeholder={searchPlaceholder}
-            aria-label={searchPlaceholder}
-            className="hero-search-input w-full bg-transparent text-xs sm:text-base text-slate-900 placeholder:text-slate-500 focus:outline-none"
-          />
-
-          {keyword && (
-            <button
-              type="button"
-              aria-label="Clear search"
-              onClick={() => setKeyword('')}
-              className="text-xs sm:text-sm text-slate-400 hover:text-slate-900 font-bold px-1.5 cursor-pointer shrink-0"
-            >
-              ✕
-            </button>
-          )}
-        </form>
-
-        {/* Menu */}
-        <button
-          type="button"
-          onClick={() => setMobileMenuOpen(true)}
-          title="Open Menu"
-          aria-label="Open menu"
-          className="hero-menu-button w-[46px] h-[46px] sm:w-[52px] sm:h-[52px] md:w-[54px] md:h-[54px] rounded-2xl md:rounded-[20px] bg-white md:bg-transparent hover:bg-slate-100 text-slate-950 md:text-[#8eb6ff] md:border-2 md:border-[#8eb6ff] flex items-center justify-center transition-all duration-200 shadow-md md:shadow-none cursor-pointer shrink-0"
-        >
-          <Menu className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 stroke-[2]" />
-        </button>
       </div>
 
       {/* ------------------------------------------------------------------ */}
@@ -475,8 +216,8 @@ export const HomeHero: React.FC = () => {
 
             <p className="text-[11px] sm:text-xs md:text-[1.1rem] text-[#8eb6ff]/85 font-medium tracking-normal">
               No Middleman{' '}
-              <span className="text-slate-500">•</span> 0% Commission{' '}
-              <span className="text-slate-500">•</span> 100% Free
+              <span className="text-slate-500">â€¢</span> 0% Commission{' '}
+              <span className="text-slate-500">â€¢</span> 100% Free
             </p>
           </div>
         </div>
@@ -503,307 +244,6 @@ export const HomeHero: React.FC = () => {
         </div>
       </div>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* MOBILE DRAWER */}
-      {/* ------------------------------------------------------------------ */}
-
-      {mobileMenuOpen && (
-        <div
-          className="fixed inset-0 z-50 bg-black/65 backdrop-blur-sm flex items-stretch justify-end p-0 animate-fadeIn"
-          onClick={closeMobileMenu}
-          role="presentation"
-        >
-          <div
-            className="h-full w-[min(88vw,390px)] bg-[#101b31] shadow-[-20px_0_60px_rgba(0,0,0,0.45)] overflow-hidden border-l border-white/10 flex flex-col animate-scaleUp"
-            onClick={(e) => e.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Navigation menu"
-          >
-            {/* Drawer Header */}
-            <div className="bg-[#0b1b3b] px-6 py-4 flex items-center justify-between">
-              <div className="text-xl font-bold tracking-tight select-none">
-                <span className="text-white">the</span>
-                <span className="text-[#D4A338]">brands</span>
-                <span className="text-white">story</span>
-                <span className="text-[#D4A338]">.</span>
-              </div>
-
-              <button
-                type="button"
-                onClick={closeMobileMenu}
-                aria-label="Close menu"
-                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer"
-              >
-                <span className="text-sm leading-none">✕</span>
-              </button>
-            </div>
-
-            {/* Drawer Body */}
-            <div className="p-5 space-y-4 flex-1 overflow-y-auto">
-              {/* User */}
-              {authUser ? (
-                <div className="flex items-center gap-3 pb-4 border-b border-white/10">
-                  <div className="relative shrink-0">
-                    <div className="w-14 h-14 rounded-full p-[2px] bg-gradient-to-tr from-[#D4A338] via-amber-300 to-[#D4A338] shadow-md">
-                      {avatarSrc ? (
-                        <img
-                          src={avatarSrc}
-                          alt={displayName}
-                          className="w-full h-full rounded-full object-cover bg-slate-100"
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      ) : (
-                        <div className="w-full h-full rounded-full bg-[#0b1b3b] text-white flex items-center justify-center font-black text-lg">
-                          {displayName.charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="min-w-0 flex-1 text-left">
-                    <div className="flex items-center gap-1">
-                      <h4 className="font-extrabold text-white text-sm truncate leading-tight">
-                        Hi, {displayName}
-                      </h4>
-
-                      <CheckCircle2 className="w-4 h-4 text-[#0095F6] fill-[#0095F6] text-white shrink-0" />
-                    </div>
-
-                    <p className="text-xs text-slate-400 truncate mt-0.5">
-                      {displayHandle}
-                    </p>
-
-                    <button
-                      type="button"
-                      onClick={handleProfileNavigation}
-                      className="text-[11px] font-bold text-[#D4A338] hover:text-[#f0c75a] mt-1 inline-flex items-center gap-1 cursor-pointer"
-                    >
-                      <span>
-                        {isBrand ? 'View Brand Profile' : 'View Profile'}
-                      </span>
-                      <span className="text-[10px]">›</span>
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="pb-4 border-b border-white/10 space-y-3 text-left">
-                  <p className="text-xs text-slate-400 font-medium leading-relaxed">
-                    India&apos;s biggest influencer &amp; brand collaboration
-                    ecosystem.
-                  </p>
-
-                  <div className="flex gap-2 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        closeMobileMenu();
-                        navigateTo('login', { mode: 'login' });
-                      }}
-                      className="flex-1 h-10 rounded-full border border-white/15 text-white font-bold text-xs hover:bg-white/5 text-center transition cursor-pointer"
-                    >
-                      Sign In
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        closeMobileMenu();
-                        openAuthModal('signup', 'CREATOR');
-                      }}
-                      className="flex-1 h-10 rounded-full bg-[#D4A338] text-slate-950 font-black text-xs hover:bg-[#be8f2b] text-center transition cursor-pointer"
-                    >
-                      Get Started
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Primary Search */}
-              {authUser && <div>
-                <button
-                  type="button"
-                  onClick={handlePrimaryMobileSearch}
-                  className="w-full h-11 px-4 rounded-full bg-[#D4A338] hover:bg-[#be8f2b] text-slate-950 font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md shadow-[#D4A338]/25 transition cursor-pointer"
-                >
-                  <Search className="w-4 h-4 stroke-[2.5]" />
-
-                  <span>
-                    {isBrand
-                      ? 'Find Influencers'
-                      : isCreator
-                        ? 'Find Brands'
-                        : 'Explore'}
-                  </span>
-                </button>
-              </div>}
-
-              {/* Menu Items */}
-              <div className="space-y-1 text-slate-200 text-xs sm:text-sm font-bold text-left">
-                {/* Wishlist */}
-                {authUser && <button
-                  type="button"
-                  onClick={() => {
-                    closeMobileMenu();
-                    openSavedDrawer();
-                  }}
-                  className="w-full px-3 py-3 rounded-xl hover:bg-white/5 flex items-center justify-between text-left transition cursor-pointer"
-                >
-                  <div className="flex items-center gap-3">
-                    <Heart className="w-4 h-4 text-white fill-white" />
-                    <span>Wish list</span>
-                  </div>
-
-                  {savedCreatorIds.length > 0 && (
-                    <span className="px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-300 text-[10px] font-black">
-                      {savedCreatorIds.length}
-                    </span>
-                  )}
-                </button>}
-
-                {/* Pitches */}
-                {authUser && <button
-                  type="button"
-                  onClick={() => {
-                    closeMobileMenu();
-
-                    if (isCreator) {
-                      navigateTo('creator-dashboard');
-                    } else if (isBrand) {
-                      navigateTo('brand-dashboard');
-                    } else if (isAdmin) {
-                      navigateTo('admin-dashboard');
-                    } else {
-                      navigateTo('opportunities');
-                    }
-                  }}
-                  className="w-full px-3 py-3 rounded-xl hover:bg-white/5 flex items-center justify-between text-left transition cursor-pointer"
-                >
-                  <div className="flex items-center gap-3">
-                    <Megaphone className="w-4 h-4 text-white" />
-                    <span>Pitches</span>
-                  </div>
-                </button>}
-
-                {/* Chat is available to signed-in creators and brands. */}
-                {(isCreator || isBrand) && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      closeMobileMenu();
-                      navigateTo('chat', {
-                        username: isCreator
-                          ? matchedCreator?.username || authUser?.name?.toLowerCase().replace(/\s+/g, '-')
-                          : displayName.toLowerCase().replace(/\s+/g, '-'),
-                      });
-                    }}
-                    className="w-full px-3 py-3 rounded-xl hover:bg-white/5 flex items-center gap-3 text-left transition cursor-pointer"
-                  >
-                    <MessageCircle className="w-4 h-4 text-white" />
-                    <span>Chat</span>
-                  </button>
-                )}
-
-                {/* Brand Items */}
-                {isBrand && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        closeMobileMenu();
-                        navigateTo('brand-dashboard');
-                      }}
-                      className="w-full px-3 py-3 rounded-xl hover:bg-white/5 flex items-center gap-3 text-left transition cursor-pointer"
-                    >
-                      <Megaphone className="w-4 h-4 text-white" />
-                      <span>My Campaign</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        closeMobileMenu();
-                        navigateTo('brand-dashboard');
-                      }}
-                      className="w-full px-3 py-3 rounded-xl hover:bg-white/5 flex items-center gap-3 text-left transition cursor-pointer"
-                    >
-                      <Building2 className="w-4 h-4 text-white" />
-                      <span>Brand Profile</span>
-                    </button>
-                  </>
-                )}
-
-                {/* Creator / Other Profile */}
-                {authUser && !isBrand && (
-                  <button
-                    type="button"
-                    onClick={handleProfileNavigation}
-                    className="w-full px-3 py-3 rounded-xl hover:bg-white/5 flex items-center gap-3 text-left transition cursor-pointer"
-                  >
-                    <User className="w-4 h-4 text-white" />
-                    <span>My Profile</span>
-                  </button>
-                )}
-
-                {/* Wallet / Billing */}
-                {authUser && <button
-                  type="button"
-                  onClick={handleWalletNavigation}
-                  className="w-full px-3 py-3 rounded-xl hover:bg-white/5 flex items-center gap-3 text-left transition cursor-pointer"
-                >
-                  <CreditCard className="w-4 h-4 text-white" />
-                  <span>Wallet / Billing</span>
-                </button>}
-
-                {/* Help */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    closeMobileMenu();
-                    navigateTo('blog');
-                  }}
-                  className="w-full px-3 py-3 rounded-xl hover:bg-white/5 flex items-center gap-3 text-left transition cursor-pointer"
-                >
-                  <HelpCircle className="w-4 h-4 text-white" />
-                  <span>Help and Support</span>
-                </button>
-
-                {/* Logout */}
-                {authUser && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      closeMobileMenu();
-                      logout();
-                    }}
-                    className="w-full px-3 py-3 rounded-xl hover:bg-rose-500/10 flex items-center gap-3 text-left text-rose-400 font-bold transition cursor-pointer mt-2"
-                  >
-                    <LogOut className="w-4 h-4 text-rose-400" />
-                    <span>Log out</span>
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="bg-[#0b1b3b] px-6 py-3 border-t border-white/10 text-center">
-              <span className="text-[10px] text-slate-500 font-medium tracking-wide">
-                v2.4.1 •{' '}
-                {isBrand
-                  ? 'Brand Account'
-                  : isCreator
-                    ? 'Creator Account'
-                    : isAdmin
-                      ? 'Admin Account'
-                      : isSales
-                        ? 'Sales Account'
-                        : 'Guest Account'}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
     </section>
   );
 };
