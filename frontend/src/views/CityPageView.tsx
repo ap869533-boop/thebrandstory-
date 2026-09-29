@@ -4,7 +4,6 @@ import { usePlatform } from '../context/PlatformContext';
 import { CITIES_LIST } from '../data/initialData';
 import { CreatorCard } from '../components/common/CreatorCard';
 import { matchesCityLocation } from '../utils/location';
-import { SubPageHeader } from '../components/common/SubPageHeader';
 
 export const CityPageView: React.FC = () => {
   const { viewParams, creators, navigateTo, setFilters, cities } = usePlatform();
@@ -18,7 +17,7 @@ export const CityPageView: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#051126] text-white">
-      <SubPageHeader title={cityData.name} subtitle={`${cityData.count || cityData.influencersCount}+ Creators`} backTo="home" />
+      
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         {/* Realistic City Header Hero with Big Image & Overlaid Text */}

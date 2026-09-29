@@ -2,7 +2,6 @@ import React from 'react';
 import { ArrowLeft, Calendar, User, Clock } from 'lucide-react';
 import { usePlatform } from '../context/PlatformContext';
 import { BLOG_POSTS_DATA } from '../data/initialData';
-import { SubPageHeader } from '../components/common/SubPageHeader';
 
 export const BlogPostView: React.FC = () => {
   const { viewParams, navigateTo, blogPosts } = usePlatform();
@@ -12,7 +11,7 @@ export const BlogPostView: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#051126] text-white">
-      <SubPageHeader title="Blog" backTo="blog" />
+      
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
         {/* Back Link */}

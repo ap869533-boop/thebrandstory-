@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -37,6 +37,7 @@ import { usePlatform } from '../context/PlatformContext';
 import { Creator } from '../types';
 import { cleanInstagramHandle } from '../utils/sanitize';
 import { CreatorCard } from '../components/common/CreatorCard';
+import { apiUrl } from '../config/api';
 
 export const CreatorDetailView: React.FC = () => {
   const { username: routeUsername } = useParams<{ username: string }>();
@@ -52,16 +53,64 @@ export const CreatorDetailView: React.FC = () => {
     addCreatorReview,
   } = usePlatform();
 
-  // Resolve the profile from the URL so a reload preserves the creator that was opened.
-  // `viewParams` only exists during in-app navigation and is empty after a browser refresh.
   const requestedUsername = routeUsername || viewParams.username;
-  const creator: Creator | undefined =
-    creators.find(
-      (c) =>
-        requestedUsername
-          ? c.username.toLowerCase() === requestedUsername.toLowerCase()
-          : Boolean(viewParams.id && c.id === viewParams.id)
-    ) || (authUser?.role === 'CREATOR' && !requestedUsername ? authUser.creatorProfile : undefined);
+  const localCreator: Creator | undefined =
+    creators.find((c) => {
+      const matchesUsername = Boolean(
+        requestedUsername && c.username?.toLowerCase() === requestedUsername.toLowerCase()
+      );
+      const matchesId = Boolean(
+        (viewParams.id && c.id === viewParams.id) || (requestedUsername && c.id === requestedUsername)
+      );
+      return matchesUsername || matchesId;
+    }) || (authUser?.role === 'CREATOR' && !requestedUsername ? authUser.creatorProfile : undefined);
+
+  const [fetchedCreator, setFetchedCreator] = useState<Creator | null>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [selectedPost, setSelectedPost] = useState<any | null>(null);
+  const [showRatingForm, setShowRatingForm] = useState(false);
+  const [ratingBrand, setRatingBrand] = useState('');
+  const [ratingStars, setRatingStars] = useState(5);
+  const [ratingDeliverable, setRatingDeliverable] = useState('Instagram Reel (1x)');
+  const [ratingComment, setRatingComment] = useState('');
+  const [ratingSubmitted, setRatingSubmitted] = useState(false);
+
+  // Protect direct profile URLs as well as navigation from creator cards.
+  useEffect(() => {
+    if (!authUser) navigateTo('login', { mode: 'login' });
+  }, [authUser, navigateTo]);
+
+  // Cards can be loaded from sections that have more than the initial creator
+  // list. Load the individual profile so every active creator remains viewable.
+  useEffect(() => {
+    if (!authUser || localCreator || !requestedUsername) {
+      setProfileLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setProfileLoading(true);
+    fetch(apiUrl(`/api/creators/${encodeURIComponent(requestedUsername)}`))
+      .then((response) => response.json())
+      .then((data) => {
+        if (!cancelled && data.success && data.creator) setFetchedCreator(data.creator);
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (!cancelled) setProfileLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [authUser, localCreator, requestedUsername]);
+
+  if (!authUser) return null;
+
+  const creator: Creator | undefined = localCreator || fetchedCreator || undefined;
+
+  if (profileLoading) {
+    return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-sm text-slate-300">Loading profile...</div>;
+  }
 
   if (!creator) {
     return (
@@ -79,17 +128,6 @@ export const CreatorDetailView: React.FC = () => {
       </div>
     );
   }
-
-  const [copiedLink, setCopiedLink] = useState(false);
-  const [selectedPost, setSelectedPost] = useState<any | null>(null);
-
-  // Brand Rating Form state
-  const [showRatingForm, setShowRatingForm] = useState(false);
-  const [ratingBrand, setRatingBrand] = useState('');
-  const [ratingStars, setRatingStars] = useState(5);
-  const [ratingDeliverable, setRatingDeliverable] = useState('Instagram Reel (1x)');
-  const [ratingComment, setRatingComment] = useState('');
-  const [ratingSubmitted, setRatingSubmitted] = useState(false);
 
   const isSaved = isCreatorSaved(creator.id);
   const isOwner = Boolean(
@@ -179,17 +217,18 @@ export const CreatorDetailView: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#051126] pb-16 font-sans text-white">
-      {/* 1. Sub-Header Navigation Bar - Clean & Top-Aligned */}
-      <div className="sticky top-0 z-40 bg-[#051126]/95 backdrop-blur-md border-b border-white/10 px-4 sm:px-6 lg:px-8 py-2 sm:py-2.5 shadow-lg">
-        <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
+      
+      {/* Quick Actions Bar */}
+      {/* Quick Creator Action Bar */}
+      <div className="bg-[#051126]/95 border-b border-white/10 px-4 sm:px-6 lg:px-8 py-2.5">
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-4 flex-wrap">
           <button
             onClick={() => navigateTo('explore')}
-            className="inline-flex items-center gap-2 text-xs font-bold text-slate-700 hover:text-black hover:bg-slate-100/80 px-3 py-1.5 rounded-xl border border-slate-200/70 bg-white shadow-2xs transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-300 hover:text-white transition cursor-pointer"
           >
-            <ArrowLeft className="w-3.5 h-3.5 text-slate-600" />
+            <ArrowLeft className="w-4 h-4" />
             <span>Back to Discovery</span>
           </button>
-
           <div className="flex items-center gap-2">
             <button
               onClick={() => toggleSaveCreator(creator.id)}
@@ -202,27 +241,25 @@ export const CreatorDetailView: React.FC = () => {
               <Heart className={`w-3.5 h-3.5 ${isSaved ? 'fill-rose-400 text-rose-400' : ''}`} />
               <span>{isSaved ? 'Saved' : 'Save'}</span>
             </button>
-
             <button
               onClick={handleShare}
-              className="px-3.5 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-1.5 transition cursor-pointer"
+              className="px-3.5 py-1.5 rounded-xl border border-white/10 text-xs font-bold text-slate-300 hover:bg-white/10 flex items-center gap-1.5 transition cursor-pointer"
             >
-              <Share2 className="w-3.5 h-3.5 text-slate-500" />
+              <Share2 className="w-3.5 h-3.5" />
               <span>{copiedLink ? 'Link Copied!' : 'Share'}</span>
             </button>
-
             <button
               onClick={() => {
                 if (!authUser) {
-                  openAuthModal('login', 'BRAND', 'Please log in to send a direct booking enquiry.');
+                  openAuthModal('login', 'BRAND', 'Please log in to send a booking enquiry.');
                   return;
                 }
                 openEnquiryModal(creator);
               }}
-              className="px-4 py-1.5 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-1.5 rounded-xl bg-[#D4A338] hover:bg-[#b88628] text-slate-950 text-xs font-bold shadow-sm transition flex items-center gap-1.5 cursor-pointer"
             >
-              <MessageSquare className="w-3.5 h-3.5 text-blue-400" />
-              <span>Direct Booking Enquiry</span>
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>Book Enquiry</span>
             </button>
           </div>
         </div>

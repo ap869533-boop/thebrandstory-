@@ -8,6 +8,7 @@ import { CompareDrawer } from './components/common/CompareDrawer';
 import { SavedShortlistDrawer } from './components/common/SavedShortlistDrawer';
 import { CreatorOnboardingModal } from './components/common/CreatorOnboardingModal';
 import { AuthModal } from './components/common/AuthModal';
+import { SubPageHeader } from './components/common/SubPageHeader';
 
 // Route views are code-split so visitors load only the page they open.
 const HomeView = lazy(() => import('./views/HomeView').then(({ HomeView }) => ({ default: HomeView })));
@@ -29,7 +30,10 @@ const ChatView = lazy(() => import('./views/ChatView').then(({ ChatView }) => ({
 const MainAppContent: React.FC = () => {
   return (
     <div className="dark-theme min-h-screen flex flex-col bg-[#051126] text-slate-100 font-sans antialiased selection:bg-[#D4A338]/30 selection:text-white w-full max-w-full overflow-x-hidden">
-      {/* Main Dynamic View (Navbar removed from all pages as requested) */}
+      {/* Global Navbar — shown on every page */}
+      <SubPageHeader />
+
+      {/* Main Dynamic View */}
       <main className="flex-1 w-full max-w-full overflow-x-hidden">
         <Suspense fallback={<div className="min-h-[40vh]" aria-busy="true" />}>
           <Routes>
