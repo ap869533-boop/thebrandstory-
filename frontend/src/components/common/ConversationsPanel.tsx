@@ -783,7 +783,7 @@ export const ConversationsPanel: React.FC<{
                   title={`Rate & Review ${active.peerName}`}
                 >
                   <Star className="w-3.5 h-3.5 fill-current" />
-                  <span>Save Review</span>
+                  <span>Add Review</span>
                 </button>
               </div>
             </header>
@@ -945,7 +945,7 @@ export const ConversationsPanel: React.FC<{
                               </a>
                             )}
                             <p className="text-[9px] text-white/50 mt-1.5 italic font-medium leading-tight opacity-80">
-                              (Auto-deletes in 15 days)
+                              (Auto-deletes in 30 days)
                             </p>
                           </div>
                         )}
