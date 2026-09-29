@@ -48,7 +48,8 @@ export async function listConversations(req: AuthenticatedRequest, res: Response
         cr.username as creator_username,
         bu.last_seen_at as brand_last_seen,
         cu.last_seen_at as creator_last_seen,
-        (SELECT COUNT(*) FROM messages m WHERE m.conversation_id = c.id AND m.is_read = FALSE AND m.sender_id <> ?) as unread_count
+        (SELECT COUNT(*) FROM messages m WHERE m.conversation_id = c.id AND m.is_read = FALSE AND m.sender_id <> ?) as unread_count,
+        (SELECT COUNT(*) FROM messages m WHERE m.conversation_id = c.id) as message_count
       FROM conversations c
       LEFT JOIN brand_profiles bp ON bp.user_id = c.brand_user_id
       LEFT JOIN creators cr ON cr.id = c.creator_id
@@ -93,6 +94,7 @@ export async function listConversations(req: AuthenticatedRequest, res: Response
         lastMessage: r.last_message || '',
         lastMessageAt: r.last_message_at,
         unreadCount: Number(r.unread_count) || 0,
+        messageCount: Number(r.message_count) || 0,
         online: isOnline(peerLastSeen, onlineUserIds, peerUserId),
         createdAt: r.created_at,
         peerTyping: (() => {
