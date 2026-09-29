@@ -232,6 +232,21 @@ a.bg-blue-500 svg {
   color: #64748b !important;
 }
 
+/* Shared page navbar search must remain white in the dark application shell. */
+.dark-theme .subpage-search-form {
+  background-color: #ffffff !important;
+  border-color: #ffffff !important;
+}
+
+.dark-theme .subpage-search-input {
+  background-color: transparent !important;
+  color: #0f172a !important;
+}
+
+.dark-theme .subpage-search-input::placeholder {
+  color: #64748b !important;
+}
+
 .dark-theme .hero-signin-button {
   color: #0f172a !important;
 }

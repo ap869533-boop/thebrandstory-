@@ -384,7 +384,7 @@ export const HomeHero: React.FC = () => {
       {/* TOP HEADER */}
       {/* ------------------------------------------------------------------ */}
 
-      <div className="w-full max-w-xl md:max-w-none mx-auto relative z-20 flex items-center justify-between gap-3 sm:gap-4 pt-2 pb-4 md:grid md:grid-cols-[1fr_64px] md:gap-5 md:pb-6">
+      <div className="w-full max-w-xl md:max-w-none mx-auto relative z-20 flex items-center justify-between gap-3 sm:gap-4 pt-2 pb-4 md:gap-5 md:pb-6">
         {/* Desktop Logo */}
         <button
           type="button"
@@ -403,7 +403,7 @@ export const HomeHero: React.FC = () => {
         {/* Search */}
         <form
           onSubmit={handleSearchSubmit}
-          className="hero-search-form flex-1 relative flex items-center bg-white backdrop-blur-md rounded-full border border-white px-4 sm:px-6 py-2.5 sm:py-3.5 md:absolute md:left-[64%] md:-translate-x-1/2 md:w-[580px] md:h-[54px] md:py-0 md:px-6 transition-all shadow-lg shadow-black/10 group"
+          className="hero-search-form flex-1 relative flex items-center bg-white backdrop-blur-md rounded-full border border-white px-4 sm:px-6 py-2.5 sm:py-3.5 md:ml-auto md:flex-none md:w-[580px] md:h-[54px] md:py-0 md:px-6 transition-all shadow-lg shadow-black/10 group"
         >
           <Search className="w-4 h-4 sm:w-5 sm:h-5 text-[#3977c9] shrink-0 mr-2.5 sm:mr-3.5" />
 
@@ -434,7 +434,7 @@ export const HomeHero: React.FC = () => {
           onClick={() => setMobileMenuOpen(true)}
           title="Open Menu"
           aria-label="Open menu"
-          className="hero-menu-button w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-2xl md:rounded-[20px] bg-white md:bg-transparent hover:bg-slate-100 text-slate-950 md:text-[#8eb6ff] md:border-2 md:border-[#8eb6ff] flex items-center justify-center transition-all duration-200 shadow-md md:shadow-none cursor-pointer shrink-0"
+          className="hero-menu-button w-[46px] h-[46px] sm:w-[52px] sm:h-[52px] md:w-[54px] md:h-[54px] rounded-2xl md:rounded-[20px] bg-white md:bg-transparent hover:bg-slate-100 text-slate-950 md:text-[#8eb6ff] md:border-2 md:border-[#8eb6ff] flex items-center justify-center transition-all duration-200 shadow-md md:shadow-none cursor-pointer shrink-0"
         >
           <Menu className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 stroke-[2]" />
         </button>
