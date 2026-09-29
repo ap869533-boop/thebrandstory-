@@ -108,9 +108,15 @@ export const ConversationsPanel: React.FC<{
   // WhatsApp-style "Contact Info" Drawer State (View-Only)
   const [showContactInfo, setShowContactInfo] = useState(false);
   const [showEnlargedPhoto, setShowEnlargedPhoto] = useState(false);
+  const [enlargedPhotoUrl, setEnlargedPhotoUrl] = useState<string | null>(null);
 
   // Mobile navigation state
   const [mobileShowChat, setMobileShowChat] = useState(Boolean(openConversationId));
+
+  // Instagram-style Filter States
+  const [activeFilter, setActiveFilter] = useState<'all' | 'pitches' | 'inquiry'>('all');
+  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -198,16 +204,54 @@ export const ConversationsPanel: React.FC<{
   const active = threads.find((t) => t.id === activeId) || null;
   const revieweeLabel = authUser?.role === 'BRAND' ? 'Creator' : 'Brand';
 
-  // Filter threads by search input
+  // Filter threads by search input and instagram-style filters
   const filteredThreads = useMemo(() => {
-    if (!searchQuery.trim()) return threads;
-    const q = searchQuery.toLowerCase();
-    return threads.filter(
-      (t) =>
-        t.peerName.toLowerCase().includes(q) ||
-        (t.lastMessage && t.lastMessage.toLowerCase().includes(q))
-    );
-  }, [threads, searchQuery]);
+    let result = threads;
+
+    // 1. Filter by category (All, Pitches, Inquiry)
+    if (activeFilter === 'pitches') {
+      result = result.filter(t => t.campaignId);
+    } else if (activeFilter === 'inquiry') {
+      result = result.filter(t => t.inquiryId);
+    } else if (activeFilter === 'all') {
+      // Exclude pitches and inquiries from the default 'all' view UNLESS they have > 3 messages
+      result = result.filter(t => (!t.campaignId && !t.inquiryId) || (t.messageCount && t.messageCount > 3));
+    }
+
+    // 2. Filter by unread
+    if (showUnreadOnly) {
+      result = result.filter(t => t.unreadCount > 0);
+    }
+
+    // 3. Filter by search query
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (t) =>
+          t.peerName.toLowerCase().includes(q) ||
+          (t.lastMessage && t.lastMessage.toLowerCase().includes(q))
+      );
+    }
+
+    return result;
+  }, [threads, searchQuery, activeFilter, showUnreadOnly]);
+
+  // Calculate unread thread counts for each category
+  const unreadCounts = useMemo(() => {
+    let all = 0;
+    let pitches = 0;
+    let inquiry = 0;
+    for (const t of threads) {
+      if (t.unreadCount > 0) {
+        if (t.campaignId) pitches++;
+        if (t.inquiryId) inquiry++;
+        if ((!t.campaignId && !t.inquiryId) || (t.messageCount && t.messageCount > 3)) {
+          all++;
+        }
+      }
+    }
+    return { all, pitches, inquiry };
+  }, [threads]);
 
   // Handle typing indicator
   useEffect(() => {
@@ -380,7 +424,7 @@ export const ConversationsPanel: React.FC<{
           LEFT SIDEBAR: CONVERSATION LIST (WhatsApp Web Theme)
       ======================================================== */}
       <aside
-        className={`md:col-span-4 lg:col-span-4 bg-[#0e172a] border-r border-white/10 flex flex-col h-full ${
+        className={`md:col-span-4 lg:col-span-4 bg-[#0e172a] border-r border-white/10 flex flex-col h-full min-h-0 ${
           mobileShowChat ? 'hidden md:flex' : 'flex'
         }`}
       >
@@ -419,6 +463,133 @@ export const ConversationsPanel: React.FC<{
                 <X className="w-3.5 h-3.5" />
               </button>
             )}
+          </div>
+        </div>
+
+        {/* Instagram-style Filter Pills */}
+        <div className="px-3 py-2 bg-[#0c1527] border-b border-white/5 flex items-center shrink-0 relative z-40">
+          {/* Dropdown for extra filters */}
+          <div className="relative shrink-0 pr-2">
+            <button
+              onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+              className="px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-full text-[11px] font-semibold text-slate-300 flex items-center gap-1.5 transition whitespace-nowrap border border-white/5"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+              Filter
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform ${showFilterDropdown ? 'rotate-180' : ''}`}><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            {showFilterDropdown && (
+              <div className="absolute top-full mt-1 left-0 w-40 bg-[#16233d] border border-white/10 shadow-2xl rounded-xl p-1.5 z-50 animate-in fade-in zoom-in-95">
+                <button
+                  onClick={() => {
+                    setActiveFilter('all');
+                    setShowFilterDropdown(false);
+                  }}
+                  className="w-full text-left px-3 py-2 text-xs hover:bg-white/5 rounded-lg flex items-center justify-between transition"
+                >
+                  <span className={activeFilter === 'all' ? 'text-white font-semibold' : 'text-slate-300'}>All</span>
+                  {activeFilter === 'all' && <Check className="w-3.5 h-3.5 text-white" />}
+                </button>
+
+                <button
+                  onClick={() => {
+                    setShowUnreadOnly(!showUnreadOnly);
+                    setShowFilterDropdown(false);
+                  }}
+                  className="w-full text-left px-3 py-2 text-xs hover:bg-white/5 rounded-lg flex items-center justify-between transition"
+                >
+                  <span className={showUnreadOnly ? 'text-[#D4A338] font-semibold' : 'text-slate-300'}>Unread</span>
+                  {showUnreadOnly && <Check className="w-3.5 h-3.5 text-[#D4A338]" />}
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveFilter('pitches');
+                    setShowFilterDropdown(false);
+                  }}
+                  className="w-full text-left px-3 py-2 text-xs hover:bg-white/5 rounded-lg flex items-center justify-between transition"
+                >
+                  <span className={activeFilter === 'pitches' ? 'text-[#D4A338] font-semibold' : 'text-slate-300'}>Pitches</span>
+                  {activeFilter === 'pitches' && <Check className="w-3.5 h-3.5 text-[#D4A338]" />}
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveFilter('inquiry');
+                    setShowFilterDropdown(false);
+                  }}
+                  className="w-full text-left px-3 py-2 text-xs hover:bg-white/5 rounded-lg flex items-center justify-between transition"
+                >
+                  <span className={activeFilter === 'inquiry' ? 'text-emerald-400 font-semibold' : 'text-slate-300'}>Inquiry</span>
+                  {activeFilter === 'inquiry' && <Check className="w-3.5 h-3.5 text-emerald-400" />}
+                </button>
+
+                <div className="h-px w-full bg-white/5 my-1" />
+                <button
+                  onClick={() => {
+                    setActiveFilter('all');
+                    setShowUnreadOnly(false);
+                    setShowFilterDropdown(false);
+                  }}
+                  className="w-full text-left px-3 py-2 text-xs hover:bg-white/5 rounded-lg text-rose-400 transition"
+                >
+                  Clear Filters
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="w-px h-4 bg-white/10 shrink-0 mx-1" />
+
+          {/* Primary Pills */}
+          <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pl-2 flex-1">
+            <button
+            onClick={() => setActiveFilter('all')}
+            className={`px-3 py-1.5 rounded-full text-[11px] font-semibold transition whitespace-nowrap flex items-center gap-1.5 shrink-0 ${
+              activeFilter === 'all'
+                ? 'bg-[#182647] text-white border border-white/10'
+                : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
+            }`}
+          >
+            All
+            {unreadCounts.all > 0 && (
+              <span className={`px-1.5 py-0.5 rounded-full text-[9px] ${activeFilter === 'all' ? 'bg-white/20' : 'bg-white/10 text-white'}`}>
+                {unreadCounts.all}
+              </span>
+            )}
+          </button>
+          
+          <button
+            onClick={() => setActiveFilter('pitches')}
+            className={`px-3 py-1.5 rounded-full text-[11px] font-semibold transition whitespace-nowrap flex items-center gap-1.5 shrink-0 ${
+              activeFilter === 'pitches'
+                ? 'bg-[#182647] text-[#D4A338] border border-[#D4A338]/30'
+                : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
+            }`}
+          >
+            Pitches
+            {unreadCounts.pitches > 0 && (
+              <span className={`px-1.5 py-0.5 rounded-full text-[9px] ${activeFilter === 'pitches' ? 'bg-[#D4A338]/20' : 'bg-[#D4A338]/10 text-[#D4A338]'}`}>
+                {unreadCounts.pitches}
+              </span>
+            )}
+          </button>
+          
+          <button
+            onClick={() => setActiveFilter('inquiry')}
+            className={`px-3 py-1.5 rounded-full text-[11px] font-semibold transition whitespace-nowrap flex items-center gap-1.5 shrink-0 ${
+              activeFilter === 'inquiry'
+                ? 'bg-[#182647] text-emerald-400 border border-emerald-500/30'
+                : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
+            }`}
+          >
+            Inquiry
+            {unreadCounts.inquiry > 0 && (
+              <span className={`px-1.5 py-0.5 rounded-full text-[9px] ${activeFilter === 'inquiry' ? 'bg-emerald-500/20' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                {unreadCounts.inquiry}
+              </span>
+            )}
+          </button>
           </div>
         </div>
 
@@ -523,7 +694,7 @@ export const ConversationsPanel: React.FC<{
           RIGHT PANEL: ACTIVE CHAT SCREEN (WhatsApp Styled)
       ======================================================== */}
       <section
-        className={`md:col-span-8 lg:col-span-8 flex flex-col h-full bg-[#08101e] relative ${
+        className={`md:col-span-8 lg:col-span-8 flex flex-col h-full min-h-0 bg-[#08101e] relative ${
           !mobileShowChat ? 'hidden md:flex' : 'flex'
         }`}
       >
@@ -612,7 +783,7 @@ export const ConversationsPanel: React.FC<{
                   title={`Rate & Review ${active.peerName}`}
                 >
                   <Star className="w-3.5 h-3.5 fill-current" />
-                  <span>Save Review</span>
+                  <span>Add Review</span>
                 </button>
               </div>
             </header>
@@ -707,7 +878,7 @@ export const ConversationsPanel: React.FC<{
             )}
 
             {/* Main Chat Area With Optional Right Side "Contact Info" Drawer */}
-            <div className="flex-1 flex overflow-hidden relative">
+            <div className="flex-1 flex min-h-0 overflow-hidden relative">
               {/* ========================================================
                   CHAT MESSAGES AREA: Crisp White WhatsApp Doodle Pattern
               ======================================================== */}
@@ -759,7 +930,12 @@ export const ConversationsPanel: React.FC<{
                         {m.attachmentUrl && (
                           <div className="mb-2">
                             {m.attachmentType === 'image' ? (
-                              <img src={apiUrl(m.attachmentUrl)} alt={m.attachmentName || 'Attachment'} className="max-w-full rounded-lg max-h-[300px] object-contain bg-black/20" />
+                              <img 
+                                src={apiUrl(m.attachmentUrl)} 
+                                alt={m.attachmentName || 'Attachment'} 
+                                className="max-w-full rounded-lg max-h-[300px] object-contain bg-black/20 cursor-pointer hover:opacity-90 transition-opacity" 
+                                onClick={() => setEnlargedPhotoUrl(apiUrl(m.attachmentUrl!))}
+                              />
                             ) : m.attachmentType === 'video' ? (
                               <video src={apiUrl(m.attachmentUrl)} controls className="max-w-full rounded-lg max-h-[300px] object-contain bg-black/20" />
                             ) : (
@@ -769,7 +945,7 @@ export const ConversationsPanel: React.FC<{
                               </a>
                             )}
                             <p className="text-[9px] text-white/50 mt-1.5 italic font-medium leading-tight opacity-80">
-                              (Auto-deletes in 15 days)
+                              (Auto-deletes in 30 days)
                             </p>
                           </div>
                         )}
@@ -862,7 +1038,7 @@ export const ConversationsPanel: React.FC<{
             {/* ========================================================
                 BOTTOM INPUT BAR (WhatsApp Style)
             ======================================================== */}
-            <div className="relative">
+            <div className="relative shrink-0 z-40">
               {showEmojiPicker && (
                 <div className="absolute bottom-full left-0 z-50 mb-2">
                   <EmojiPicker
@@ -948,6 +1124,31 @@ export const ConversationsPanel: React.FC<{
           </>
         )}
       </section>
+
+      {/* Enlarged Photo Modal */}
+      {enlargedPhotoUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full h-full flex flex-col">
+            <div className="absolute top-0 right-0 p-4 sm:p-6 z-50">
+              <button
+                type="button"
+                onClick={() => setEnlargedPhotoUrl(null)}
+                className="p-3 bg-black/50 hover:bg-black/80 rounded-full text-white transition cursor-pointer"
+                title="Close"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="flex-1 w-full p-4 sm:p-8 flex items-center justify-center overflow-hidden">
+              <img 
+                src={enlargedPhotoUrl} 
+                alt="Enlarged" 
+                className="max-w-full max-h-full object-contain drop-shadow-2xl rounded-xl"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

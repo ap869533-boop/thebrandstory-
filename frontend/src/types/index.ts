@@ -255,6 +255,7 @@ export interface ConversationThread {
   lastMessage: string;
   lastMessageAt?: string | null;
   unreadCount: number;
+  messageCount?: number;
   online: boolean;
   peerTyping?: boolean;
   createdAt?: string;

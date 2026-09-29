@@ -142,11 +142,55 @@ export async function createBrandInquiry(req: AuthenticatedRequest, res: Respons
     }
 
     const trackingId = `SC-BRAND-INQ-${Math.floor(10000 + Math.random() * 90000)}`;
+    const inquiryMessage = String(data.message).trim();
+    let conversationId = `conv_${Date.now()}`;
 
+    // Auto-create conversation
+    try {
+      await dbQuery(
+        `INSERT INTO conversations (id, brand_user_id, creator_id, creator_user_id, campaign_id, inquiry_id, last_message, last_message_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+        [
+          conversationId,
+          brandId,
+          creatorId,
+          req.user.id,
+          campaignId || null,
+          trackingId,
+          inquiryMessage,
+        ]
+      );
+    } catch (err: any) {
+      if (err?.code === 'ER_DUP_ENTRY') {
+        const existing: any = await dbQuery(
+          `SELECT id FROM conversations WHERE brand_user_id = ? AND creator_id = ? AND (campaign_id <=> ?) LIMIT 1`,
+          [brandId, creatorId, campaignId || null]
+        );
+        if (Array.isArray(existing) && existing.length > 0) {
+          conversationId = existing[0].id;
+          await dbQuery(
+            `UPDATE conversations SET inquiry_id = ?, last_message = ?, last_message_at = NOW() WHERE id = ?`,
+            [trackingId, inquiryMessage, conversationId]
+          );
+        }
+      } else {
+        throw err;
+      }
+    }
+
+    // Insert the inquiry as the first chat message
+    const messageId = `msg_${Date.now()}_${Math.floor(Math.random()*1000)}`;
     await dbQuery(
-      `INSERT INTO brand_inquiries (id, creator_id, creator_name, creator_avatar, brand_id, brand_name, campaign_id, message, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'New')`,
-      [trackingId, creatorId, creatorName, creatorAvatar, brandId, brandName, campaignId, String(data.message).trim()]
+      `INSERT INTO messages (id, conversation_id, sender_id, sender_role, body, is_read, created_at)
+       VALUES (?, ?, ?, ?, ?, 0, NOW())`,
+      [messageId, conversationId, req.user.id, req.user.role, inquiryMessage]
+    );
+
+    // Insert the inquiry record
+    await dbQuery(
+      `INSERT INTO brand_inquiries (id, creator_id, creator_name, creator_avatar, brand_id, brand_name, campaign_id, message, status, conversation_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'New', ?)`,
+      [trackingId, creatorId, creatorName, creatorAvatar, brandId, brandName, campaignId, inquiryMessage, conversationId]
     );
 
     const inquiry = {
@@ -157,9 +201,9 @@ export async function createBrandInquiry(req: AuthenticatedRequest, res: Respons
       brandId,
       brandName,
       campaignId,
-      message: String(data.message).trim(),
+      message: inquiryMessage,
       status: 'New',
-      conversationId: null,
+      conversationId,
       createdAt: 'Just now',
     };
 

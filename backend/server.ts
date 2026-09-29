@@ -166,13 +166,13 @@ async function startServer() {
     console.log(`🚀 thebrandsstory. Backend API Server running on http://localhost:${PORT}`);
   });
 
-  // Start media auto-cleanup job (Deletes files older than 15 days)
+  // Start media auto-cleanup job (Deletes files older than 30 days)
   setInterval(async () => {
     try {
       const rows: any = await dbQuery(`
         SELECT id, attachment_url FROM messages 
         WHERE attachment_url IS NOT NULL 
-        AND created_at < DATE_SUB(NOW(), INTERVAL 15 DAY)
+        AND created_at < DATE_SUB(NOW(), INTERVAL 30 DAY)
       `);
       if (Array.isArray(rows) && rows.length > 0) {
         for (const row of rows) {
