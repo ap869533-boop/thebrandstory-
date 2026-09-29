@@ -4,6 +4,9 @@ import { AuthenticatedRequest } from '../middleware/authMiddleware';
 
 const ONLINE_THRESHOLD_MS = 90_000;
 
+// conversationId -> Map<userId, expireTimeMs>
+export const typingUsers = new Map<string, Map<string, number>>();
+
 async function resolveParticipantIds(user: { id: string; role: string }) {
   if (user.role === 'CREATOR') {
     const rows: any = await dbQuery('SELECT id, user_id FROM creators WHERE id = ? OR user_id = ? LIMIT 1', [
@@ -92,6 +95,18 @@ export async function listConversations(req: AuthenticatedRequest, res: Response
         unreadCount: Number(r.unread_count) || 0,
         online: isOnline(peerLastSeen, onlineUserIds, peerUserId),
         createdAt: r.created_at,
+        peerTyping: (() => {
+          if (!peerUserId) return false;
+          const convMap = typingUsers.get(r.id);
+          if (!convMap) return false;
+          const expire = convMap.get(peerUserId);
+          if (!expire) return false;
+          if (Date.now() > expire) {
+            convMap.delete(peerUserId);
+            return false;
+          }
+          return true;
+        })(),
       };
     });
 
@@ -137,6 +152,19 @@ export async function getMessages(req: AuthenticatedRequest, res: Response) {
 
     res.json({
       success: true,
+      peerTyping: (() => {
+        const peerUserId = req.user.role === 'BRAND' ? conv.creator_user_id : conv.brand_user_id;
+        if (!peerUserId) return false;
+        const convMap = typingUsers.get(id);
+        if (!convMap) return false;
+        const expire = convMap.get(peerUserId);
+        if (!expire) return false;
+        if (Date.now() > expire) {
+          convMap.delete(peerUserId);
+          return false;
+        }
+        return true;
+      })(),
       messages: (Array.isArray(msgs) ? msgs : []).map((m: any) => ({
         id: m.id,
         conversationId: m.conversation_id,
@@ -204,6 +232,28 @@ export async function sendMessage(req: AuthenticatedRequest, res: Response) {
   } catch (error) {
     console.error('sendMessage error:', error);
     res.status(500).json({ success: false, error: 'Failed to send message' });
+  }
+}
+
+export async function setTypingStatus(req: AuthenticatedRequest, res: Response) {
+  try {
+    if (!req.user) return res.status(401).json({ success: false, error: 'Authentication required' });
+    const { id } = req.params;
+    const { isTyping } = req.body;
+    
+    if (!typingUsers.has(id)) typingUsers.set(id, new Map());
+    const convTyping = typingUsers.get(id)!;
+    
+    if (isTyping) {
+      convTyping.set(req.user.id, Date.now() + 6000); // Expire in 6 seconds
+    } else {
+      convTyping.delete(req.user.id);
+    }
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('setTypingStatus error:', error);
+    res.status(500).json({ success: false, error: 'Failed to set typing status' });
   }
 }
 
