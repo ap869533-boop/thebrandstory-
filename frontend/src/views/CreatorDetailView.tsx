@@ -37,6 +37,7 @@ import { Creator } from '../types';
 import { cleanInstagramHandle } from '../utils/sanitize';
 import { CreatorCard } from '../components/common/CreatorCard';
 import { apiUrl } from '../config/api';
+import { EditCreatorProfileForm } from '../components/common/EditCreatorProfileForm';
 
 export const CreatorDetailView: React.FC = () => {
   const { username: routeUsername } = useParams<{ username: string }>();
@@ -75,6 +76,7 @@ export const CreatorDetailView: React.FC = () => {
   const [ratingDeliverable, setRatingDeliverable] = useState('Instagram Reel (1x)');
   const [ratingComment, setRatingComment] = useState('');
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [profileDraft, setProfileDraft] = useState<Record<string, string>>({});
 
@@ -140,6 +142,10 @@ export const CreatorDetailView: React.FC = () => {
       (authUser.name && creator.name && authUser.name.toLowerCase() === creator.name.toLowerCase())
     )
   );
+
+  const fullCreator = (isOwner && authUser?.creatorProfile)
+    ? { ...creator, ...authUser.creatorProfile, id: creator.id }
+    : creator;
 
   const startEditingProfile = () => {
     setProfileDraft({
@@ -244,6 +250,20 @@ export const CreatorDetailView: React.FC = () => {
       
       {/* Main Content Container */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 sm:pt-4 pb-8 space-y-6">
+        
+        {isEditing ? (
+          <EditCreatorProfileForm 
+            creator={fullCreator} 
+            onSave={async (updates) => {
+              await updateCreatorProfile(fullCreator.id, updates);
+              setIsEditing(false);
+              // Force local reload by setting fetched creator or reloading page
+              window.location.reload();
+            }} 
+            onCancel={() => setIsEditing(false)} 
+          />
+        ) : (
+        <>
         {/* Profile Hero Section */}
         <section className="rounded-3xl border border-white/10 bg-white/5 p-5 sm:rounded-[2.5rem] sm:p-8 lg:p-10">
           <div className="flex flex-col md:flex-row items-center md:items-stretch gap-6 lg:gap-10">
@@ -325,7 +345,7 @@ export const CreatorDetailView: React.FC = () => {
                 {isOwner ? (
                   <button
                     type="button"
-                    onClick={() => navigateTo('opportunities')}
+                    onClick={() => setIsEditing(true)}
                     className="inline-flex items-center gap-2 rounded-xl bg-[#D4A338] hover:bg-[#c2912a] px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md shadow-[#D4A338]/20 transition cursor-pointer active:scale-95"
                   >
                     <Edit3 className="w-4 h-4" />
@@ -753,6 +773,8 @@ export const CreatorDetailView: React.FC = () => {
             </div>
           )}
         </div>
+        </>
+        )}
       </div>
 
       {/* 9. Interactive Video Deliverable Analytics Modal */}

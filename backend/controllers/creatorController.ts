@@ -39,6 +39,8 @@ export function mapDbRowToCreator(row: any): Creator {
     languages: typeof row.languages === 'string' ? JSON.parse(row.languages) : (row.languages || []),
     gender: row.gender || undefined,
     ageGroup: row.age_group || '',
+    phone: row.phone || '',
+    email: row.email || '',
     followers: Number(row.followers) || 0,
     rating: Number(row.rating) || 0,
     totalPosts: Number(row.total_posts) || 0,
@@ -676,7 +678,9 @@ export async function updateCreator(req: AuthenticatedRequest, res: Response) {
         collaboration_types = COALESCE(?, collaboration_types),
         audience = COALESCE(?, audience),
         latitude = COALESCE(?, latitude),
-        longitude = COALESCE(?, longitude)
+        longitude = COALESCE(?, longitude),
+        phone = COALESCE(?, phone),
+        email = COALESCE(?, email)
        WHERE id = ?`,
       [
         body.name !== undefined ? body.name : null,
@@ -717,6 +721,8 @@ export async function updateCreator(req: AuthenticatedRequest, res: Response) {
         body.audience !== undefined ? JSON.stringify(body.audience) : null,
         body.latitude !== undefined ? body.latitude : null,
         body.longitude !== undefined ? body.longitude : null,
+        body.phone !== undefined ? body.phone : null,
+        body.email !== undefined ? body.email : null,
         id,
       ]
     );
