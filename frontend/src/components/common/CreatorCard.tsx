@@ -20,6 +20,7 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({
 }) => {
   const {
     navigateTo,
+    authUser,
     isCreatorSaved,
     toggleSaveCreator,
   } = usePlatform();
@@ -40,6 +41,10 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({
 
   const handleCardClick = (event: React.MouseEvent) => {
     if (!interactive) return;
+    if (!authUser) {
+      navigateTo('login', { mode: 'login' });
+      return;
+    }
     // Touch devices do not have hover: the first tap previews the reel and the
     // next tap keeps the original card-navigation behaviour.
     const isTouchLayout = typeof window !== 'undefined'

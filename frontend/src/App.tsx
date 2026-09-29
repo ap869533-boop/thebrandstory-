@@ -24,6 +24,7 @@ const BlogView = lazy(() => import('./views/BlogView').then(({ BlogView }) => ({
 const BlogPostView = lazy(() => import('./views/BlogPostView').then(({ BlogPostView }) => ({ default: BlogPostView })));
 const BrandDetailView = lazy(() => import('./views/BrandDetailView').then(({ BrandDetailView }) => ({ default: BrandDetailView })));
 const LoginView = lazy(() => import('./views/LoginView').then(({ LoginView }) => ({ default: LoginView })));
+const ChatView = lazy(() => import('./views/ChatView').then(({ ChatView }) => ({ default: ChatView })));
 
 const MainAppContent: React.FC = () => {
   return (
@@ -34,6 +35,7 @@ const MainAppContent: React.FC = () => {
           <Routes>
             <Route path="/" element={<HomeView />} />
             <Route path="/login" element={<LoginView />} />
+            <Route path="/chat" element={<ChatView />} />
             <Route path="/explore" element={<ExploreView />} />
             <Route path="/creator/:username" element={<CreatorDetailView />} />
             <Route path="/brand/:brandId" element={<BrandDetailView />} />

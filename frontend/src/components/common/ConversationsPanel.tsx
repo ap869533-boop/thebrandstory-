@@ -4,7 +4,7 @@ import { apiUrl, authHeaders } from '../../config/api';
 import type { ChatMessage, ConversationThread } from '../../types';
 import { usePlatform } from '../../context/PlatformContext';
 
-export const ConversationsPanel: React.FC<{ openConversationId?: string | null }> = ({ openConversationId }) => {
+export const ConversationsPanel: React.FC<{ openConversationId?: string | null; fullPage?: boolean }> = ({ openConversationId, fullPage = false }) => {
   const { authUser } = usePlatform();
   const [threads, setThreads] = useState<ConversationThread[]>([]);
   const [activeId, setActiveId] = useState<string | null>(openConversationId || null);
@@ -114,8 +114,8 @@ export const ConversationsPanel: React.FC<{ openConversationId?: string | null }
   if (!authUser) return null;
 
   return (
-    <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden min-h-[520px] grid grid-cols-1 md:grid-cols-12">
-      <aside className="md:col-span-4 border-b md:border-b-0 md:border-r border-slate-100 max-h-[280px] md:max-h-[640px] overflow-y-auto">
+    <div className={`bg-white rounded-3xl border border-slate-200 overflow-hidden min-h-[520px] grid grid-cols-1 md:grid-cols-12 ${fullPage ? 'md:min-h-[calc(100vh-10rem)]' : ''}`}>
+      <aside className={`md:col-span-4 border-b md:border-b-0 md:border-r border-slate-100 max-h-[280px] overflow-y-auto ${fullPage ? 'md:max-h-none' : 'md:max-h-[640px]'}`}>
         <div className="px-4 py-3 border-b border-slate-100">
           <h3 className="font-black text-slate-900 text-sm flex items-center gap-2">
             <MessageSquare className="w-4 h-4 text-[#D4A338]" />
@@ -215,7 +215,7 @@ export const ConversationsPanel: React.FC<{ openConversationId?: string | null }
               </div>
               {reviewMsg && <p className="text-[11px] text-slate-600">{reviewMsg}</p>}
             </form>
-            <div ref={listRef} className="flex-1 overflow-y-auto p-4 space-y-2 bg-slate-50/60 max-h-[360px]">
+            <div ref={listRef} className={`flex-1 overflow-y-auto p-4 space-y-2 bg-slate-50/60 ${fullPage ? 'md:max-h-none' : 'max-h-[360px]'}`}>
               {messages.map((m) => {
                 const mine = m.senderId === authUser.id;
                 return (

@@ -250,6 +250,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     let path = '/';
     if (view === 'home') path = '/';
     else if (view === 'login') path = '/login';
+    else if (view === 'chat') path = '/chat';
     else if (view === 'explore') path = '/explore';
     else if (view === 'creator-detail' && params.username) path = `/creator/${params.username}`;
     else if (view === 'creator-detail' && params.id) path = `/creator/${params.id}`; // fallback
