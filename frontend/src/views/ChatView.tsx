@@ -1,10 +1,15 @@
 import React, { useEffect } from 'react';
+import { useParams, useLocation } from 'react-router-dom';
 import { ConversationsPanel } from '../components/common/ConversationsPanel';
 import { usePlatform } from '../context/PlatformContext';
 
 export const ChatView: React.FC = () => {
   const { authUser, navigateTo } = usePlatform();
+  const { username } = useParams<{ username: string }>();
+  const location = useLocation();
   const canUseChat = authUser?.role === 'CREATOR' || authUser?.role === 'BRAND';
+  const openCreatorId = location.state?.creatorId;
+  const campaignId = location.state?.campaignId;
 
   useEffect(() => {
     if (!authUser) navigateTo('login', { mode: 'login' });
@@ -21,7 +26,7 @@ export const ChatView: React.FC = () => {
           <h1 className="text-2xl sm:text-3xl font-black">Live Chat</h1>
           <p className="mt-1 text-sm text-slate-400">Manage your conversations with {authUser?.role === 'BRAND' ? 'influencers' : 'brands'}.</p>
         </div>
-        <ConversationsPanel fullPage />
+        <ConversationsPanel fullPage openUsername={username} openCreatorId={openCreatorId} campaignId={campaignId} />
       </main>
     </div>
   );

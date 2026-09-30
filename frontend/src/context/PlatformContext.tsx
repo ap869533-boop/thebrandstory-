@@ -261,7 +261,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     else if (view === 'post-requirement') path = '/post-requirement';
     else if (view === 'opportunities') path = '/opportunities';
     else if (view === 'brand-campaigns' && params.slug) path = `/brand/${encodeURIComponent(params.slug)}/campaigns`;
-    else if (view === 'brand-profile' && params.slug) path = `/brand/${encodeURIComponent(params.slug)}/profile`;
+    else if (view === 'brand-profile' && params.slug) path = `/brand/${encodeURIComponent(params.slug)}`;
     else if (view === 'wallet') path = '/wallet';
     else if (view === 'admin-dashboard') path = '/admin';
     else if (view === 'blog') path = '/blog';

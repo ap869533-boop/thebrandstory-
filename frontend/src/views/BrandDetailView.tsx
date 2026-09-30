@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import {
   Building2,
   MapPin,
@@ -22,11 +23,13 @@ import {
   TrendingUp,
   Clock,
   Repeat,
-  Check
+  Check,
+  Edit3
 } from 'lucide-react';
 import { usePlatform } from '../context/PlatformContext';
 import { BrandProfile, CampaignRequirement } from '../types';
-import { apiUrl } from '../config/api';
+import { apiUrl, authHeaders } from '../config/api';
+import { EditBrandProfileForm } from '../components/common/EditBrandProfileForm';
 
 export const BrandDetailView: React.FC = () => {
   const {
@@ -39,12 +42,19 @@ export const BrandDetailView: React.FC = () => {
     requireRole,
     isBrandSaved,
     toggleSaveBrand,
-    submitBrandInquiry
+    submitBrandInquiry,
+    setAuthUser
   } = usePlatform();
+  
+  const { brandId: urlBrandId } = useParams<{ brandId: string }>();
 
   const [brand, setBrand] = useState<Partial<BrandProfile> | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'campaigns' | 'reviews' | 'about'>('campaigns');
+  
+  // Edit Profile state
+  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   // Modal pitch state
   const [selectedCampaign, setSelectedCampaign] = useState<CampaignRequirement | null>(null);
@@ -67,9 +77,29 @@ export const BrandDetailView: React.FC = () => {
           const match = d.brands.find(
             (b: any) =>
               (viewParams.id && (b.id === viewParams.id || b.userId === viewParams.id)) ||
-              (viewParams.brandName && b.brandName.toLowerCase() === (viewParams.brandName as string).toLowerCase())
+              (viewParams.brandName && b.brandName.toLowerCase() === (viewParams.brandName as string).toLowerCase()) ||
+              (urlBrandId && b.brandName?.toLowerCase().replace(/[^a-z0-9]+/g, '-') === urlBrandId) ||
+              (urlBrandId && b.id === urlBrandId)
           );
           if (match) {
+            // If the current user is the owner, try fetching their full profile instead
+            if (authUser?.role === 'BRAND' && (match.userId === authUser.id || match.brandName === authUser.companyName)) {
+               fetch(apiUrl('/api/brands/profile'), { headers: authHeaders() })
+                 .then(r => r.json())
+                 .then(profData => {
+                    if (profData.profile) {
+                       setBrand({ ...match, ...profData.profile });
+                    } else {
+                       setBrand(match);
+                    }
+                    setLoading(false);
+                 })
+                 .catch(() => {
+                    setBrand(match);
+                    setLoading(false);
+                 });
+               return;
+            }
             setBrand(match);
             setLoading(false);
             return;
@@ -145,8 +175,15 @@ export const BrandDetailView: React.FC = () => {
     }, 1500);
   };
 
-  const brandId = (brand?.id || (viewParams.id as string) || 'brand_1').toString();
+  const brandId = (brand?.id || (viewParams.id as string) || urlBrandId || 'brand_1').toString();
   const isSaved = isBrandSaved(brandId);
+
+  // Check if the current user is the owner of this profile
+  const isOwner = authUser?.role === 'BRAND' && (
+    brand?.userId === authUser.id ||
+    brand?.brandName === authUser.companyName ||
+    (urlBrandId && urlBrandId.toLowerCase() === authUser.companyName?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''))
+  );
 
   const handleShare = async () => {
     const shareUrl = window.location.href;
@@ -220,6 +257,48 @@ export const BrandDetailView: React.FC = () => {
     );
   }
 
+  if (isEditing) {
+    return (
+      <div className="min-h-screen bg-[#051126] px-4 py-8 text-white sm:px-8 lg:px-[8vw]">
+        <EditBrandProfileForm
+          profile={brand as any}
+          onSave={async (updates) => {
+            setSaving(true);
+            try {
+              const response = await fetch(apiUrl('/api/brands/profile'), {
+                method: 'PUT',
+                headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+                body: JSON.stringify(updates),
+              });
+              const data = await response.json();
+              if (!response.ok || !data.success)
+                throw new Error(data.error || 'Could not save profile');
+              
+              if (authUser) {
+                setAuthUser({
+                  ...authUser,
+                  name: updates.contactPerson || authUser.name,
+                  companyName: updates.brandName || authUser.companyName,
+                  phone: updates.phone,
+                  avatar: updates.logoUrl || authUser.avatar,
+                  logoUrl: updates.logoUrl || (authUser as any).logoUrl,
+                } as any);
+              }
+              setBrand({ ...brand, ...updates });
+              setIsEditing(false);
+              window.location.reload();
+            } catch (error: any) {
+              console.error(error);
+            } finally {
+              setSaving(false);
+            }
+          }}
+          onCancel={() => setIsEditing(false)}
+        />
+      </div>
+    );
+  }
+
   const sampleReviews = [
     {
       id: 'rev-1',
@@ -258,42 +337,55 @@ export const BrandDetailView: React.FC = () => {
           
           {/* Action Buttons */}
           <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
-            <button
-              onClick={() => toggleSaveBrand(brandId)}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-xs font-bold transition cursor-pointer shadow-xs whitespace-nowrap ${
-                isSaved
-                  ? 'bg-rose-500/20 border-rose-500/30 text-rose-300 hover:bg-rose-500/30'
-                  : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10 hover:text-white'
-              }`}
-            >
-              <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-rose-500 text-rose-500' : ''}`} />
-              <span>{isSaved ? 'Saved' : 'Save'}</span>
-            </button>
+            {isOwner ? (
+               <button
+                 type="button"
+                 onClick={() => setIsEditing(true)}
+                 className="flex items-center gap-1.5 px-4 md:px-5 py-1.5 rounded-full bg-[#D4A338] hover:bg-[#be8f2b] text-slate-950 text-xs font-black transition cursor-pointer shadow-xs border border-transparent whitespace-nowrap"
+               >
+                 <Edit3 className="w-3.5 h-3.5" />
+                 <span>Edit Profile</span>
+               </button>
+            ) : (
+              <>
+                <button
+                  onClick={() => toggleSaveBrand(brandId)}
+                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-xs font-bold transition cursor-pointer shadow-xs whitespace-nowrap ${
+                    isSaved
+                      ? 'bg-rose-500/20 border-rose-500/30 text-rose-300 hover:bg-rose-500/30'
+                      : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10 hover:text-white'
+                  }`}
+                >
+                  <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-rose-500 text-rose-500' : ''}`} />
+                  <span>{isSaved ? 'Saved' : 'Save'}</span>
+                </button>
 
-            <button
-              onClick={handleShare}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 text-xs font-bold transition cursor-pointer shadow-xs whitespace-nowrap"
-            >
-              {copied ? (
-                <>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  <span className="text-emerald-600">Copied!</span>
-                </>
-              ) : (
-                <>
-                  <Share2 className="w-3.5 h-3.5" />
-                  <span>Share</span>
-                </>
-              )}
-            </button>
+                <button
+                  onClick={handleShare}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 text-xs font-bold transition cursor-pointer shadow-xs whitespace-nowrap"
+                >
+                  {copied ? (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span className="text-emerald-600">Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Share2 className="w-3.5 h-3.5" />
+                      <span>Share</span>
+                    </>
+                  )}
+                </button>
 
-            <button 
-              onClick={handleInquireClick}
-              className="flex items-center gap-1.5 px-4 md:px-5 py-1.5 rounded-full bg-[#D4A338] hover:bg-[#b88628] text-white text-xs font-bold transition cursor-pointer shadow-xs border border-transparent whitespace-nowrap"
-            >
-              <MessageSquare className="w-3.5 h-3.5" />
-              <span>Inquire</span>
-            </button>
+                <button 
+                  onClick={handleInquireClick}
+                  className="flex items-center gap-1.5 px-4 md:px-5 py-1.5 rounded-full bg-[#D4A338] hover:bg-[#b88628] text-white text-xs font-bold transition cursor-pointer shadow-xs border border-transparent whitespace-nowrap"
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  <span>Inquire</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>

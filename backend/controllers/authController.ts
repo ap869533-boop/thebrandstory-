@@ -538,6 +538,15 @@ export async function login(req: Request, res: Response) {
       { expiresIn: '7d' }
     );
 
+    // Fetch logo for brand
+    let logoUrl: string | undefined = undefined;
+    if (user.role === 'BRAND') {
+      const dbBrands = await dbQuery('SELECT logo_url FROM brands WHERE user_id = ? LIMIT 1', [user.id]);
+      if (dbBrands && dbBrands.length > 0) {
+        logoUrl = dbBrands[0].logo_url || undefined;
+      }
+    }
+
     res.json({
       success: true,
       message: 'Login successful',
@@ -552,6 +561,7 @@ export async function login(req: Request, res: Response) {
         approvalStatus: user.approval_status || (user.role === 'BRAND' ? 'pending' : 'approved'),
         avatar: user.avatar,
         creatorProfile: creatorProfile || undefined,
+        logoUrl,
       },
     });
   } catch (error: any) {
