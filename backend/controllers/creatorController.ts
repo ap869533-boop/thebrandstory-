@@ -41,6 +41,8 @@ export function mapDbRowToCreator(row: any): Creator {
     ageGroup: row.age_group || '',
     phone: row.phone || '',
     email: row.email || '',
+    facebookUrl: row.facebook_url || '',
+    youtubeUrl: row.youtube_url || '',
     followers: Number(row.followers) || 0,
     rating: Number(row.rating) || 0,
     totalPosts: Number(row.total_posts) || 0,
@@ -393,7 +395,7 @@ export async function getCreatorByIdOrUsername(req: Request, res: Response) {
     } catch {
       // posts table may not exist yet on first boot
     }
-    return res.json({ success: true, creator });
+    return res.json({ success: true, creator: withoutPrivateContact(creator) });
   }
 
   // Fallback to memory store
@@ -504,11 +506,11 @@ export async function createCreator(req: Request, res: Response) {
     // Also persist in MySQL
     const creatorInsertResult = await dbQuery(
       `INSERT INTO creators (
-        id, name, username, avatar, cover_image, bio, current_city, primary_category, email, phone,
+        id, name, username, avatar, cover_image, bio, current_city, primary_category, email, phone, facebook_url, youtube_url,
         followers, total_posts, avg_views, starting_price, reel_price, story_price, post_price,
-        ugc_price, is_barter_available, collaboration_types, preferred_cities, sub_categories,
+        ugc_price, event_price, is_barter_available, collaboration_types, preferred_cities, sub_categories,
         languages, is_verified, verification_requested, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
       [
         newCreator.id,
         newCreator.name,
@@ -520,6 +522,8 @@ export async function createCreator(req: Request, res: Response) {
         newCreator.primaryCategory,
         newCreator.email || null,
         newCreator.phone || null,
+        newCreator.facebookUrl || null,
+        newCreator.youtubeUrl || null,
         newCreator.followers,
         newCreator.totalPosts,
         newCreator.avgViews,
@@ -528,6 +532,7 @@ export async function createCreator(req: Request, res: Response) {
         newCreator.pricing.storyPrice,
         newCreator.pricing.postPrice,
         newCreator.pricing.ugcPrice,
+        newCreator.pricing.eventPrice,
         newCreator.pricing.isBarterAvailable,
         JSON.stringify(newCreator.collaborationTypes),
         JSON.stringify(newCreator.preferredCities),
@@ -666,6 +671,7 @@ export async function updateCreator(req: AuthenticatedRequest, res: Response) {
         story_price = COALESCE(?, story_price),
         post_price = COALESCE(?, post_price),
         ugc_price = COALESCE(?, ugc_price),
+        event_price = COALESCE(?, event_price),
         is_negotiable = COALESCE(?, is_negotiable),
         is_barter_available = COALESCE(?, is_barter_available),
         is_verified = COALESCE(?, is_verified),
@@ -677,10 +683,13 @@ export async function updateCreator(req: AuthenticatedRequest, res: Response) {
         social_platforms = COALESCE(?, social_platforms),
         collaboration_types = COALESCE(?, collaboration_types),
         audience = COALESCE(?, audience),
+        portfolio = COALESCE(?, portfolio),
         latitude = COALESCE(?, latitude),
         longitude = COALESCE(?, longitude),
         phone = COALESCE(?, phone),
-        email = COALESCE(?, email)
+        email = COALESCE(?, email),
+        facebook_url = COALESCE(?, facebook_url),
+        youtube_url = COALESCE(?, youtube_url)
        WHERE id = ?`,
       [
         body.name !== undefined ? body.name : null,
@@ -707,7 +716,7 @@ export async function updateCreator(req: AuthenticatedRequest, res: Response) {
         body.pricing?.storyPrice !== undefined ? body.pricing.storyPrice : null,
         body.pricing?.postPrice !== undefined ? body.pricing.postPrice : null,
         body.pricing?.ugcPrice !== undefined ? body.pricing.ugcPrice : null,
-
+        body.pricing?.eventPrice !== undefined ? body.pricing.eventPrice : null,
         body.pricing?.isNegotiable !== undefined ? (body.pricing.isNegotiable ? 1 : 0) : null,
         body.pricing?.isBarterAvailable !== undefined ? (body.pricing.isBarterAvailable ? 1 : 0) : null,
         body.isVerified !== undefined ? (body.isVerified ? 1 : 0) : null,
@@ -719,10 +728,13 @@ export async function updateCreator(req: AuthenticatedRequest, res: Response) {
         body.socialPlatforms !== undefined ? JSON.stringify(body.socialPlatforms) : null,
         body.collaborationTypes !== undefined ? JSON.stringify(body.collaborationTypes) : null,
         body.audience !== undefined ? JSON.stringify(body.audience) : null,
+        body.portfolio !== undefined ? JSON.stringify(body.portfolio) : null,
         body.latitude !== undefined ? body.latitude : null,
         body.longitude !== undefined ? body.longitude : null,
         body.phone !== undefined ? body.phone : null,
         body.email !== undefined ? body.email : null,
+        body.facebookUrl !== undefined ? body.facebookUrl : null,
+        body.youtubeUrl !== undefined ? body.youtubeUrl : null,
         id,
       ]
     );

@@ -185,6 +185,8 @@ export interface Creator {
   // Contact details (Private unless enabled)
   phone?: string;
   email?: string;
+  facebookUrl?: string;
+  youtubeUrl?: string;
   isContactPublic?: boolean;
   
   // Metadata

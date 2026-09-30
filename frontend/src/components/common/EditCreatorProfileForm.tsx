@@ -34,6 +34,8 @@ export const EditCreatorProfileForm: React.FC<Props> = ({ creator, onSave, onCan
     avgComments: creator.avgComments || 0,
     avatar: creator.avatar || '',
     coverImage: creator.coverImage || '',
+    facebookUrl: creator.facebookUrl || '',
+    youtubeUrl: creator.youtubeUrl || '',
   });
 
   const [cropModalData, setCropModalData] = useState<{ src: string, type: 'avatar' | 'cover' } | null>(null);
@@ -106,6 +108,8 @@ export const EditCreatorProfileForm: React.FC<Props> = ({ creator, onSave, onCan
 
         avatar: form.avatar,
         coverImage: form.coverImage,
+        facebookUrl: form.facebookUrl,
+        youtubeUrl: form.youtubeUrl,
       });
     } catch (err: any) {
       setMessage(err.message || 'Error saving profile.');
@@ -196,9 +200,14 @@ export const EditCreatorProfileForm: React.FC<Props> = ({ creator, onSave, onCan
             <label className="block">
               <span className="text-sm font-bold text-slate-300">WhatsApp Number</span>
               <input 
+                type="text"
+                maxLength={10}
                 value={form.phone} 
-                onChange={e => update('phone', e.target.value)}
-                placeholder="+91..."
+                onChange={e => {
+                  const val = e.target.value.replace(/\D/g, '');
+                  if (val.length <= 10) update('phone', val);
+                }}
+                placeholder="10 digit number"
                 className="mt-1.5 w-full bg-[#051126] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#D4A338]/50"
               />
             </label>
@@ -211,6 +220,9 @@ export const EditCreatorProfileForm: React.FC<Props> = ({ creator, onSave, onCan
                 className="mt-1.5 w-full bg-[#051126] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#D4A338]/50"
               >
                 <option value="">Select Category</option>
+                {form.primaryCategory && !CATEGORIES_LIST.some(c => c.name === form.primaryCategory) && (
+                  <option value={form.primaryCategory}>{form.primaryCategory}</option>
+                )}
                 {CATEGORIES_LIST.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
               </select>
             </label>
@@ -223,6 +235,9 @@ export const EditCreatorProfileForm: React.FC<Props> = ({ creator, onSave, onCan
                 className="mt-1.5 w-full bg-[#051126] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#D4A338]/50"
               >
                 <option value="">Select City</option>
+                {form.currentCity && !CITIES_LIST.some(c => c.name === form.currentCity) && (
+                  <option value={form.currentCity}>{form.currentCity}</option>
+                )}
                 {CITIES_LIST.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
               </select>
             </label>
@@ -265,12 +280,37 @@ export const EditCreatorProfileForm: React.FC<Props> = ({ creator, onSave, onCan
           <label className="block mt-4">
             <span className="text-sm font-bold text-slate-300">Bio</span>
             <textarea 
+              maxLength={50}
               value={form.bio} 
               onChange={e => update('bio', e.target.value)}
               rows={4}
+              placeholder="Tell brands about yourself (Max 50 characters)"
               className="mt-1.5 w-full bg-[#051126] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#D4A338]/50 resize-none"
             />
           </label>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <label className="block">
+              <span className="text-sm font-bold text-slate-300">Facebook URL</span>
+              <input 
+                type="url"
+                value={form.facebookUrl} 
+                onChange={e => update('facebookUrl', e.target.value)}
+                placeholder="https://facebook.com/..."
+                className="mt-1.5 w-full bg-[#051126] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#D4A338]/50"
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm font-bold text-slate-300">YouTube URL</span>
+              <input 
+                type="url"
+                value={form.youtubeUrl} 
+                onChange={e => update('youtubeUrl', e.target.value)}
+                placeholder="https://youtube.com/..."
+                className="mt-1.5 w-full bg-[#051126] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#D4A338]/50"
+              />
+            </label>
+          </div>
         </div>
 
         {/* Performance Matrix */}

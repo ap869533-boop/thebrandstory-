@@ -29,7 +29,11 @@ import {
   Bookmark,
   Send,
   X,
-  Edit3
+  Edit3,
+  Facebook,
+  Youtube,
+  Trash2,
+  UploadCloud
 } from 'lucide-react';
 import { usePlatform } from '../context/PlatformContext';
 
@@ -38,6 +42,8 @@ import { cleanInstagramHandle } from '../utils/sanitize';
 import { CreatorCard } from '../components/common/CreatorCard';
 import { apiUrl } from '../config/api';
 import { EditCreatorProfileForm } from '../components/common/EditCreatorProfileForm';
+import { ImageCropperModal } from '../components/common/ImageCropperModal';
+import { authHeaders } from '../config/api';
 
 export const CreatorDetailView: React.FC = () => {
   const { username: routeUsername } = useParams<{ username: string }>();
@@ -79,6 +85,10 @@ export const CreatorDetailView: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [profileDraft, setProfileDraft] = useState<Record<string, string>>({});
+  const [isEditingRates, setIsEditingRates] = useState(false);
+  const [ratesDraft, setRatesDraft] = useState<Record<string, string>>({});
+  const [cropModalData, setCropModalData] = useState<{ src: string, type: string } | null>(null);
+  const [uploadingMedia, setUploadingMedia] = useState<string | null>(null);
 
   // Protect direct profile URLs as well as navigation from creator cards.
   useEffect(() => {
@@ -88,7 +98,7 @@ export const CreatorDetailView: React.FC = () => {
   // Cards can be loaded from sections that have more than the initial creator
   // list. Load the individual profile so every active creator remains viewable.
   useEffect(() => {
-    if (!authUser || localCreator || !requestedUsername) {
+    if (!authUser || !requestedUsername) {
       setProfileLoading(false);
       return;
     }
@@ -106,11 +116,11 @@ export const CreatorDetailView: React.FC = () => {
       });
 
     return () => { cancelled = true; };
-  }, [authUser, localCreator, requestedUsername]);
+  }, [authUser, requestedUsername]);
 
   if (!authUser) return null;
 
-  const creator: Creator | undefined = localCreator || fetchedCreator || undefined;
+  const creator: Creator | undefined = fetchedCreator || localCreator || undefined;
 
   if (profileLoading) {
     return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-sm text-slate-300">Loading profile...</div>;
@@ -165,6 +175,92 @@ export const CreatorDetailView: React.FC = () => {
     setIsEditingProfile(false);
   };
 
+  const handlePortfolioImageSelect = async (e: React.ChangeEvent<HTMLInputElement>, type: string) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) return;
+    
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropModalData({ src: reader.result as string, type });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const uploadCroppedImage = async (file: File, type: string) => {
+    setUploadingMedia(type);
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const response = await fetch(apiUrl('/api/upload'), {
+          method: 'POST',
+          headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: reader.result, creatorId: creator.id, type: type === 'cover' ? 'cover' : 'chat_attachment' })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success || !data.url) throw new Error(data.error || 'Upload failed');
+        
+        const fullUrl = apiUrl(data.url);
+        
+        if (type === 'cover') {
+          await updateCreatorProfile(creator.id, { coverImage: fullUrl });
+        } else if (type.startsWith('portfolio-')) {
+          const index = parseInt(type.replace('portfolio-', ''), 10);
+          const newPortfolio = [...(creator.portfolio || [])];
+          while (newPortfolio.length < 4) {
+            newPortfolio.push({ id: Math.random().toString(), type: 'post', title: '', thumbnail: '' } as any);
+          }
+          newPortfolio[index] = { ...newPortfolio[index], thumbnail: fullUrl };
+          await updateCreatorProfile(creator.id, { portfolio: newPortfolio });
+        }
+      } catch (err: any) {
+        console.error('Image upload failed', err);
+      } finally {
+        setUploadingMedia(null);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removePortfolioImage = async (type: string) => {
+    if (type === 'cover') {
+      await updateCreatorProfile(creator.id, { coverImage: '' });
+    } else if (type.startsWith('portfolio-')) {
+      const index = parseInt(type.replace('portfolio-', ''), 10);
+      const newPortfolio = [...(creator.portfolio || [])];
+      if (newPortfolio[index]) {
+        newPortfolio[index].thumbnail = '';
+        await updateCreatorProfile(creator.id, { portfolio: newPortfolio });
+      }
+    }
+  };
+
+  const startEditingRates = () => {
+    setRatesDraft({
+      reelPrice: String(creator.pricing?.reelPrice || 0),
+      storyPrice: String(creator.pricing?.storyPrice || 0),
+      postPrice: String(creator.pricing?.postPrice || 0),
+      ugcPrice: String(creator.pricing?.ugcPrice || 0),
+      eventPrice: String(creator.pricing?.eventPrice || 0),
+    });
+    setIsEditingRates(true);
+  };
+
+  const saveRates = async () => {
+    await updateCreatorProfile(creator.id, {
+      pricing: {
+        ...(creator.pricing || {}),
+        reelPrice: Number(ratesDraft.reelPrice || 0),
+        storyPrice: Number(ratesDraft.storyPrice || 0),
+        postPrice: Number(ratesDraft.postPrice || 0),
+        ugcPrice: Number(ratesDraft.ugcPrice || 0),
+        eventPrice: Number(ratesDraft.eventPrice || 0),
+      }
+    });
+    setIsEditingRates(false);
+  };
+
   const profileField = (key: string, value: string) => isEditingProfile
     ? <input value={profileDraft[key] ?? value} onChange={(event) => setProfileDraft((draft) => ({ ...draft, [key]: event.target.value }))} className="mt-0.5 w-full rounded-lg border border-[#D4A338]/50 bg-[#071226] px-2 py-1 text-sm font-black text-white outline-none" />
     : <p className="mt-0.5 text-sm sm:text-base font-black text-white">{value}</p>;
@@ -195,6 +291,7 @@ export const CreatorDetailView: React.FC = () => {
 
     addCreatorReview(creator.id, {
       brandName: ratingBrand.trim(),
+      brandLogo: authUser?.avatar || '',
       rating: ratingStars,
       campaignType: ratingDeliverable,
       reviewText: ratingComment.trim() || `Rated ${ratingStars} stars for ${ratingDeliverable} collaboration.`,
@@ -377,6 +474,30 @@ export const CreatorDetailView: React.FC = () => {
                   <ExternalLink className="w-4 h-4 text-slate-300" />
                   View Instagram Profile
                 </a>
+
+                {creator.facebookUrl && (
+                  <a
+                    href={creator.facebookUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-[#111827] hover:bg-[#1877F2] text-white shadow-md shadow-slate-900/15 transition cursor-pointer active:scale-95"
+                    title="View Facebook Profile"
+                  >
+                    <Facebook className="w-5 h-5" />
+                  </a>
+                )}
+
+                {creator.youtubeUrl && (
+                  <a
+                    href={creator.youtubeUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-[#111827] hover:bg-[#FF0000] text-white shadow-md shadow-slate-900/15 transition cursor-pointer active:scale-95"
+                    title="View YouTube Channel"
+                  >
+                    <Youtube className="w-5 h-5" />
+                  </a>
+                )}
               </div>
             </div>
           </div>
@@ -394,58 +515,107 @@ export const CreatorDetailView: React.FC = () => {
               </p>
             </div>
 
-            <button
-              onClick={() => {
-                if (!authUser) {
-                  openAuthModal('login', 'BRAND', 'Please log in to request a quote or book this creator.');
-                  return;
-                }
-                openEnquiryModal(creator);
-              }}
-              className="px-4 py-2 rounded-xl bg-black hover:bg-zinc-900 text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
-            >
-              <MessageSquare className="w-3.5 h-3.5" />
-              <span>Request Quote / Book</span>
-            </button>
+            {isOwner ? (
+              isEditingRates ? (
+                <div className="flex gap-2">
+                  <button onClick={() => setIsEditingRates(false)} className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs shadow-xs transition shrink-0">Cancel</button>
+                  <button onClick={saveRates} className="px-4 py-2 rounded-xl bg-[#D4A338] hover:bg-[#c2912a] text-white font-bold text-xs shadow-xs transition shrink-0">Save Rates</button>
+                </div>
+              ) : (
+                <button onClick={startEditingRates} className="px-4 py-2 rounded-xl bg-black hover:bg-zinc-900 text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer shrink-0">
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Edit Rates</span>
+                </button>
+              )
+            ) : (
+              <button
+                onClick={() => {
+                  if (!authUser) {
+                    openAuthModal('login', 'BRAND', 'Please log in to request a quote or book this creator.');
+                    return;
+                  }
+                  openEnquiryModal(creator);
+                }}
+                className="px-4 py-2 rounded-xl bg-black hover:bg-zinc-900 text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span>Request Quote / Book</span>
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70 text-center space-y-1">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Reel (1x)</span>
-              <span className="text-base font-black text-slate-900 block">
-                ₹{(creator.pricing?.reelPrice || 0).toLocaleString('en-IN')}
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">per reel</span>
+              <span className="text-base font-black text-slate-900 block flex items-center justify-center h-8">
+                {isEditingRates ? (
+                  <div className="flex items-center justify-center gap-1">
+                    <span>₹</span>
+                    <input type="number" className="w-16 px-1 py-1 text-center border border-slate-300 rounded text-sm outline-none" value={ratesDraft.reelPrice} onChange={(e) => setRatesDraft(d => ({...d, reelPrice: e.target.value}))} />
+                  </div>
+                ) : (
+                  `₹${(creator.pricing?.reelPrice || 0).toLocaleString('en-IN')}`
+                )}
               </span>
               <span className="text-[10px] text-emerald-600 font-semibold block">High Reach</span>
             </div>
 
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70 text-center space-y-1">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Story (3x)</span>
-              <span className="text-base font-black text-slate-900 block">
-                ₹{(creator.pricing?.storyPrice || 0).toLocaleString('en-IN')}
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">per story</span>
+              <span className="text-base font-black text-slate-900 block flex items-center justify-center h-8">
+                {isEditingRates ? (
+                  <div className="flex items-center justify-center gap-1">
+                    <span>₹</span>
+                    <input type="number" className="w-16 px-1 py-1 text-center border border-slate-300 rounded text-sm outline-none" value={ratesDraft.storyPrice} onChange={(e) => setRatesDraft(d => ({...d, storyPrice: e.target.value}))} />
+                  </div>
+                ) : (
+                  `₹${(creator.pricing?.storyPrice || 0).toLocaleString('en-IN')}`
+                )}
               </span>
               <span className="text-[10px] text-[#D4A338] font-semibold block">Link Click</span>
             </div>
 
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70 text-center space-y-1">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Feed Post</span>
-              <span className="text-base font-black text-slate-900 block">
-                ₹{(creator.pricing?.postPrice || 0).toLocaleString('en-IN')}
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">per post</span>
+              <span className="text-base font-black text-slate-900 block flex items-center justify-center h-8">
+                {isEditingRates ? (
+                  <div className="flex items-center justify-center gap-1">
+                    <span>₹</span>
+                    <input type="number" className="w-16 px-1 py-1 text-center border border-slate-300 rounded text-sm outline-none" value={ratesDraft.postPrice} onChange={(e) => setRatesDraft(d => ({...d, postPrice: e.target.value}))} />
+                  </div>
+                ) : (
+                  `₹${(creator.pricing?.postPrice || 0).toLocaleString('en-IN')}`
+                )}
               </span>
               <span className="text-[10px] text-slate-500 font-semibold block">Carousel / Static</span>
             </div>
 
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70 text-center space-y-1">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">UGC Video</span>
-              <span className="text-base font-black text-slate-900 block">
-                ₹{(creator.pricing?.ugcPrice || 0).toLocaleString('en-IN')}
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">per ugc video</span>
+              <span className="text-base font-black text-slate-900 block flex items-center justify-center h-8">
+                {isEditingRates ? (
+                  <div className="flex items-center justify-center gap-1">
+                    <span>₹</span>
+                    <input type="number" className="w-16 px-1 py-1 text-center border border-slate-300 rounded text-sm outline-none" value={ratesDraft.ugcPrice} onChange={(e) => setRatesDraft(d => ({...d, ugcPrice: e.target.value}))} />
+                  </div>
+                ) : (
+                  `₹${(creator.pricing?.ugcPrice || 0).toLocaleString('en-IN')}`
+                )}
               </span>
               <span className="text-[10px] text-purple-600 font-semibold block">Ad Creative</span>
             </div>
 
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70 text-center space-y-1">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Event / Visit</span>
-              <span className="text-base font-black text-slate-900 block">
-                ₹{(creator.pricing?.eventPrice || 0).toLocaleString('en-IN')}
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">per event/visit</span>
+              <span className="text-base font-black text-slate-900 block flex items-center justify-center h-8">
+                {isEditingRates ? (
+                  <div className="flex items-center justify-center gap-1">
+                    <span>₹</span>
+                    <input type="number" className="w-16 px-1 py-1 text-center border border-slate-300 rounded text-sm outline-none" value={ratesDraft.eventPrice} onChange={(e) => setRatesDraft(d => ({...d, eventPrice: e.target.value}))} />
+                  </div>
+                ) : (
+                  `₹${(creator.pricing?.eventPrice || 0).toLocaleString('en-IN')}`
+                )}
               </span>
               <span className="text-[10px] text-amber-600 font-semibold block">Store Presence</span>
             </div>
@@ -458,26 +628,6 @@ export const CreatorDetailView: React.FC = () => {
               <span className="text-[10px] text-blue-500 font-semibold block">
                 {creator.pricing?.isNegotiable ? 'Negotiable' : 'Fixed'}
               </span>
-            </div>
-          </div>
-
-          {/* Realistic Deliverable Assurance Strip */}
-          <div className="pt-2 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs text-slate-600">
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-[#D4A338] shrink-0" />
-              <span>Turnaround: <strong>3-5 Days</strong></span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Repeat className="w-4 h-4 text-[#D4A338] shrink-0" />
-              <span>Revisions: <strong>2 Rounds</strong></span>
-            </div>
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>Rights: <strong>30-Day Organic</strong></span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Check className="w-4 h-4 text-[#D4A338] shrink-0" />
-              <span>Approval: <strong>Script First</strong></span>
             </div>
           </div>
         </div>
@@ -515,106 +665,70 @@ export const CreatorDetailView: React.FC = () => {
         )}
 
         {/* 7. Recent Verified Publications (Reels/Portfolio) */}
-        {recentVideoPosts.length > 0 ? (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
-                Recent Content & Deliverables
-              </h2>
-              <span className="text-xs font-semibold text-[#D4A338]">
-                Click to view performance stats
-              </span>
-            </div>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+              Best Work & Portfolio
+            </h2>
+          </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {recentVideoPosts.map((post) => (
-                <div
-                  key={post.id}
-                  className="group relative h-80 rounded-2xl overflow-hidden shadow-sm hover:shadow-md border border-slate-200/80 transition-all flex flex-col justify-between p-4 bg-slate-900 cursor-pointer"
-                  onClick={() => setSelectedPost(post)}
-                >
-                  <div className="absolute inset-0 w-full h-full overflow-hidden z-0">
-                    {/* Video playback if videoUrl present, else thumbnail image */}
-                    {post.videoUrl ? (
-                      <video
-                        src={post.videoUrl}
-                        className="w-full h-full object-cover object-center"
-                        autoPlay
-                        muted
-                        loop
-                        playsInline
-                        poster={post.thumbnail}
-                      />
-                    ) : post.thumbnail ? (
-                      <img
-                        src={post.thumbnail}
-                        alt={post.title}
-                        className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
-                        <Play className="w-12 h-12 text-slate-600" />
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-black/20" />
-                  </div>
-
-                  <div className="relative z-10 flex items-center justify-between">
-                    <span className="bg-black/50 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-md border border-white/20">
-                      {post.type}
-                    </span>
-                    {post.plays && (
-                      <span className="bg-emerald-500/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-md">
-                        {post.plays} Plays
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="relative z-10 space-y-2">
-                    {post.brandPartner && (
-                      <span className="text-[10px] font-bold text-blue-300 block uppercase tracking-wider">
-                        Collab: {post.brandPartner}
-                      </span>
-                    )}
-                    <h4 className="text-xs font-bold text-white leading-snug line-clamp-2">
-                      {post.title}
-                    </h4>
-                    <div className="flex items-center gap-3 text-[11px] text-white/80 font-medium">
-                      {post.likes && (
-                        <span className="flex items-center gap-1">
-                          <Heart className="w-3 h-3 text-rose-400" />
-                          <span>{post.likes}</span>
-                        </span>
-                      )}
-                      {post.comments && (
-                        <span className="flex items-center gap-1">
-                          <MessageCircle className="w-3 h-3 text-blue-400" />
-                          <span>{post.comments}</span>
-                        </span>
-                      )}
-                      {post.engagement && (
-                        <span className="text-emerald-400 font-bold ml-auto">
-                          {post.engagement} eng
-                        </span>
-                      )}
-                    </div>
-                  </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+            {/* Box 1: Cover Photo */}
+            <div className="relative h-60 sm:h-80 rounded-2xl overflow-hidden shadow-sm border border-slate-200/80 bg-slate-900 group">
+              {creator.coverImage ? (
+                <img src={creator.coverImage} alt="Cover" className="w-full h-full object-cover object-center" loading="lazy" />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 gap-2">
+                  <UploadCloud className="w-6 h-6" />
+                  <span className="text-[10px] text-center font-bold px-2">Upload your best image</span>
                 </div>
-              ))}
+              )}
+              {isOwner && (
+                <>
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition z-10 backdrop-blur-sm gap-2">
+                    <span className="text-xs font-black text-white pointer-events-none">{creator.coverImage ? 'Change Photo' : 'Upload Photo'}</span>
+                  </div>
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    className="absolute inset-0 opacity-0 cursor-pointer z-20"
+                    onChange={e => handlePortfolioImageSelect(e, 'cover')}
+                  />
+                </>
+              )}
             </div>
+
+            {/* Boxes 2-5: Portfolio Items */}
+            {[0, 1, 2, 3].map((idx) => {
+              const item = creator.portfolio?.[idx];
+              return (
+                <div key={idx} className="relative h-60 sm:h-80 rounded-2xl overflow-hidden shadow-sm border border-slate-200/80 bg-slate-100 group">
+                  {item?.thumbnail ? (
+                    <img src={item.thumbnail} alt="Portfolio" className="w-full h-full object-cover object-center" loading="lazy" />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-2">
+                      <UploadCloud className="w-6 h-6" />
+                      <span className="text-[10px] text-center font-bold px-2">Upload your best image</span>
+                    </div>
+                  )}
+                  {isOwner && (
+                    <>
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition z-10 backdrop-blur-sm gap-2">
+                        <span className="text-xs font-black text-white pointer-events-none">{item?.thumbnail ? 'Change Photo' : 'Upload Photo'}</span>
+                      </div>
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        className="absolute inset-0 opacity-0 cursor-pointer z-20"
+                        onChange={e => handlePortfolioImageSelect(e, `portfolio-${idx}`)}
+                      />
+                    </>
+                  )}
+                </div>
+              );
+            })}
           </div>
-        ) : (
-          <div className="bg-white rounded-2xl p-8 border border-slate-200/80 shadow-xs text-center space-y-3">
-            <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mx-auto">
-              <Play className="w-6 h-6 text-slate-400" />
-            </div>
-            <div>
-              <h3 className="text-sm font-black text-slate-900">No Content Uploaded Yet</h3>
-              <p className="text-xs text-slate-500 mt-1">This creator hasn't uploaded any reels or portfolio items yet.</p>
-            </div>
-          </div>
-        )}
+        </div>
 
         {/* 8. Brand Performance Rating System */}
         <div className="bg-white rounded-2xl p-5 sm:p-7 border border-slate-200/80 shadow-xs space-y-5">
@@ -734,33 +848,51 @@ export const CreatorDetailView: React.FC = () => {
 
           {/* Reviews List */}
           {creator.reviews && creator.reviews.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {creator.reviews.map((rev) => (
                 <div
                   key={rev.id}
-                  className="p-4 rounded-xl bg-slate-50/70 border border-slate-200/70 space-y-2 text-xs"
+                  className="group relative p-5 rounded-2xl bg-white border border-[#D4A338]/40 hover:border-[#D4A338] shadow-sm hover:shadow-md hover:shadow-[#D4A338]/10 transition-all duration-300 flex flex-col justify-between"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-bold text-slate-900">{rev.brandName}</span>
-                      {rev.verifiedCollaboration && (
-                        <span className="text-[10px] text-[#D4A338] font-bold">✓ Verified Brand</span>
-                      )}
+                  <div className="space-y-4">
+                    {/* Header: Avatar + Name & Verified */}
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center shrink-0 border border-[#D4A338]/30">
+                        {rev.brandLogo ? (
+                          <img src={rev.brandLogo} alt={rev.brandName} className="w-full h-full object-cover" />
+                        ) : (
+                          <Building className="w-6 h-6 text-slate-400" />
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-black text-slate-900 text-sm line-clamp-1">{rev.brandName}</span>
+                        {rev.verifiedCollaboration && (
+                          <span className="inline-flex items-center gap-1 text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100 w-fit">
+                            <Check className="w-3 h-3" /> Verified Brand
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center text-amber-400">
+
+                    {/* Stars Highlighted */}
+                    <div className="flex items-center gap-1 pt-1">
                       {Array.from({ length: rev.rating || 5 }).map((_, i) => (
-                        <Star key={i} className="w-3.5 h-3.5 fill-amber-400" />
+                        <Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400 drop-shadow-sm" />
                       ))}
+                    </div>
+
+                    {/* Review Text */}
+                    <div className="pt-2">
+                      <p className="text-slate-700 text-xs font-medium leading-relaxed">
+                        {rev.reviewText}
+                      </p>
                     </div>
                   </div>
 
-                  <p className="text-slate-600 text-xs leading-relaxed">
-                    "{rev.reviewText}"
-                  </p>
-
-                  <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-100">
-                    <span>{rev.campaignType}</span>
-                    <span>{rev.date || 'Recent'}</span>
+                  <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 pt-4 mt-4 border-t border-slate-100">
+                    <span className="uppercase tracking-wider text-slate-500">{rev.campaignType || 'Collaboration'}</span>
+                    <span className="text-slate-300">•</span>
+                    <span>{rev.date || 'Recently'}</span>
                   </div>
                 </div>
               ))}
@@ -859,6 +991,19 @@ export const CreatorDetailView: React.FC = () => {
             </button>
           </div>
         </div>
+      )}
+
+      {cropModalData && (
+        <ImageCropperModal
+          imageSrc={cropModalData.src}
+          shape="rect"
+          aspect={9/16}
+          onCropDone={(croppedFile) => {
+            uploadCroppedImage(croppedFile, cropModalData.type);
+            setCropModalData(null);
+          }}
+          onCancel={() => setCropModalData(null)}
+        />
       )}
     </div>
   );

@@ -1,7 +1,9 @@
 import { dbQueryStrict } from '../config/db';
 import { migration001 } from '../migrations/001_add_query_indexes';
+import { migration002 } from '../migrations/002_add_creator_social_columns';
+import { migration003 } from '../migrations/003_add_creator_event_price';
 
-const migrations = [migration001];
+const migrations = [migration001, migration002, migration003];
 
 async function runMigrations() {
   await dbQueryStrict(`
