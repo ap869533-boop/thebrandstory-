@@ -71,7 +71,7 @@ export const CreatorDetailView: React.FC = () => {
         (viewParams.id && c.id === viewParams.id) || (requestedUsername && c.id === requestedUsername)
       );
       return matchesUsername || matchesId;
-    }) || (authUser?.role === 'CREATOR' && !requestedUsername ? authUser.creatorProfile : undefined);
+    }) || (authUser?.role === 'CREATOR' && authUser.creatorProfile && (!requestedUsername || requestedUsername === authUser.creatorProfile.username || requestedUsername === authUser.creatorProfile.id || requestedUsername === (authUser.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')) ? authUser.creatorProfile : undefined);
 
   const [fetchedCreator, setFetchedCreator] = useState<Creator | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
@@ -257,7 +257,7 @@ export const CreatorDetailView: React.FC = () => {
         postPrice: Number(ratesDraft.postPrice || 0),
         ugcPrice: Number(ratesDraft.ugcPrice || 0),
         eventPrice: Number(ratesDraft.eventPrice || 0),
-      }
+      } as any
     });
     setIsEditingRates(false);
   };
@@ -309,7 +309,7 @@ export const CreatorDetailView: React.FC = () => {
   };
 
   // Real portfolio items from database - used as recent reels
-  const recentVideoPosts = (creator.portfolio && creator.portfolio.length > 0)
+  const recentVideoPosts = (creator.portfolio && Array.isArray(creator.portfolio) && creator.portfolio.length > 0)
     ? creator.portfolio.slice(0, 6).map((item, idx) => ({
         id: item.id || `p${idx}`,
         title: item.title || `${creator.name} Content`,

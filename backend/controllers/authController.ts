@@ -606,12 +606,22 @@ export async function getMe(req: AuthenticatedRequest, res: Response) {
 
 export async function requestOtp(req: Request, res: Response) {
   try {
-    const { email } = req.body;
+    const { email, role } = req.body;
     if (!email) {
       return res.status(400).json({ success: false, error: 'Email is required' });
     }
 
     const cleanEmail = email.toLowerCase().trim();
+
+    // If it's a signup request (role is provided), check if email is already registered
+    if (role) {
+      const sqlUser = 'SELECT id FROM users WHERE email = ? LIMIT 1';
+      const dbUsers = await dbQuery(sqlUser, [cleanEmail]);
+      const memUser = memoryUsers.find((u) => u.email === cleanEmail);
+      if ((dbUsers && dbUsers.length > 0) || memUser) {
+        return res.status(409).json({ success: false, error: 'This email is already registered. Please sign in instead.' });
+      }
+    }
 
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();

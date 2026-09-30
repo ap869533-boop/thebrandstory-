@@ -77,6 +77,7 @@ export const LoginView: React.FC = () => {
   // UI State
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [contextualNotice, setContextualNotice] = useState<string | null>(null);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -121,7 +122,7 @@ export const LoginView: React.FC = () => {
   };
 
   const fieldClass = (field: string, value: string, extra = '') =>
-    `w-full px-4 py-3 bg-white/5 border ${isFieldInvalid(field, value) ? 'border-rose-500/50 bg-rose-500/5' : 'border-white/10'} rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#D4A338]/60 focus:bg-white/8 text-xs font-medium transition ${extra}`;
+    `w-full px-4 py-3 bg-white/5 border ${isFieldInvalid(field, value) ? '!border-rose-500/70 !bg-rose-500/10' : 'border-white/10'} rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#D4A338]/60 focus:bg-white/8 text-xs font-medium transition ${extra}`;
 
   const creatorFieldClass = (field: string, value: string, extra = '') =>
     `w-full px-4 py-3 bg-white/5 border ${isFieldInvalid(field, value) ? 'border-rose-500/50 bg-rose-500/5' : 'border-white/10'} rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#D4A338]/60 focus:bg-white/8 text-xs font-medium transition ${extra}`;
@@ -267,6 +268,7 @@ export const LoginView: React.FC = () => {
 
     setIsLoading(true);
     setErrorMsg(null);
+    setEmailError(null);
     setSuccessMsg(null);
 
     try {
@@ -326,7 +328,7 @@ export const LoginView: React.FC = () => {
         if (!otpSent) {
           const signupPayload: any = {
             email: email.trim(), password, name: role === 'CREATOR' ? name.trim() : companyName.trim(),
-            role, phone: `${countryCode}${phone.trim()}`,
+            role, phone: phone.trim(), countryCode: countryCode.trim(),
           };
           if (role === 'BRAND') {
             signupPayload.companyName = companyName.trim();
@@ -334,17 +336,23 @@ export const LoginView: React.FC = () => {
           }
           if (role === 'CREATOR') signupPayload.category = category;
 
-          const res = await fetch(apiUrl('/api/auth/send-otp'), {
+          const res = await fetch(apiUrl('/api/auth/request-otp'), {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(signupPayload),
           });
           const data = await readApiResponse(res);
-          if (!res.ok || !data.success) throw new Error(data.error || 'Failed to send OTP');
+          if (!res.ok || !data.success) {
+            if (data.error && data.error.includes('already registered')) {
+              setEmailError(data.error);
+              throw new Error('SILENT');
+            }
+            throw new Error(data.error || 'Failed to send OTP');
+          }
           setOtpSent(true);
           setSuccessMsg(`OTP sent to ${email.trim()}. Please check your inbox.`);
         } else {
           const verifyPayload: any = {
             email: email.trim(), otp: otp.trim(), password, name: role === 'CREATOR' ? name.trim() : companyName.trim(),
-            role, phone: `${countryCode}${phone.trim()}`,
+            role, phone: phone.trim(), countryCode: countryCode.trim(),
           };
           if (role === 'BRAND') {
             verifyPayload.companyName = companyName.trim();
@@ -399,7 +407,9 @@ export const LoginView: React.FC = () => {
         }
       }
     } catch (err: any) {
-      setErrorMsg(err.message || 'Authentication error. Please try again.');
+      if (err.message !== 'SILENT') {
+        setErrorMsg(err.message || 'Authentication error. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -564,25 +574,51 @@ export const LoginView: React.FC = () => {
 
                 {creatorSetupStep === 1 ? (
                   <>
-                    {/* Profile Photo */}
-                    <div>
-                      <label className="block font-bold text-slate-300 mb-1.5">Profile Photo</label>
-                      <div className="flex items-center gap-3">
-                        <div className="w-14 h-14 rounded-full overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
-                          {profilePhotoUrl
-                            ? <img src={profilePhotoUrl} alt="Profile" className="w-full h-full object-cover" />
-                            : <User className="w-6 h-6 text-slate-500" />}
+                    <div className="grid grid-cols-2 gap-3">
+                      {/* Profile Photo */}
+                      <div>
+                        <label className="block font-bold text-slate-300 mb-1.5">Profile Photo</label>
+                        <div className="flex items-center gap-3">
+                          <div className="w-14 h-14 rounded-full overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                            {profilePhotoUrl
+                              ? <img src={profilePhotoUrl} alt="Profile" className="w-full h-full object-cover" />
+                              : <User className="w-6 h-6 text-slate-500" />}
+                          </div>
+                          <label className="cursor-pointer px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 transition text-xs font-bold">
+                            Upload
+                            <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              setProfilePhotoFile(file);
+                              const url = URL.createObjectURL(file);
+                              setCropSrc(url); setCropTarget('avatar'); setShowCropper(true);
+                              e.target.value = '';
+                            }} />
+                          </label>
                         </div>
-                        <label className="cursor-pointer px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 transition text-xs font-bold">
-                          Upload Photo
-                          <input type="file" accept="image/*" className="hidden" onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            setProfilePhotoFile(file);
-                            const url = URL.createObjectURL(file);
-                            setCropSrc(url); setCropTarget('avatar'); setShowCropper(true);
-                          }} />
-                        </label>
+                      </div>
+
+                      {/* Card Photo */}
+                      <div>
+                        <label className="block font-bold text-slate-300 mb-1.5">Card Photo</label>
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-16 rounded-md overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                            {bannerUrl
+                              ? <img src={bannerUrl} alt="Card" className="w-full h-full object-cover" />
+                              : <div className="text-[8px] text-slate-500 text-center leading-tight">9:16<br/>Size</div>}
+                          </div>
+                          <label className="cursor-pointer px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 transition text-xs font-bold">
+                            Upload
+                            <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              setBannerFile(file);
+                              const url = URL.createObjectURL(file);
+                              setCropSrc(url); setCropTarget('cover'); setShowCropper(true);
+                              e.target.value = '';
+                            }} />
+                          </label>
+                        </div>
                       </div>
                     </div>
 
@@ -597,31 +633,29 @@ export const LoginView: React.FC = () => {
                         </select>
                       </div>
                       <div>
-                        <label className="block font-bold text-slate-300 mb-1">Age Group *</label>
-                        <select value={ageGroup} onChange={e => setAgeGroup(e.target.value)}
-                          className={creatorFieldClass('ageGroup', ageGroup, 'bg-white/5 text-white border-white/10')}>
-                          <option value="" className="bg-[#051126]">Select</option>
-                          {['18-21', '22-25', '26-30', '31-35', '36-40', '41+'].map(a => <option key={a} value={a} className="bg-[#051126]">{a}</option>)}
-                        </select>
+                        <label className="block font-bold text-slate-300 mb-1">Age *</label>
+                        <input type="number" value={ageGroup} onChange={e => setAgeGroup(e.target.value)}
+                          placeholder="e.g. 24"
+                          className={creatorFieldClass('ageGroup', ageGroup)} />
                       </div>
                     </div>
 
-                    <div>
-                      <label className="block font-bold text-slate-300 mb-1">Primary Category *</label>
-                      <select value={category} onChange={e => setCategory(e.target.value)}
-                        className={creatorFieldClass('category', category, 'bg-white/5 text-white border-white/10')}>
-                        <option value="" className="bg-[#051126]">Select category</option>
-                        {CATEGORIES_LIST.map(c => <option key={c.slug} value={c.name} className="bg-[#051126]">{c.name}</option>)}
-                      </select>
-                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block font-bold text-slate-300 mb-1">Primary Category *</label>
+                        <select value={category} onChange={e => setCategory(e.target.value)}
+                          className={creatorFieldClass('category', category, 'bg-white/5 text-white border-white/10')}>
+                          <option value="" className="bg-[#051126]">Select category</option>
+                          {CATEGORIES_LIST.map(c => <option key={c.slug} value={c.name} className="bg-[#051126]">{c.name}</option>)}
+                        </select>
+                      </div>
 
-                    <div>
-                      <label className="block font-bold text-slate-300 mb-1">City / Location *</label>
-                      <select value={creatorState} onChange={e => setCreatorState(e.target.value)}
-                        className={creatorFieldClass('creatorState', creatorState, 'bg-white/5 text-white border-white/10')}>
-                        <option value="" className="bg-[#051126]">Select city</option>
-                        {CITIES_LIST.map(c => <option key={c.slug} value={c.name} className="bg-[#051126]">{c.name}</option>)}
-                      </select>
+                      <div>
+                        <label className="block font-bold text-slate-300 mb-1">Current City *</label>
+                        <input type="text" value={creatorState} onChange={e => setCreatorState(e.target.value)}
+                          placeholder="e.g. Mumbai"
+                          className={creatorFieldClass('creatorState', creatorState)} />
+                      </div>
                     </div>
 
                     <div>
@@ -765,23 +799,31 @@ export const LoginView: React.FC = () => {
                   </>
                 )}
 
-                {/* Email */}
-                <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
-                  <input
-                    type="email"
-                    autoComplete="email"
-                    required
-                    placeholder="Email address"
-                    value={email}
-                    onChange={e => { setEmail(e.target.value); setTouched(t => ({ ...t, email: true })); }}
-                    onBlur={() => setTouched(t => ({ ...t, email: true }))}
-                    className={`${fieldClass('email', email)} pl-10`}
-                  />
-                </div>
+                {/* Email (Hidden when OTP is sent during signup to keep UI clean) */}
+                {(!otpSent || isForgotPassword) && (
+                  <div className="space-y-1">
+                    <div className="relative">
+                      <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                      <input
+                        type="email"
+                        autoComplete="email"
+                        required
+                        disabled={otpSent}
+                        placeholder="Email address"
+                        value={email}
+                        onChange={e => { setEmail(e.target.value); setTouched(t => ({ ...t, email: true })); setEmailError(null); }}
+                        onBlur={() => setTouched(t => ({ ...t, email: true }))}
+                        className={`${fieldClass('email', email)} pl-10 ${emailError ? '!border-rose-500/70 !bg-rose-500/10' : ''} ${otpSent ? 'opacity-60 cursor-not-allowed' : ''}`}
+                      />
+                    </div>
+                    {emailError && (
+                      <p className="text-rose-400 text-xs ml-1 font-medium">{emailError}</p>
+                    )}
+                  </div>
+                )}
 
                 {/* Password */}
-                {!isForgotPassword && (
+                {!isForgotPassword && !otpSent && (
                   <div className="space-y-3">
                     <div className="relative">
                       <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
@@ -924,11 +966,11 @@ export const LoginView: React.FC = () => {
       {showCropper && (
         <ImageCropperModal
           imageSrc={cropSrc}
-          aspect={cropTarget === 'avatar' ? 1 : 3}
-          onCropDone={(croppedFile) => {
-            const croppedImageUrl = URL.createObjectURL(croppedFile);
-            if (cropTarget === 'avatar') setProfilePhotoUrl(croppedImageUrl);
-            else setBannerUrl(croppedImageUrl);
+          aspect={cropTarget === 'avatar' ? 1 : 9 / 16}
+          onCropDone={async (croppedFile) => {
+            const base64Url = await fileToBase64(croppedFile as File);
+            if (cropTarget === 'avatar') setProfilePhotoUrl(base64Url);
+            else setBannerUrl(base64Url);
             setShowCropper(false);
           }}
           onCancel={() => setShowCropper(false)}
