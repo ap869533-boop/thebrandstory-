@@ -375,35 +375,15 @@ export const LoginView: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#051126] py-12 px-4 sm:px-6 lg:px-8 flex flex-col justify-center items-center font-sans">
-      {/* Back to Home button */}
-      <div className="w-full max-w-md mb-4">
-        <button
-          onClick={() => navigateTo('home')}
-          className="inline-flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-white transition cursor-pointer group"
-        >
-          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-          <span>Back to Home</span>
-        </button>
-      </div>
 
       <div className="max-w-md w-full space-y-6">
         {/* Brand Header */}
         <div className="text-center space-y-3">
-          <div
-            onClick={() => navigateTo('home')}
-            className="cursor-pointer inline-flex items-center group"
-          >
-            <div className="text-3xl sm:text-4xl tracking-tighter">
-              <span className="font-light text-white">the</span>
-              <span className="font-black text-[#D4A338]">brands</span>
-              <span className="font-light text-white">story</span>
-              <span className="font-black text-[#D4A338]">.</span>
-            </div>
-          </div>
+          
           <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
             {creatorProfileSetup
               ? creatorSetupStep === 1 ? 'Complete your basic profile' : 'Add your Instagram details'
-              : isForgotPassword ? 'Reset Password' : mode === 'login' ? 'Sign In to Your Workspace' : 'Create Your Account'}
+              : isForgotPassword ? 'Reset Password' : mode === 'login' ? 'Log In to Your Account' : 'Create Your Account'}
           </h1>
           <p className="text-xs sm:text-sm text-slate-400 max-w-sm mx-auto">
             {creatorProfileSetup
@@ -865,13 +845,6 @@ export const LoginView: React.FC = () => {
                 and{' '}
                 <span className="text-[#D4A338] cursor-pointer hover:underline font-bold">Privacy Policy</span>
               </p>
-              <div className="flex items-center justify-center gap-3 text-[10px] text-slate-500">
-                <span className="flex items-center gap-1"><ShieldCheck className="w-3 h-3 text-emerald-500" /> SSL Secured</span>
-                <span>•</span>
-                <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-blue-400" /> Zero Commission</span>
-                <span>•</span>
-                <span className="flex items-center gap-1"><Check className="w-3 h-3 text-[#D4A338]" /> Verified Profiles</span>
-              </div>
             </div>
           )}
         </div>

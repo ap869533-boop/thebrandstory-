@@ -79,7 +79,7 @@ export const Navbar: React.FC = () => {
 
   return (
     <header className="sticky top-0 z-50 bg-[#051126] text-white border-b border-white/10 shadow-lg">
-      <div className="w-full px-5 sm:px-8 md:px-[6vw] h-[84px] sm:h-[100px] flex items-center justify-between gap-4">
+      <div className="w-full px-5 sm:px-8 md:px-[6vw] h-[75px] sm:h-[80px] flex items-center justify-between gap-4">
 
         {/* LEFT: Logo */}
         <button
@@ -88,7 +88,7 @@ export const Navbar: React.FC = () => {
           className="shrink-0 cursor-pointer select-none"
           aria-label="Go to home"
         >
-          <span className="text-[2rem] sm:text-[2.5rem] lg:text-[2.8rem] tracking-tight leading-none">
+          <span className="text-[1.4rem] sm:text-[1.6rem] lg:text-[1.8rem] tracking-tight leading-none">
             <span className="font-medium text-white">the</span>
             <span className="font-black text-[#D4A338]">brands</span>
             <span className="font-medium text-white">story</span>
@@ -103,7 +103,7 @@ export const Navbar: React.FC = () => {
           <div ref={searchRef} className="relative hidden sm:block">
             <form
               onSubmit={submitSearch}
-              className="subpage-search-form flex-1 relative flex items-center bg-white backdrop-blur-md rounded-full border border-white px-4 sm:px-6 py-2.5 sm:py-3 md:ml-auto md:flex-none md:w-[580px] lg:w-[725px] md:h-[48px] lg:h-[56px] md:py-0 md:px-6 transition-all shadow-lg shadow-black/10 group"
+              className="subpage-search-form flex-1 relative flex items-center bg-white backdrop-blur-md rounded-full border border-white px-3 sm:px-5 py-1.5 sm:py-2 md:ml-auto md:flex-none md:w-[480px] lg:w-[600px] md:h-[36px] lg:h-[40px] md:py-0 md:px-5 transition-all shadow-lg shadow-black/10 group"
             >
               <Search className="w-4 h-4 sm:w-5 sm:h-5 text-[#3977c9] shrink-0 mr-2.5 sm:mr-3.5" />
               <input
@@ -196,7 +196,7 @@ export const Navbar: React.FC = () => {
             type="button"
             onClick={() => setMenuOpen(true)}
             title="Open menu"
-            className="w-[46px] h-[46px] sm:w-[52px] sm:h-[52px] md:w-[54px] md:h-[54px] rounded-2xl md:rounded-[20px] bg-white md:bg-transparent hover:bg-slate-100 text-slate-950 md:text-[#8eb6ff] md:border-2 md:border-[#8eb6ff] flex items-center justify-center transition-all duration-200 shadow-md md:shadow-none cursor-pointer shrink-0"
+            className="w-[34px] h-[34px] sm:w-[38px] sm:h-[38px] rounded-xl md:rounded-[14px] bg-white md:bg-transparent hover:bg-slate-100 text-slate-950 md:text-[#8eb6ff] md:border-2 md:border-[#8eb6ff] flex items-center justify-center transition-all duration-200 shadow-md md:shadow-none cursor-pointer shrink-0"
           >
             <Menu className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 stroke-[2]" />
           </button>

@@ -87,6 +87,7 @@ export const ConversationsPanel: React.FC<{
 }> = ({ openConversationId, openUsername, openCreatorId, campaignId, fullPage = false }) => {
   const { authUser } = usePlatform();
   const [threads, setThreads] = useState<ConversationThread[]>([]);
+  const threadsRef = useRef<ConversationThread[]>([]);
   const [activeId, setActiveId] = useState<string | null>(openConversationId || null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
@@ -142,9 +143,10 @@ export const ConversationsPanel: React.FC<{
 
   const loadThreads = useCallback(async () => {
     try {
-      const res = await fetch(apiUrl('/api/conversations'), { headers: authHeaders() });
+      const res = await fetch(apiUrl(`/api/conversations?t=${Date.now()}`), { headers: authHeaders() });
       const data = await res.json();
       if (data.success && Array.isArray(data.conversations)) {
+        threadsRef.current = data.conversations;
         setThreads(data.conversations);
       }
     } catch {
@@ -156,7 +158,7 @@ export const ConversationsPanel: React.FC<{
 
   const loadMessages = useCallback(async (id: string) => {
     try {
-      const res = await fetch(apiUrl(`/api/conversations/${id}/messages`), { headers: authHeaders() });
+      const res = await fetch(apiUrl(`/api/conversations/${id}/messages?t=${Date.now()}`), { headers: authHeaders() });
       const data = await res.json();
       if (data.success && Array.isArray(data.messages)) {
         setMessages(data.messages);
@@ -182,22 +184,29 @@ export const ConversationsPanel: React.FC<{
     };
   }, [authUser, loadThreads]);
 
+  const resolvedUsername = useRef<string | null>(null);
+
   useEffect(() => {
     if (openConversationId) {
       setActiveId(openConversationId);
       setMobileShowChat(true);
-    } else if (openUsername && threads.length > 0) {
-      // Find thread by username/peerName
+    } else if (openUsername && openUsername !== resolvedUsername.current) {
+      // Use ref so polling updates don't re-trigger this logic
+      const currentThreads = threadsRef.current;
+      if (currentThreads.length === 0) return; // wait for first load
+
       const normalizedQuery = openUsername.toLowerCase().replace(/-/g, ' ');
-      const matchedThread = threads.find(t => 
-        t.peerName.toLowerCase().includes(normalizedQuery) || 
+      const matchedThread = currentThreads.find(t =>
+        t.peerName.toLowerCase().includes(normalizedQuery) ||
         normalizedQuery.includes(t.peerName.toLowerCase())
       );
-      if (matchedThread && activeId !== matchedThread.id) {
+
+      if (matchedThread) {
+        resolvedUsername.current = openUsername;
         setActiveId(matchedThread.id);
         setMobileShowChat(true);
-      } else if (!matchedThread && openCreatorId && authUser?.role === 'BRAND') {
-        // If not found, create or open a new conversation
+      } else if (openCreatorId && authUser?.role === 'BRAND') {
+        resolvedUsername.current = openUsername; // prevent multiple API calls
         fetch(apiUrl('/api/conversations/open'), {
           method: 'POST',
           headers: { ...authHeaders(), 'Content-Type': 'application/json' },
@@ -206,7 +215,6 @@ export const ConversationsPanel: React.FC<{
           .then(res => res.json())
           .then(data => {
             if (data.success && data.conversationId) {
-              // Ensure we reload threads then set active
               loadThreads().then(() => {
                 setActiveId(data.conversationId);
                 setMobileShowChat(true);
@@ -216,7 +224,9 @@ export const ConversationsPanel: React.FC<{
           .catch(console.error);
       }
     }
-  }, [openConversationId, openUsername, openCreatorId, campaignId, threads, authUser, activeId, loadThreads]);
+  // Only re-run when the incoming props change — NOT on every poll
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openConversationId, openUsername, openCreatorId, campaignId, authUser]);
 
   useEffect(() => {
     if (!activeId) return;
