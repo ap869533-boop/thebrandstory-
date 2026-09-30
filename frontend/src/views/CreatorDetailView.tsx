@@ -58,6 +58,7 @@ export const CreatorDetailView: React.FC = () => {
     toggleSaveCreator,
     addCreatorReview,
     updateCreatorProfile,
+    partnerBrands,
   } = usePlatform();
 
   const requestedUsername = routeUsername || viewParams.username;
@@ -291,7 +292,7 @@ export const CreatorDetailView: React.FC = () => {
 
     addCreatorReview(creator.id, {
       brandName: ratingBrand.trim(),
-      brandLogo: authUser?.avatar || '',
+      brandLogo: (authUser as any)?.logoUrl || authUser?.avatar || '',
       rating: ratingStars,
       campaignType: ratingDeliverable,
       reviewText: ratingComment.trim() || `Rated ${ratingStars} stars for ${ratingDeliverable} collaboration.`,
@@ -849,21 +850,32 @@ export const CreatorDetailView: React.FC = () => {
           {/* Reviews List */}
           {creator.reviews && creator.reviews.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {creator.reviews.map((rev) => (
-                <div
-                  key={rev.id}
-                  className="group relative p-5 rounded-2xl bg-white border border-[#D4A338]/40 hover:border-[#D4A338] shadow-sm hover:shadow-md hover:shadow-[#D4A338]/10 transition-all duration-300 flex flex-col justify-between"
-                >
-                  <div className="space-y-4">
-                    {/* Header: Avatar + Name & Verified */}
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center shrink-0 border border-[#D4A338]/30">
-                        {rev.brandLogo ? (
-                          <img src={rev.brandLogo} alt={rev.brandName} className="w-full h-full object-cover" />
-                        ) : (
-                          <Building className="w-6 h-6 text-slate-400" />
-                        )}
-                      </div>
+              {creator.reviews.map((rev) => {
+                const isMyReview = authUser?.role === 'BRAND' && 
+                  (rev.brandName.toLowerCase() === authUser?.name?.toLowerCase() || 
+                   rev.brandName.toLowerCase() === authUser?.companyName?.toLowerCase() ||
+                   rev.brandName.toLowerCase() === (authUser as any)?.company_name?.toLowerCase());
+                
+                const matchedBrand = partnerBrands.find(b => b.name.toLowerCase() === rev.brandName.toLowerCase());
+                const displayLogo = isMyReview 
+                  ? ((authUser as any)?.logoUrl || authUser?.avatar || rev.brandLogo) 
+                  : (rev.brandLogo || matchedBrand?.logoUrl);
+
+                return (
+                  <div
+                    key={rev.id}
+                    className="group relative p-5 rounded-2xl bg-white border border-[#D4A338]/40 hover:border-[#D4A338] shadow-sm hover:shadow-md hover:shadow-[#D4A338]/10 transition-all duration-300 flex flex-col justify-between"
+                  >
+                    <div className="space-y-4">
+                      {/* Header: Avatar + Name & Verified */}
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center shrink-0 border border-[#D4A338]/30">
+                          {displayLogo ? (
+                            <img src={displayLogo} alt={rev.brandName} className="w-full h-full object-cover" />
+                          ) : (
+                            <Building className="w-6 h-6 text-slate-400" />
+                          )}
+                        </div>
                       <div className="flex flex-col gap-0.5">
                         <span className="font-black text-slate-900 text-sm line-clamp-1">{rev.brandName}</span>
                         {rev.verifiedCollaboration && (
@@ -895,7 +907,8 @@ export const CreatorDetailView: React.FC = () => {
                     <span>{rev.date || 'Recently'}</span>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-8 text-slate-400">
