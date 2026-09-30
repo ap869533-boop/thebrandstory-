@@ -109,7 +109,7 @@ export const EditBrandProfileForm: React.FC<Props> = ({ profile, onSave, onCance
       <form onSubmit={handleSubmit} className="space-y-8">
         
         {/* Images Section */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className="flex flex-col sm:flex-row items-start gap-6">
           <div className="space-y-2">
             <span className="text-sm font-bold text-slate-300">Brand Logo</span>
             <div className="relative w-32 h-32 sm:w-40 sm:h-40 rounded-full overflow-hidden bg-[#051126] border border-white/10 flex items-center justify-center mx-auto sm:mx-0 group">
@@ -127,27 +127,6 @@ export const EditBrandProfileForm: React.FC<Props> = ({ profile, onSave, onCance
                 className="absolute inset-0 opacity-0 cursor-pointer z-20"
                 disabled={!!uploadingMedia}
                 onChange={e => handleImageSelect(e, 'logo')}
-              />
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <span className="text-sm font-bold text-slate-300">Cover Image Preview</span>
-            <div className="relative w-full h-32 sm:h-40 rounded-2xl overflow-hidden bg-[#051126] border border-white/10 flex items-center justify-center mx-auto sm:mx-0 group">
-              {form.coverUrl ? (
-                <img src={form.coverUrl} alt="Cover" className="w-full h-full object-cover" />
-              ) : (
-                <UploadCloud className="w-8 h-8 text-slate-500" />
-              )}
-              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition cursor-pointer z-10 backdrop-blur-sm text-center px-2">
-                <span className="text-xs font-black text-white">{uploadingMedia === 'cover' ? 'Uploading...' : 'Change Cover'}</span>
-              </div>
-              <input 
-                type="file" 
-                accept="image/*" 
-                className="absolute inset-0 opacity-0 cursor-pointer z-20"
-                disabled={!!uploadingMedia}
-                onChange={e => handleImageSelect(e, 'cover')}
               />
             </div>
           </div>

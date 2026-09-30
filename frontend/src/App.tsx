@@ -19,7 +19,7 @@ const CategoryPageView = lazy(() => import('./views/CategoryPageView').then(({ C
 const PostRequirementView = lazy(() => import('./views/PostRequirementView').then(({ PostRequirementView }) => ({ default: PostRequirementView })));
 const OpportunitiesView = lazy(() => import('./views/OpportunitiesView').then(({ OpportunitiesView }) => ({ default: OpportunitiesView })));
 const BrandCampaignsView = lazy(() => import('./views/BrandCampaignsView').then(({ BrandCampaignsView }) => ({ default: BrandCampaignsView })));
-const BrandProfileView = lazy(() => import('./views/BrandProfileView').then(({ BrandProfileView }) => ({ default: BrandProfileView })));
+
 const WalletView = lazy(() => import('./views/WalletView').then(({ WalletView }) => ({ default: WalletView })));
 const AdminDashboardView = lazy(() => import('./views/AdminDashboardView').then(({ AdminDashboardView }) => ({ default: AdminDashboardView })));
 const BlogView = lazy(() => import('./views/BlogView').then(({ BlogView }) => ({ default: BlogView })));
@@ -50,7 +50,7 @@ const MainAppContent: React.FC = () => {
             <Route path="/post-requirement" element={<PostRequirementView />} />
             <Route path="/opportunities" element={<OpportunitiesView />} />
             <Route path="/brand/:brandSlug/campaigns" element={<BrandCampaignsView />} />
-            <Route path="/brand/:brandSlug/profile" element={<BrandProfileView />} />
+
             <Route path="/wallet" element={<WalletView />} />
             <Route path="/admin" element={<AdminDashboardView />} />
             <Route path="/blog" element={<BlogView />} />

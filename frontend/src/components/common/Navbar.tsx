@@ -57,7 +57,7 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-[#051126] text-white border-b border-white/10 shadow-lg">
+    <header className="sticky top-0 z-50 bg-[#051126] text-white border-b border-white/10 shadow-lg">
       <div className="w-full px-5 sm:px-8 md:px-[6vw] h-[84px] sm:h-[100px] flex items-center justify-between gap-4">
 
         {/* LEFT: Logo */}
