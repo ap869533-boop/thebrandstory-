@@ -157,7 +157,7 @@ export const HomeHero: React.FC = () => {
         <button
           type="button"
           id="hero-get-started-btn"
-          onClick={() => openAuthModal('signup', 'CREATOR')}
+          onClick={() => navigateTo('login', { mode: 'signup' })}
           className={`${heroSecondaryButton} flex-1 md:flex-none md:min-w-[220px]`}
         >
           <span>Get Started For Free</span>
@@ -173,7 +173,7 @@ export const HomeHero: React.FC = () => {
    */
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-[#051126] via-[#071736] to-[#091f48] text-white min-h-screen md:min-h-[740px] flex flex-col justify-between py-4 sm:py-8 px-4 sm:px-6 md:px-[6vw] font-sans w-full max-w-full">
+    <section className="relative overflow-hidden bg-gradient-to-b from-[#051126] via-[#071736] to-[#091f48] text-white min-h-[calc(100dvh-75px)] md:min-h-[680px] flex flex-col justify-center py-8 sm:py-10 px-4 sm:px-6 md:px-[6vw] font-sans w-full max-w-full">
       {/* Background Ambient Glows */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-full overflow-hidden pointer-events-none z-0">
         <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[600px] h-[350px] bg-[#D4A338]/10 rounded-full blur-[120px]" />
@@ -186,24 +186,10 @@ export const HomeHero: React.FC = () => {
       {/* ------------------------------------------------------------------ */}
 
       <div className="max-w-2xl md:max-w-none mx-auto w-full text-center md:text-left relative z-10 flex flex-col items-center justify-center my-auto space-y-4 sm:space-y-6 md:grid md:grid-cols-2 md:items-center md:gap-x-0 md:gap-y-10 md:space-y-0">
-        {/* Mobile Logo */}
-        <button
-          type="button"
-          className="cursor-pointer group select-none mt-2 md:hidden"
-          onClick={() => navigateTo('home')}
-          aria-label="Go to home"
-        >
-          <h2 className="text-[2.35rem] sm:text-5xl font-black tracking-tight leading-none">
-            <span className="text-white font-medium">the</span>
-            <span className="text-[#D4A338] font-black">brands</span>
-            <span className="text-white font-medium">story</span>
-            <span className="text-[#D4A338]">.</span>
-          </h2>
-        </button>
 
         {/* Main Title */}
         <div className="space-y-2.5 md:space-y-12 max-w-xl mx-auto md:mx-0 md:col-start-1 md:row-start-1 md:self-end">
-          <h1 className="text-3xl sm:text-4xl md:text-[2.3rem] font-black tracking-tight text-white leading-tight">
+          <h1 className="text-4xl sm:text-5xl md:text-[3.5rem] lg:text-[4rem] font-black tracking-tight text-white leading-tight">
             Your next collab is here
           </h1>
 

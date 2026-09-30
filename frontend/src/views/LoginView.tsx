@@ -55,7 +55,9 @@ export const LoginView: React.FC = () => {
   // Form Fields
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
   const [phone, setPhone] = useState('');
@@ -106,11 +108,23 @@ export const LoginView: React.FC = () => {
   const [avgComments, setAvgComments] = useState('');
   const [startingPrice, setStartingPrice] = useState('');
 
-  const fieldClass = (field: string, extra = '') =>
-    `w-full px-4 py-3 bg-white/5 border ${touched[field] && !eval(field) ? 'border-rose-500/50 bg-rose-500/5' : 'border-white/10'} rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#D4A338]/60 focus:bg-white/8 text-xs font-medium transition ${extra}`;
+  const isFieldInvalid = (field: string, value: string) => {
+    if (!touched[field]) return false;
+    if (!value) return true;
+    if (field === 'email') return !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+    if (field === 'password') return value.trim().length < 6 || value.trim().length > 8;
+    if (field === 'confirmPassword') return mode === 'signup' && value !== password;
+    if (field === 'name' || field === 'companyName') return value.trim().length < 2;
+    if (field === 'phone') return value.trim().length < 10;
+    if (field === 'otp') return value.trim().length < 6;
+    return false;
+  };
+
+  const fieldClass = (field: string, value: string, extra = '') =>
+    `w-full px-4 py-3 bg-white/5 border ${isFieldInvalid(field, value) ? 'border-rose-500/50 bg-rose-500/5' : 'border-white/10'} rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#D4A338]/60 focus:bg-white/8 text-xs font-medium transition ${extra}`;
 
   const creatorFieldClass = (field: string, value: string, extra = '') =>
-    `w-full px-4 py-3 bg-white/5 border ${touched[field] && !value ? 'border-rose-500/50 bg-rose-500/5' : 'border-white/10'} rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#D4A338]/60 focus:bg-white/8 text-xs font-medium transition ${extra}`;
+    `w-full px-4 py-3 bg-white/5 border ${isFieldInvalid(field, value) ? 'border-rose-500/50 bg-rose-500/5' : 'border-white/10'} rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#D4A338]/60 focus:bg-white/8 text-xs font-medium transition ${extra}`;
 
   useEffect(() => {
     if (viewParams.message) {
@@ -118,14 +132,18 @@ export const LoginView: React.FC = () => {
     }
   }, [viewParams.message]);
 
-  const handlePostAuthRedirect = (effectiveRole: UserRole) => {
+  const handlePostAuthRedirect = (effectiveRole: UserRole, user?: any) => {
     const redirectTarget = viewParams.redirectAfter as string;
     if (redirectTarget) {
       navigateTo(redirectTarget as any);
     } else if (effectiveRole === 'BRAND') {
-      navigateTo('brand-campaigns', { slug: 'account' });
+      // Go to brand's own profile page
+      const slug = (user?.companyName || user?.name || 'account').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      navigateTo('brand-profile', { slug });
     } else if (effectiveRole === 'CREATOR') {
-      navigateTo('opportunities');
+      // Go to creator's own profile page
+      const username = user?.creatorProfile?.username || user?.username || user?.id;
+      navigateTo('creator-detail', { username });
     } else if (effectiveRole === 'ADMIN' || effectiveRole === 'SALES') {
       navigateTo('admin-dashboard');
     } else {
@@ -134,11 +152,13 @@ export const LoginView: React.FC = () => {
   };
 
   const validate = () => {
-    if (isForgotPassword) return email.trim().length > 0;
-    if (!email.trim() || !password.trim()) return false;
+    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+    if (isForgotPassword) return isValidEmail;
+    if (!isValidEmail || password.trim().length < 6) return false;
     if (mode === 'signup') {
-      if (role === 'CREATOR' && (!name.trim() || !phone.trim())) return false;
-      if (role === 'BRAND' && (!companyName.trim() || !phone.trim())) return false;
+      if (password !== confirmPassword) return false;
+      if (role === 'CREATOR' && (name.trim().length < 2 || phone.trim().length < 10)) return false;
+      if (role === 'BRAND' && (companyName.trim().length < 2 || phone.trim().length < 10)) return false;
     }
     return true;
   };
@@ -211,12 +231,18 @@ export const LoginView: React.FC = () => {
     localStorage.setItem('sc_auth_user', JSON.stringify(user));
     setAuthUser(user); setCreators(prev => [data.creator, ...prev.filter(c => c.id !== data.creator.id)]);
     setActiveCreatorId(data.creator.id);
-    navigateTo('opportunities');
+    const creatorUsername = data.creator?.username || data.creator?.id;
+    navigateTo('creator-detail', { username: creatorUsername });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (creatorProfileSetup) {
+      if (creatorSetupStep === 1) {
+        setTouched(t => ({ ...t, gender: true, ageGroup: true, creatorState: true, category: true }));
+      } else {
+        setTouched(t => ({ ...t, username: true, followers: true, startingPrice: true }));
+      }
       if (!validateCreatorSetup()) {
         setErrorMsg('Please correct the highlighted fields before continuing.');
         return;
@@ -226,10 +252,16 @@ export const LoginView: React.FC = () => {
       finally { setIsLoading(false); }
       return;
     }
-    setTouched({ email: true, password: true, name: true, companyName: true, phone: true, otp: true });
+    setTouched({ email: true, password: true, confirmPassword: true, name: true, companyName: true, phone: true, otp: true });
 
     if (!validate()) {
-      setErrorMsg('Please correct the highlighted fields before submitting.');
+      if (mode === 'signup' && password !== confirmPassword) {
+        setErrorMsg('Passwords do not match.');
+      } else if (password.trim().length < 6 || password.trim().length > 8) {
+        setErrorMsg('Password must be between 6 and 8 characters long.');
+      } else {
+        setErrorMsg('Please correct the highlighted fields before submitting.');
+      }
       return;
     }
 
@@ -288,7 +320,7 @@ export const LoginView: React.FC = () => {
         }
 
         setSuccessMsg('Welcome back! Redirecting...');
-        setTimeout(() => handlePostAuthRedirect(effectiveRole), 700);
+        setTimeout(() => handlePostAuthRedirect(effectiveRole, userWithCorrectRole), 700);
       } else {
         // Signup flow
         if (!otpSent) {
@@ -355,7 +387,7 @@ export const LoginView: React.FC = () => {
           if (effectiveRole === 'BRAND') {
             setSuccessMsg('Brand account created! Your account is pending admin approval. You will be notified once approved.');
             setTimeout(() => {
-              handlePostAuthRedirect('BRAND');
+            handlePostAuthRedirect('BRAND', userWithCorrectRole);
             }, 2500);
           } else {
             setSignupCreator(userWithCorrectRole);
@@ -660,40 +692,6 @@ export const LoginView: React.FC = () => {
 
             {!creatorProfileSetup && (
               <>
-                {/* Email */}
-                <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
-                  <input
-                    type="email"
-                    autoComplete="email"
-                    required
-                    placeholder="Email address"
-                    value={email}
-                    onChange={e => { setEmail(e.target.value); setTouched(t => ({ ...t, email: true })); }}
-                    className={`${fieldClass('email')} pl-10`}
-                  />
-                </div>
-
-                {/* Password */}
-                {!isForgotPassword && (
-                  <div className="relative">
-                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                      required
-                      placeholder="Password"
-                      value={password}
-                      onChange={e => { setPassword(e.target.value); setTouched(t => ({ ...t, password: true })); }}
-                      className={`${fieldClass('password')} pl-10 pr-10`}
-                    />
-                    <button type="button" onClick={() => setShowPassword(s => !s)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition cursor-pointer">
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                )}
-
                 {/* Signup only fields */}
                 {mode === 'signup' && !otpSent && !isForgotPassword && (
                   <>
@@ -705,7 +703,8 @@ export const LoginView: React.FC = () => {
                           placeholder="Your Full Name *"
                           value={name}
                           onChange={e => { setName(e.target.value); setTouched(t => ({ ...t, name: true })); }}
-                          className={`${fieldClass('name')} pl-10`}
+                          onBlur={() => setTouched(t => ({ ...t, name: true }))}
+                          className={`${fieldClass('name', name)} pl-10`}
                         />
                       </div>
                     ) : (
@@ -717,7 +716,8 @@ export const LoginView: React.FC = () => {
                             placeholder="Company / Brand Name *"
                             value={companyName}
                             onChange={e => { setCompanyName(e.target.value); setTouched(t => ({ ...t, companyName: true })); }}
-                            className={`${fieldClass('companyName')} pl-10`}
+                            onBlur={() => setTouched(t => ({ ...t, companyName: true }))}
+                            className={`${fieldClass('companyName', companyName)} pl-10`}
                           />
                         </div>
                         <div className="relative">
@@ -738,7 +738,7 @@ export const LoginView: React.FC = () => {
                       <select
                         value={countryCode}
                         onChange={e => setCountryCode(e.target.value)}
-                        className="px-3 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-xs font-bold focus:outline-none focus:border-[#D4A338]/60 transition cursor-pointer w-28"
+                        className="px-2 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-[11px] font-bold focus:outline-none focus:border-[#D4A338]/60 transition cursor-pointer w-[4.5rem] shrink-0"
                       >
                         {COUNTRY_CODES.map(c => (
                           <option key={c.code} value={c.code} className="bg-[#051126]">{c.label}</option>
@@ -748,15 +748,83 @@ export const LoginView: React.FC = () => {
                         <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                         <input
                           type="tel"
+                          inputMode="numeric"
+                          maxLength={10}
                           placeholder="Phone number *"
                           value={phone}
-                          onChange={e => { setPhone(e.target.value); setTouched(t => ({ ...t, phone: true })); }}
-                          className={`${fieldClass('phone')} pl-10`}
+                          onChange={e => {
+                            const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                            setPhone(val);
+                            setTouched(t => ({ ...t, phone: true }));
+                          }}
+                          onBlur={() => setTouched(t => ({ ...t, phone: true }))}
+                          className={`${fieldClass('phone', phone)} pl-10`}
                         />
                       </div>
                     </div>
                   </>
                 )}
+
+                {/* Email */}
+                <div className="relative">
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                  <input
+                    type="email"
+                    autoComplete="email"
+                    required
+                    placeholder="Email address"
+                    value={email}
+                    onChange={e => { setEmail(e.target.value); setTouched(t => ({ ...t, email: true })); }}
+                    onBlur={() => setTouched(t => ({ ...t, email: true }))}
+                    className={`${fieldClass('email', email)} pl-10`}
+                  />
+                </div>
+
+                {/* Password */}
+                {!isForgotPassword && (
+                  <div className="space-y-3">
+                    <div className="relative">
+                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                        required
+                        maxLength={8}
+                        placeholder="Password"
+                        value={password}
+                        onChange={e => { setPassword(e.target.value.slice(0, 8)); setTouched(t => ({ ...t, password: true })); }}
+                        onBlur={() => setTouched(t => ({ ...t, password: true }))}
+                        className={`${fieldClass('password', password)} pl-10 pr-10`}
+                      />
+                      <button type="button" onClick={() => setShowPassword(s => !s)}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition cursor-pointer">
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+
+                    {mode === 'signup' && (
+                      <div className="relative">
+                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                        <input
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          autoComplete="new-password"
+                          required
+                          maxLength={8}
+                          placeholder="Confirm Password"
+                          value={confirmPassword}
+                          onChange={e => { setConfirmPassword(e.target.value.slice(0, 8)); setTouched(t => ({ ...t, confirmPassword: true })); }}
+                          onBlur={() => setTouched(t => ({ ...t, confirmPassword: true }))}
+                          className={`w-full px-4 py-3 bg-white/5 border ${touched.confirmPassword && password !== confirmPassword ? 'border-rose-500/50 bg-rose-500/5' : 'border-white/10'} rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#D4A338]/60 focus:bg-white/8 text-xs font-medium transition pl-10 pr-10`}
+                        />
+                        <button type="button" onClick={() => setShowConfirmPassword(s => !s)}
+                          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition cursor-pointer">
+                          {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
 
                 {/* OTP Input */}
                 {(otpSent || resetOtpSent) && !isForgotPassword || (isForgotPassword && resetOtpSent) ? (
@@ -770,7 +838,8 @@ export const LoginView: React.FC = () => {
                         placeholder="Enter 6-digit OTP"
                         value={otp}
                         onChange={e => { setOtp(e.target.value); setTouched(t => ({ ...t, otp: true })); }}
-                        className={`${fieldClass('otp')} pl-10 tracking-[0.3em] font-mono`}
+                        onBlur={() => setTouched(t => ({ ...t, otp: true }))}
+                        className={`${fieldClass('otp', otp)} pl-10 tracking-[0.3em] font-mono`}
                       />
                     </div>
                     {isForgotPassword && resetOtpSent && (
@@ -781,7 +850,8 @@ export const LoginView: React.FC = () => {
                           placeholder="New password"
                           value={newPassword}
                           onChange={e => setNewPassword(e.target.value)}
-                          className={`${fieldClass('newPassword')} pl-10`}
+                          onBlur={() => setTouched(t => ({ ...t, newPassword: true }))}
+                          className={`${fieldClass('newPassword', newPassword)} pl-10`}
                         />
                       </div>
                     )}
