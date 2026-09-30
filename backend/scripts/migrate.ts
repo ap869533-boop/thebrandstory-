@@ -2,8 +2,9 @@ import { dbQueryStrict } from '../config/db';
 import { migration001 } from '../migrations/001_add_query_indexes';
 import { migration002 } from '../migrations/002_add_creator_social_columns';
 import { migration003 } from '../migrations/003_add_creator_event_price';
+import { migration004 } from '../migrations/004_add_brand_legal_name';
 
-const migrations = [migration001, migration002, migration003];
+const migrations = [migration001, migration002, migration003, migration004];
 
 async function runMigrations() {
   await dbQueryStrict(`

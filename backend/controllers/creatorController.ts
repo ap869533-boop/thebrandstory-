@@ -41,8 +41,6 @@ export function mapDbRowToCreator(row: any): Creator {
     ageGroup: row.age_group || '',
     phone: row.phone || '',
     email: row.email || '',
-    facebookUrl: row.facebook_url || '',
-    youtubeUrl: row.youtube_url || '',
     followers: Number(row.followers) || 0,
     rating: Number(row.rating) || 0,
     totalPosts: Number(row.total_posts) || 0,
@@ -83,8 +81,7 @@ export function mapDbRowToCreator(row: any): Creator {
     audience: typeof row.audience === 'string' ? JSON.parse(row.audience) : (row.audience || {}),
     portfolio: typeof row.portfolio === 'string' ? JSON.parse(row.portfolio) : (row.portfolio || []),
     // Contact details stay private and are shared through authenticated enquiries.
-    phone: '',
-    email: '',
+    // Contact details stay private and are shared through authenticated enquiries.
     verificationStepsCompleted: [],
     previousCollaborations: [],
     reviews: [],
@@ -522,8 +519,8 @@ export async function createCreator(req: Request, res: Response) {
         newCreator.primaryCategory,
         newCreator.email || null,
         newCreator.phone || null,
-        newCreator.facebookUrl || null,
-        newCreator.youtubeUrl || null,
+        null, // facebook_url removed from Creator interface
+        null, // youtube_url removed from Creator interface
         newCreator.followers,
         newCreator.totalPosts,
         newCreator.avgViews,

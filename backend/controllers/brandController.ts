@@ -65,12 +65,14 @@ function mapAdminBrandRow(r: any) {
     userEmail: r.user_email,
     userPhone: r.user_phone,
     companyName: r.company_name,
+    legalName: r.legal_name || '',
   };
 }
 
 export async function ensurePendingBrandProfile(opts: {
   userId: string;
   brandName?: string;
+  legalName?: string;
   gstNumber?: string;
   contactPerson?: string;
   phone?: string;
@@ -85,6 +87,7 @@ export async function ensurePendingBrandProfile(opts: {
     id,
     userId: opts.userId,
     brandName,
+    legalName: opts.legalName || '',
     gstNumber: opts.gstNumber || '',
     logoUrl: '',
     coverUrl: '',
@@ -99,20 +102,20 @@ export async function ensurePendingBrandProfile(opts: {
     contactPerson: opts.contactPerson || '',
     phone: opts.phone || '',
     email: opts.email || '',
-    approvalStatus: 'pending' as const,
+    approvalStatus: 'approved' as const,
     rejectionReason: '',
     isFeatured: false,
     createdAt: new Date().toISOString(),
   };
-  brandProfilesStore.unshift(profile);
+  brandProfilesStore.unshift(profile as any);
 
   await dbQuery(
-    `INSERT INTO brand_profiles (id, user_id, brand_name, gst_number, contact_person, phone, email, approval_status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`,
-    [id, opts.userId, brandName, opts.gstNumber || null, opts.contactPerson || null, opts.phone || null, opts.email || null]
+    `INSERT INTO brand_profiles (id, user_id, brand_name, legal_name, gst_number, contact_person, phone, email, approval_status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'approved')`,
+    [id, opts.userId, brandName, opts.legalName || null, opts.gstNumber || null, opts.contactPerson || null, opts.phone || null, opts.email || null]
   );
   await dbQuery(
-    `UPDATE users SET approval_status = 'pending' WHERE id = ? AND (approval_status IS NULL OR approval_status = '')`,
+    `UPDATE users SET approval_status = 'approved' WHERE id = ? AND (approval_status IS NULL OR approval_status = '')`,
     [opts.userId]
   );
   return id;
@@ -273,6 +276,7 @@ export async function updateBrandProfile(req: AuthenticatedRequest, res: Respons
     const userId = req.user.id;
     const {
       brandName,
+      legalName,
       gstNumber,
       logoUrl,
       coverUrl,
@@ -312,8 +316,8 @@ export async function updateBrandProfile(req: AuthenticatedRequest, res: Respons
 
     // Update in MySQL
     await dbQueryStrict(
-      `UPDATE brand_profiles SET brand_name=?, gst_number=?, logo_url=?, cover_url=?, description=?, website=?, facebook_url=?, instagram_url=?, youtube_url=?, linkedin_url=?, industry=?, city=?, contact_person=?, phone=?, email=? WHERE user_id=?`,
-      [brandName, gstNumber || null, logoUrl || null, coverUrl || null, description || null, website || null, facebookUrl || null, instagramUrl || null, youtubeUrl || null, linkedinUrl || null, industry || null, city || null, contactPerson || null, phone || null, email || null, userId]
+      `UPDATE brand_profiles SET brand_name=?, legal_name=?, gst_number=?, logo_url=?, cover_url=?, description=?, website=?, facebook_url=?, instagram_url=?, youtube_url=?, linkedin_url=?, industry=?, city=?, contact_person=?, phone=?, email=? WHERE user_id=?`,
+      [brandName, legalName || null, gstNumber || null, logoUrl || null, coverUrl || null, description || null, website || null, facebookUrl || null, instagramUrl || null, youtubeUrl || null, linkedinUrl || null, industry || null, city || null, contactPerson || null, phone || null, email || null, userId]
     );
 
     // Update in memory

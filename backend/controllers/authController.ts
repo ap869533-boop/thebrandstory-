@@ -160,7 +160,7 @@ export async function signup(req: Request, res: Response) {
         companyName || null,
         userAvatar,
         1,
-        role === 'BRAND' ? 'pending' : 'approved'
+        'approved'
       ]
     ).catch(err => console.warn('MySQL insert notice:', err));
 
@@ -558,7 +558,7 @@ export async function login(req: Request, res: Response) {
         role: user.role,
         phone: user.phone || '',
         companyName: user.company_name,
-        approvalStatus: user.approval_status || (user.role === 'BRAND' ? 'pending' : 'approved'),
+        approvalStatus: user.approval_status || 'approved',
         avatar: user.avatar,
         creatorProfile: creatorProfile || undefined,
         logoUrl,
@@ -615,6 +615,12 @@ export async function requestOtp(req: Request, res: Response) {
 
     // If it's a signup request (role is provided), check if email is already registered
     if (role) {
+      const { phone, countryCode } = req.body;
+      const normalizedPhone = normalizeMobile(phone, countryCode);
+      if (!normalizedPhone) {
+        return res.status(400).json({ success: false, error: 'A valid 10-digit mobile number is required' });
+      }
+
       const sqlUser = 'SELECT id FROM users WHERE email = ? LIMIT 1';
       const dbUsers = await dbQuery(sqlUser, [cleanEmail]);
       const memUser = memoryUsers.find((u) => u.email === cleanEmail);
@@ -643,7 +649,7 @@ export async function requestOtp(req: Request, res: Response) {
 
 export async function verifyOtp(req: Request, res: Response) {
   try {
-    const { email, otp, name, role: requestedRole, phone, companyName, gstNumber, username, category, city, password, countryCode, deferCreatorSignup, signupToken } = req.body;
+    const { email, otp, name, role: requestedRole, phone, companyName, legalName, gstNumber, username, category, city, password, countryCode, deferCreatorSignup, signupToken } = req.body;
     const role = String(requestedRole || '').toUpperCase();
 
     if (requestedRole && role !== 'BRAND' && role !== 'CREATOR') {
@@ -689,17 +695,19 @@ export async function verifyOtp(req: Request, res: Response) {
     const existingMemUser = memoryUsers.find((u) => u.email === cleanEmail);
     const existingUser = existingDbUser || existingMemUser;
 
-    // Creator onboarding must not create any database record at the OTP step.
+    const deferBrandSignup = req.body.deferBrandSignup;
+
+    // Onboarding must not create any database record at the OTP step.
     // It only issues a short-lived proof which is consumed by the final step.
-    if (deferCreatorSignup && role === 'CREATOR' && !signupToken) {
+    if ((deferCreatorSignup && role === 'CREATOR' || deferBrandSignup && role === 'BRAND') && !signupToken) {
       if (existingUser) return res.status(409).json({ success: false, error: 'This email is already registered. Please sign in instead.' });
-      const pendingSignupToken = jwt.sign({ email: cleanEmail, role: 'CREATOR', purpose: 'creator_signup' }, JWT_SECRET, { expiresIn: '20m' });
+      const pendingSignupToken = jwt.sign({ email: cleanEmail, role, purpose: `${role.toLowerCase()}_signup` }, JWT_SECRET, { expiresIn: '20m' });
       return res.json({ success: true, message: 'OTP verified. Complete your profile to create the account.', signupToken: pendingSignupToken });
     }
 
     if (isSignupContext) {
       // This is a SIGNUP attempt — if email already registered, reject it
-      if (existingUser && !(signupToken && role === 'CREATOR' && existingUser.role === 'CREATOR')) {
+      if (existingUser && !(signupToken && (role === 'CREATOR' && existingUser.role === 'CREATOR' || role === 'BRAND' && existingUser.role === 'BRAND'))) {
         return res.status(409).json({
           success: false,
           error: 'This email is already registered. Please sign in instead.'
@@ -742,7 +750,7 @@ export async function verifyOtp(req: Request, res: Response) {
       await dbQuery(
         `INSERT INTO users (id, name, email, password_hash, role, phone, company_name, avatar, approval_status)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [userId, name, cleanEmail, hashedPassword, role, normalizedPhone, companyName || null, userAvatar || null, role === 'BRAND' ? 'pending' : 'approved']
+        [userId, name, cleanEmail, hashedPassword, role, normalizedPhone, companyName || null, userAvatar || null, 'approved']
       ).catch(err => console.warn('MySQL user insert notice:', err));
 
       const newUser: UserRecord = {
@@ -760,7 +768,7 @@ export async function verifyOtp(req: Request, res: Response) {
       user = newUser;
 
       if (role === 'BRAND') {
-        await ensurePendingBrandProfile({ userId, brandName: companyName, gstNumber, contactPerson: name, phone: normalizedPhone, email: cleanEmail });
+        await ensurePendingBrandProfile({ userId, brandName: companyName, legalName, gstNumber, contactPerson: name, phone: normalizedPhone, email: cleanEmail });
       }
 
       // Auto Creator Profile setup if CREATOR

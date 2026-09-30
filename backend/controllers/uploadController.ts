@@ -44,7 +44,7 @@ function getPreviousUrl(creatorId: string, type: string) {
   return undefined;
 }
 
-export function saveBase64Media(dataUri: string, type: 'avatar' | 'cover' | 'reel_video' | 'chat_attachment' = 'avatar'): string {
+export function saveBase64Media(dataUri: string, type: 'avatar' | 'cover' | 'reel_video' | 'chat_attachment' | 'brand_logo' = 'avatar'): string {
   if (!dataUri || typeof dataUri !== 'string' || !dataUri.startsWith('data:')) return dataUri || '';
   const encodedData = dataUri.split(',')[1];
   if (!encodedData) return '';

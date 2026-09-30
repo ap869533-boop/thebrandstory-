@@ -41,6 +41,7 @@ export const LoginView: React.FC = () => {
   const {
     viewParams,
     navigateTo,
+    authUser,
     setAuthUser,
     setCurrentRole,
     setCreators,
@@ -63,6 +64,7 @@ export const LoginView: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [countryCode, setCountryCode] = useState('+91');
   const [companyName, setCompanyName] = useState('');
+  const [legalName, setLegalName] = useState('');
   const [gstNumber, setGstNumber] = useState('');
   const [category, setCategory] = useState('');
   const [city, setCity] = useState('');
@@ -88,6 +90,14 @@ export const LoginView: React.FC = () => {
   const [signupCreator, setSignupCreator] = useState<any>(null);
   const [pendingSignupToken, setPendingSignupToken] = useState<string | null>(null);
 
+  // Brand Profile Setup
+  const [brandProfileSetup, setBrandProfileSetup] = useState(false);
+  const [brandIndustry, setBrandIndustry] = useState('');
+  const [brandCity, setBrandCity] = useState('');
+  const [brandWebsite, setBrandWebsite] = useState('');
+  const [brandInstagram, setBrandInstagram] = useState('');
+  const [brandFacebook, setBrandFacebook] = useState('');
+
   // Creator Setup Step 1 Fields
   const [gender, setGender] = useState('');
   const [ageGroup, setAgeGroup] = useState('');
@@ -98,8 +108,11 @@ export const LoginView: React.FC = () => {
   const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [showCropper, setShowCropper] = useState(false);
-  const [cropTarget, setCropTarget] = useState<'avatar' | 'cover'>('avatar');
+  const [cropTarget, setCropTarget] = useState<'avatar' | 'cover' | 'brand_logo'>('avatar');
   const [cropSrc, setCropSrc] = useState('');
+
+  // Brand Setup Step 2 Fields
+  const [brandLogoUrl, setBrandLogoUrl] = useState('');
 
   // Creator Setup Step 2 Fields
   const [followers, setFollowers] = useState('');
@@ -159,7 +172,7 @@ export const LoginView: React.FC = () => {
     if (mode === 'signup') {
       if (password !== confirmPassword) return false;
       if (role === 'CREATOR' && (name.trim().length < 2 || phone.trim().length < 10)) return false;
-      if (role === 'BRAND' && (companyName.trim().length < 2 || phone.trim().length < 10)) return false;
+      if (role === 'BRAND' && (companyName.trim().length < 2 || legalName.trim().length < 2 || phone.trim().length < 10)) return false;
     }
     return true;
   };
@@ -182,29 +195,91 @@ export const LoginView: React.FC = () => {
       reader.readAsDataURL(file);
     });
 
-  const completeCreatorSetup = async () => {
-    const creatorUser = signupCreator;
-    if (!creatorUser) throw new Error('No creator session found');
+  const validateBrandSetup = () => {
+    return brandIndustry.trim().length > 1 && brandCity.trim().length > 1 && brandWebsite.trim().length > 1 && brandInstagram.trim().length > 1;
+  };
 
+  const ensureRegistered = async () => {
+    if (pendingSignupToken && (!authUser && !signupCreator)) {
+      const verifyPayload: any = {
+        signupToken: pendingSignupToken, email: email.trim(), password, name: role === 'CREATOR' ? name.trim() : companyName.trim(),
+        role, phone: phone.trim(), countryCode: countryCode.trim(),
+      };
+      if (role === 'BRAND') {
+        verifyPayload.companyName = companyName.trim(); verifyPayload.legalName = legalName.trim(); verifyPayload.gstNumber = gstNumber.trim();
+      }
+      const res = await fetch(apiUrl('/api/auth/verify-otp'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(verifyPayload) });
+      const data = await readApiResponse(res);
+      if (!res.ok || !data.success) throw new Error(data.error || 'Failed to complete registration');
+      if (data.token) localStorage.setItem('sc_auth_token', data.token);
+      return data;
+    }
+    return { token: localStorage.getItem('sc_auth_token'), user: authUser || signupCreator };
+  };
+
+  const completeBrandSetup = async () => {
+    const regData = await ensureRegistered();
+    const token = regData.token;
+    const user = regData.user;
+    if (!token || !user) throw new Error('Authentication session expired');
+
+    let finalLogoUrl = undefined;
+    if (brandLogoUrl && brandLogoUrl.startsWith('data:')) {
+      const imageResponse = await fetch(apiUrl('/api/upload'), {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ image: brandLogoUrl, type: 'brand_logo' }),
+      });
+      const imageData = await readApiResponse(imageResponse);
+      if (imageResponse.ok && imageData.success && imageData.url) finalLogoUrl = apiUrl(imageData.url);
+    }
+    
+    const brandUpdates: any = { 
+      brandName: companyName.trim(),
+      legalName: legalName.trim(),
+      industry: brandIndustry.trim(), 
+      city: brandCity.trim(), 
+      website: brandWebsite.trim(), 
+      instagramUrl: brandInstagram.trim(), 
+      facebookUrl: brandFacebook.trim() 
+    };
+    if (finalLogoUrl) brandUpdates.logoUrl = finalLogoUrl;
+    
+    const res = await fetch(apiUrl('/api/brands/profile'), {
+      method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(brandUpdates)
+    });
+    const data = await readApiResponse(res);
+    if (!res.ok || !data.success) throw new Error(data.error || 'Could not save brand profile');
+    
+    const updatedUser = { ...user, logoUrl: data.brandProfile?.logoUrl || finalLogoUrl };
+    localStorage.setItem('sc_auth_user', JSON.stringify(updatedUser));
+    setAuthUser(updatedUser);
+    
+    setSuccessMsg('Brand account created successfully!');
+    setTimeout(() => {
+      handlePostAuthRedirect('BRAND', updatedUser);
+    }, 2000);
+  };
+
+  const completeCreatorSetup = async () => {
     if (creatorSetupStep === 1) {
       setCreatorSetupStep(2);
       setSuccessMsg(null);
       return;
     }
 
-    // Step 2: Save Instagram profile data
-    const token = pendingSignupToken || localStorage.getItem('sc_auth_token');
-    const creatorId = creatorUser.creatorProfile?.id || creatorUser.id;
+    const regData = await ensureRegistered();
+    const token = regData.token;
+    const creatorUser = regData.user;
+    const creatorId = creatorUser?.creatorProfile?.id || creatorUser?.id;
     if (!token || !creatorId) throw new Error('Authentication session expired. Please sign up again.');
 
     const parsedStartingPrice = parseStartingPrice(startingPrice);
 
     const persistImage = async (dataUrl: string, type: 'avatar' | 'cover'): Promise<string | null> => {
       if (!dataUrl || !dataUrl.startsWith('data:')) return null;
-      const image = dataUrl;
       const imageResponse = await fetch(apiUrl('/api/upload'), {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ image, creatorId, type }),
+        body: JSON.stringify({ image: dataUrl, creatorId, type }),
       });
       const imageData = await readApiResponse(imageResponse);
       if (!imageResponse.ok || !imageData.success || !imageData.url) throw new Error(imageData.error || 'Image upload failed');
@@ -238,6 +313,17 @@ export const LoginView: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (brandProfileSetup) {
+      setTouched(t => ({ ...t, brandIndustry: true, brandCity: true, brandWebsite: true, brandInstagram: true }));
+      if (!validateBrandSetup()) {
+        setErrorMsg('Please correct the highlighted fields before continuing.');
+        return;
+      }
+      setIsLoading(true); setErrorMsg(null);
+      try { await completeBrandSetup(); } catch (err: any) { setErrorMsg(err.message || 'Could not save profile details.'); }
+      finally { setIsLoading(false); }
+      return;
+    }
     if (creatorProfileSetup) {
       if (creatorSetupStep === 1) {
         setTouched(t => ({ ...t, gender: true, ageGroup: true, creatorState: true, category: true }));
@@ -253,7 +339,7 @@ export const LoginView: React.FC = () => {
       finally { setIsLoading(false); }
       return;
     }
-    setTouched({ email: true, password: true, confirmPassword: true, name: true, companyName: true, phone: true, otp: true });
+    setTouched({ email: true, password: true, confirmPassword: true, name: true, companyName: true, legalName: true, phone: true, otp: true });
 
     if (!validate()) {
       if (mode === 'signup' && password !== confirmPassword) {
@@ -332,6 +418,7 @@ export const LoginView: React.FC = () => {
           };
           if (role === 'BRAND') {
             signupPayload.companyName = companyName.trim();
+            signupPayload.legalName = legalName.trim();
             signupPayload.gstNumber = gstNumber.trim();
           }
           if (role === 'CREATOR') signupPayload.category = category;
@@ -341,8 +428,9 @@ export const LoginView: React.FC = () => {
           });
           const data = await readApiResponse(res);
           if (!res.ok || !data.success) {
-            if (data.error && data.error.includes('already registered')) {
+            if (data.error && (data.error.toLowerCase().includes('already registered') || data.error.toLowerCase().includes('already exists'))) {
               setEmailError(data.error);
+              setTouched(t => ({ ...t, email: true }));
               throw new Error('SILENT');
             }
             throw new Error(data.error || 'Failed to send OTP');
@@ -353,9 +441,12 @@ export const LoginView: React.FC = () => {
           const verifyPayload: any = {
             email: email.trim(), otp: otp.trim(), password, name: role === 'CREATOR' ? name.trim() : companyName.trim(),
             role, phone: phone.trim(), countryCode: countryCode.trim(),
+            deferCreatorSignup: true,
+            deferBrandSignup: true,
           };
           if (role === 'BRAND') {
             verifyPayload.companyName = companyName.trim();
+            verifyPayload.legalName = legalName.trim();
             verifyPayload.gstNumber = gstNumber.trim();
           }
           if (role === 'CREATOR') verifyPayload.category = category;
@@ -369,12 +460,17 @@ export const LoginView: React.FC = () => {
             throw new Error(data.error || 'Failed to verify OTP & create account');
           }
 
-          if (role === 'CREATOR' && data.signupToken) {
+          if (data.signupToken) {
             setPendingSignupToken(data.signupToken);
-            setCreatorProfileSetup(true);
-            setCreatorSetupStep(1);
             setOtpSent(false);
-            setSuccessMsg('Email verified. Complete all profile steps before confirming your account.');
+            if (role === 'BRAND') {
+              setBrandProfileSetup(true);
+              setSuccessMsg('Email verified. Complete your brand profile to confirm your account.');
+            } else {
+              setCreatorProfileSetup(true);
+              setCreatorSetupStep(1);
+              setSuccessMsg('Email verified. Complete all profile steps before confirming your account.');
+            }
             return;
           }
 
@@ -393,10 +489,9 @@ export const LoginView: React.FC = () => {
           }
 
           if (effectiveRole === 'BRAND') {
-            setSuccessMsg('Brand account created! Your account is pending admin approval. You will be notified once approved.');
-            setTimeout(() => {
-            handlePostAuthRedirect('BRAND', userWithCorrectRole);
-            }, 2500);
+            setBrandProfileSetup(true);
+            setOtpSent(false);
+            setSuccessMsg('Email verified. Complete your brand profile.');
           } else {
             setSignupCreator(userWithCorrectRole);
             setCreatorProfileSetup(true);
@@ -558,6 +653,69 @@ export const LoginView: React.FC = () => {
                 </div>
               </div>
             )}
+            
+            {brandProfileSetup && (
+              <div className="space-y-4">
+                <div>
+                  <label className="block font-bold text-slate-300 mb-1.5">Brand Logo</label>
+                  <div className="flex items-center gap-3">
+                    <div className="w-14 h-14 rounded-full overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                      {brandLogoUrl
+                        ? <img src={brandLogoUrl} alt="Logo" className="w-full h-full object-cover" />
+                        : <div className="w-6 h-6 text-slate-500 flex items-center justify-center"><User className="w-full h-full" /></div>}
+                    </div>
+                    <label className="cursor-pointer px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 transition text-xs font-bold">
+                      Upload Logo
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (ev) => {
+                              setCropTarget('brand_logo');
+                              setCropSrc(ev.target?.result as string);
+                              setShowCropper(true);
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block font-bold text-slate-300 mb-1 text-[11px]">Industry *</label>
+                  <input type="text" value={brandIndustry} onChange={e => { setBrandIndustry(e.target.value); setTouched(t => ({ ...t, brandIndustry: true })); }}
+                    className={creatorFieldClass('brandIndustry', brandIndustry)} placeholder="e.g. Technology, Fashion" />
+                </div>
+                <div className="space-y-1">
+                  <label className="block font-bold text-slate-300 mb-1 text-[11px]">City / Location *</label>
+                  <input type="text" value={brandCity} onChange={e => { setBrandCity(e.target.value); setTouched(t => ({ ...t, brandCity: true })); }}
+                    className={creatorFieldClass('brandCity', brandCity)} placeholder="e.g. Mumbai" />
+                </div>
+                <div className="space-y-1">
+                  <label className="block font-bold text-slate-300 mb-1 text-[11px]">Website Link *</label>
+                  <input type="url" value={brandWebsite} onChange={e => { setBrandWebsite(e.target.value); setTouched(t => ({ ...t, brandWebsite: true })); }}
+                    className={creatorFieldClass('brandWebsite', brandWebsite)} placeholder="https://yourbrand.com" />
+                </div>
+                <div className="space-y-1">
+                  <label className="block font-bold text-slate-300 mb-1 text-[11px]">Instagram URL *</label>
+                  <input type="url" value={brandInstagram} onChange={e => { setBrandInstagram(e.target.value); setTouched(t => ({ ...t, brandInstagram: true })); }}
+                    className={creatorFieldClass('brandInstagram', brandInstagram)} placeholder="https://instagram.com/yourbrand" />
+                </div>
+                <div className="space-y-1">
+                  <label className="block font-bold text-slate-300 mb-1 text-[11px]">Facebook URL (Optional)</label>
+                  <input type="url" value={brandFacebook} onChange={e => setBrandFacebook(e.target.value)}
+                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#D4A338]/60 focus:bg-white/8 text-xs font-medium transition" placeholder="https://facebook.com/yourbrand" />
+                </div>
+              </div>
+            )}
+
+
             {creatorProfileSetup && (
               <div className="space-y-4">
                 <button
@@ -755,6 +913,17 @@ export const LoginView: React.FC = () => {
                           />
                         </div>
                         <div className="relative">
+                          <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                          <input
+                            type="text"
+                            placeholder="Legal Firm Name *"
+                            value={legalName}
+                            onChange={e => { setLegalName(e.target.value); setTouched(t => ({ ...t, legalName: true })); }}
+                            onBlur={() => setTouched(t => ({ ...t, legalName: true }))}
+                            className={`${fieldClass('legalName', legalName)} pl-10`}
+                          />
+                        </div>
+                        <div className="relative">
                           <FileText className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                           <input
                             type="text"
@@ -926,7 +1095,9 @@ export const LoginView: React.FC = () => {
               ) : (
                 <>
                   <span>
-                    {creatorProfileSetup
+                    {brandProfileSetup
+                      ? 'Complete Profile'
+                      : creatorProfileSetup
                       ? creatorSetupStep === 1 ? 'Next Step →' : 'Complete Profile'
                       : isForgotPassword
                         ? resetOtpSent ? 'Reset Password' : 'Send OTP'
@@ -966,10 +1137,11 @@ export const LoginView: React.FC = () => {
       {showCropper && (
         <ImageCropperModal
           imageSrc={cropSrc}
-          aspect={cropTarget === 'avatar' ? 1 : 9 / 16}
+          aspect={cropTarget === 'avatar' || cropTarget === 'brand_logo' ? 1 : 9 / 16}
           onCropDone={async (croppedFile) => {
             const base64Url = await fileToBase64(croppedFile as File);
-            if (cropTarget === 'avatar') setProfilePhotoUrl(base64Url);
+            if (cropTarget === 'brand_logo') setBrandLogoUrl(base64Url);
+            else if (cropTarget === 'avatar') setProfilePhotoUrl(base64Url);
             else setBannerUrl(base64Url);
             setShowCropper(false);
           }}
