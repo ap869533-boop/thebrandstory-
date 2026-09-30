@@ -209,7 +209,7 @@ export const CreatorDetailView: React.FC = () => {
         } else if (type.startsWith('portfolio-')) {
           const index = parseInt(type.replace('portfolio-', ''), 10);
           const newPortfolio = [...(creator.portfolio || [])];
-          while (newPortfolio.length < 4) {
+          while (newPortfolio.length < 5) {
             newPortfolio.push({ id: Math.random().toString(), type: 'post', title: '', thumbnail: '' } as any);
           }
           newPortfolio[index] = { ...newPortfolio[index], thumbnail: fullUrl };
@@ -674,36 +674,11 @@ export const CreatorDetailView: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-            {/* Box 1: Cover Photo */}
-            <div className="relative h-60 sm:h-80 rounded-2xl overflow-hidden shadow-sm border border-slate-200/80 bg-slate-900 group">
-              {creator.coverImage ? (
-                <img src={creator.coverImage} alt="Cover" className="w-full h-full object-cover object-center" loading="lazy" />
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 gap-2">
-                  <UploadCloud className="w-6 h-6" />
-                  <span className="text-[10px] text-center font-bold px-2">Upload your best image</span>
-                </div>
-              )}
-              {isOwner && (
-                <>
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition z-10 backdrop-blur-sm gap-2">
-                    <span className="text-xs font-black text-white pointer-events-none">{creator.coverImage ? 'Change Photo' : 'Upload Photo'}</span>
-                  </div>
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    className="absolute inset-0 opacity-0 cursor-pointer z-20"
-                    onChange={e => handlePortfolioImageSelect(e, 'cover')}
-                  />
-                </>
-              )}
-            </div>
-
-            {/* Boxes 2-5: Portfolio Items */}
-            {[0, 1, 2, 3].map((idx) => {
+            {/* Portfolio Items (5 slots) */}
+            {[0, 1, 2, 3, 4].map((idx) => {
               const item = creator.portfolio?.[idx];
               return (
-                <div key={idx} className="relative h-60 sm:h-80 rounded-2xl overflow-hidden shadow-sm border border-slate-200/80 bg-slate-100 group">
+                <div key={idx} className="relative h-60 sm:h-80 rounded-2xl overflow-hidden shadow-sm border border-slate-200/80 bg-slate-900 group">
                   {item?.thumbnail ? (
                     <img src={item.thumbnail} alt="Portfolio" className="w-full h-full object-cover object-center" loading="lazy" />
                   ) : (
