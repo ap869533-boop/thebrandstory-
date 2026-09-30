@@ -78,9 +78,6 @@ export const BrandCampaignsView: React.FC = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                         <h4 className="font-bold text-white truncate">{applicant.creatorName}</h4>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${applicant.status === 'Accepted' ? 'bg-emerald-500/20 text-emerald-400' : applicant.status === 'Declined' ? 'bg-rose-500/20 text-rose-400' : 'bg-[#D4A338]/20 text-[#D4A338]'}`}>
-                          {applicant.status || 'Pending'}
-                        </span>
                       </div>
                       <div className="bg-[#051126] p-3 rounded-xl border border-white/5 text-sm text-slate-300 italic">
                         "{applicant.pitch || 'No additional pitch provided.'}"
@@ -93,7 +90,7 @@ export const BrandCampaignsView: React.FC = () => {
                            View Profile
                          </button>
                          <button 
-                           onClick={(e) => { e.stopPropagation(); navigateTo('chat', { username: applicant.creatorName?.toLowerCase().replace(/\s+/g, '-') }); }}
+                           onClick={(e) => { e.stopPropagation(); navigateTo('chat', { username: applicant.creatorName?.toLowerCase().replace(/\s+/g, '-'), creatorId: applicant.creatorId, campaignId: selectedCampaign.id }); }}
                            className="text-xs font-bold bg-[#D4A338] hover:bg-[#be8f2b] text-slate-950 px-4 py-2 rounded-full transition cursor-pointer"
                          >
                            Message

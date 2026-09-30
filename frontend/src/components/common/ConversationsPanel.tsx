@@ -80,8 +80,11 @@ const WHATSAPP_DOODLE_WHITE_DATA_URL = `data:image/svg+xml;utf8,${encodeURICompo
 
 export const ConversationsPanel: React.FC<{
   openConversationId?: string | null;
+  openUsername?: string | null;
+  openCreatorId?: string | null;
+  campaignId?: string | null;
   fullPage?: boolean;
-}> = ({ openConversationId, fullPage = false }) => {
+}> = ({ openConversationId, openUsername, openCreatorId, campaignId, fullPage = false }) => {
   const { authUser } = usePlatform();
   const [threads, setThreads] = useState<ConversationThread[]>([]);
   const [activeId, setActiveId] = useState<string | null>(openConversationId || null);
@@ -183,8 +186,37 @@ export const ConversationsPanel: React.FC<{
     if (openConversationId) {
       setActiveId(openConversationId);
       setMobileShowChat(true);
+    } else if (openUsername && threads.length > 0) {
+      // Find thread by username/peerName
+      const normalizedQuery = openUsername.toLowerCase().replace(/-/g, ' ');
+      const matchedThread = threads.find(t => 
+        t.peerName.toLowerCase().includes(normalizedQuery) || 
+        normalizedQuery.includes(t.peerName.toLowerCase())
+      );
+      if (matchedThread && activeId !== matchedThread.id) {
+        setActiveId(matchedThread.id);
+        setMobileShowChat(true);
+      } else if (!matchedThread && openCreatorId && authUser?.role === 'BRAND') {
+        // If not found, create or open a new conversation
+        fetch(apiUrl('/api/conversations/open'), {
+          method: 'POST',
+          headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+          body: JSON.stringify({ creatorId: openCreatorId, campaignId })
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (data.success && data.conversationId) {
+              // Ensure we reload threads then set active
+              loadThreads().then(() => {
+                setActiveId(data.conversationId);
+                setMobileShowChat(true);
+              });
+            }
+          })
+          .catch(console.error);
+      }
     }
-  }, [openConversationId]);
+  }, [openConversationId, openUsername, openCreatorId, campaignId, threads, authUser, activeId, loadThreads]);
 
   useEffect(() => {
     if (!activeId) return;
@@ -233,8 +265,16 @@ export const ConversationsPanel: React.FC<{
       );
     }
 
+    // Ensure active thread is always visible
+    if (activeId && !result.find(t => t.id === activeId)) {
+      const activeThread = threads.find(t => t.id === activeId);
+      if (activeThread) {
+        result = [activeThread, ...result];
+      }
+    }
+
     return result;
-  }, [threads, searchQuery, activeFilter, showUnreadOnly]);
+  }, [threads, searchQuery, activeFilter, showUnreadOnly, activeId]);
 
   // Calculate unread thread counts for each category
   const unreadCounts = useMemo(() => {

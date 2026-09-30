@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Heart, HelpCircle, LogOut, Menu, Megaphone, MessageCircle, Search, User, Wallet, X } from 'lucide-react';
 import { usePlatform } from '../../context/PlatformContext';
+import { apiUrl, authHeaders } from '../../config/api';
 
 export const Navbar: React.FC = () => {
   const { authUser, filters, navigateTo, setFilters, creators, partnerBrands, openAuthModal, openSavedDrawer, logout } = usePlatform();
@@ -8,6 +9,26 @@ export const Navbar: React.FC = () => {
   const [showResults, setShowResults] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
+  const [navLogo, setNavLogo] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (authUser?.role === 'BRAND') {
+      fetch(apiUrl('/api/brands/profile'), { headers: authHeaders() })
+        .then(res => res.json())
+        .then(data => {
+          if (data.profile?.logoUrl) {
+            setNavLogo(data.profile.logoUrl);
+          }
+        })
+        .catch(() => {});
+    } else if (authUser?.role === 'CREATOR' && authUser.creatorProfile?.avatar) {
+      setNavLogo(authUser.creatorProfile.avatar);
+    } else if (authUser?.avatar || (authUser as any)?.logoUrl) {
+      setNavLogo(authUser.avatar || (authUser as any)?.logoUrl);
+    } else {
+      setNavLogo(null);
+    }
+  }, [authUser]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -201,7 +222,13 @@ export const Navbar: React.FC = () => {
               ) : (
                 <>
                   <div className="flex items-center gap-3 border-b border-white/10 pb-5">
-                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 border-[#D4A338] bg-[#0b1b3b] font-black text-lg text-white">{(authUser.name || 'U').charAt(0).toUpperCase()}</div>
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 border-[#D4A338] bg-[#0b1b3b] overflow-hidden font-black text-lg text-white">
+                      {navLogo ? (
+                        <img src={navLogo} alt="Profile" className="h-full w-full object-cover" />
+                      ) : (
+                        (authUser.name || authUser.companyName || 'U').charAt(0).toUpperCase()
+                      )}
+                    </div>
                     <div className="min-w-0"><p className="truncate font-extrabold">Hi, {authUser.name || authUser.companyName}</p><p className="truncate text-xs text-slate-400">{isBrand ? authUser.companyName : `@${authUser.name?.toLowerCase().replace(/\s+/g, '_')}`}</p><button type="button" onClick={() => isBrand ? goTo('brand-profile', { slug: accountSlug }) : goTo('creator-detail', { username: authUser.creatorProfile?.username || accountSlug })} className="mt-1 text-xs font-bold text-[#D4A338] cursor-pointer">View Profile ›</button></div>
                   </div>
 
