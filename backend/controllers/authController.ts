@@ -127,7 +127,8 @@ export async function signup(req: Request, res: Response) {
     if (!normalizedPhone) {
       return res.status(400).json({ success: false, error: 'A valid 10-digit mobile number is required' });
     }
-    const cleanUsername = cleanInstagramHandle(username || (req.body as any).instagramUrl || '');
+    const rawUsername = username || (req.body as any).instagramUrl || '';
+    const cleanUsername = cleanInstagramHandle(rawUsername) || `creator_${Date.now()}`;
     const instagramUrl = cleanUsername ? `https://instagram.com/${cleanUsername}` : '';
 
     // Check if user already exists (MySQL or Memory)
@@ -276,8 +277,8 @@ export async function signup(req: Request, res: Response) {
           id, user_id, name, username, avatar, cover_image, bio, current_city, primary_category,
           followers, avg_views, starting_price, reel_price, story_price, post_price,
           ugc_price, is_barter_available, collaboration_types, preferred_cities, sub_categories,
-          languages, phone, email
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          languages, phone, email, status, verification_requested, social_platforms
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           createdCreatorProfile.id,
           userId,
@@ -295,15 +296,20 @@ export async function signup(req: Request, res: Response) {
           createdCreatorProfile.pricing.storyPrice,
           createdCreatorProfile.pricing.postPrice,
           createdCreatorProfile.pricing.ugcPrice,
-          createdCreatorProfile.pricing.isBarterAvailable,
+          createdCreatorProfile.pricing.isBarterAvailable ? 1 : 0,
           JSON.stringify(createdCreatorProfile.collaborationTypes),
           JSON.stringify(createdCreatorProfile.preferredCities),
           JSON.stringify(createdCreatorProfile.subCategories),
           JSON.stringify(createdCreatorProfile.languages),
           createdCreatorProfile.phone,
           createdCreatorProfile.email,
+          'pending',
+          0,
+          JSON.stringify(createdCreatorProfile.socialPlatforms),
         ]
-      );
+      ).catch((err: any) => {
+        console.error('❌ [SIGNUP] Failed to insert creator into DB:', err?.message || err);
+      });
     }
 
     // Generate JWT Token

@@ -331,7 +331,131 @@ export async function runAutoMigrations() {
       `ALTER TABLE campaign_requirements ADD COLUMN language VARCHAR(255) DEFAULT 'Any'`,
       `ALTER TABLE campaign_requirements ADD COLUMN valid_until DATE DEFAULT NULL`,
       `ALTER TABLE campaign_requirements MODIFY COLUMN language VARCHAR(255) DEFAULT 'Any'`,
-      `ALTER TABLE campaign_requirements DROP COLUMN influencers_count`
+      `ALTER TABLE campaign_requirements DROP COLUMN influencers_count`,
+
+      // --- creators: missing fields ---
+      `ALTER TABLE creators ADD COLUMN event_price INT UNSIGNED DEFAULT 10000`,
+      `ALTER TABLE creators ADD COLUMN verification_requested TINYINT(1) DEFAULT 0`,
+      `ALTER TABLE creators ADD COLUMN engagement_rate DECIMAL(5,2) DEFAULT 0`,
+      `ALTER TABLE creators ADD COLUMN trust_score INT UNSIGNED DEFAULT 0`,
+      `ALTER TABLE creators ADD COLUMN trust_signals JSON DEFAULT NULL`,
+      `ALTER TABLE creators ADD COLUMN avg_likes INT UNSIGNED DEFAULT 0`,
+      `ALTER TABLE creators ADD COLUMN avg_comments INT UNSIGNED DEFAULT 0`,
+      `ALTER TABLE creators ADD COLUMN brand_collaborations_count INT UNSIGNED DEFAULT 0`,
+      `ALTER TABLE creators ADD COLUMN is_top20 TINYINT(1) DEFAULT 0`,
+      `ALTER TABLE creators ADD COLUMN is_rising TINYINT(1) DEFAULT 0`,
+      `ALTER TABLE creators ADD COLUMN is_featured TINYINT(1) DEFAULT 0`,
+      `ALTER TABLE creators ADD COLUMN is_trending TINYINT(1) DEFAULT 0`,
+      `ALTER TABLE creators ADD COLUMN reel_video_url VARCHAR(500) DEFAULT NULL`,
+      `ALTER TABLE creators ADD COLUMN state VARCHAR(80) DEFAULT NULL`,
+      `ALTER TABLE creators ADD COLUMN gender VARCHAR(20) DEFAULT NULL`,
+      `ALTER TABLE creators ADD COLUMN age_group VARCHAR(20) DEFAULT NULL`,
+      `ALTER TABLE creators ADD COLUMN is_negotiable TINYINT(1) DEFAULT 1`,
+      `ALTER TABLE creators ADD COLUMN profile_views INT UNSIGNED DEFAULT 0`,
+      `ALTER TABLE creators ADD COLUMN saved_count INT UNSIGNED DEFAULT 0`,
+      `ALTER TABLE creators ADD COLUMN previous_collaborations JSON DEFAULT NULL`,
+      `ALTER TABLE creators ADD COLUMN facebook_url VARCHAR(500) DEFAULT NULL`,
+      `ALTER TABLE creators ADD COLUMN youtube_url VARCHAR(500) DEFAULT NULL`,
+      `ALTER TABLE creators ADD COLUMN phone VARCHAR(20) DEFAULT NULL`,
+      `ALTER TABLE creators ADD COLUMN email VARCHAR(150) DEFAULT NULL`,
+      `ALTER TABLE creators ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`,
+
+      // --- messages: attachment support ---
+      `ALTER TABLE messages ADD COLUMN attachment_url VARCHAR(500) DEFAULT NULL`,
+      `ALTER TABLE messages ADD COLUMN attachment_type VARCHAR(20) DEFAULT NULL`,
+      `ALTER TABLE messages ADD COLUMN attachment_name VARCHAR(200) DEFAULT NULL`,
+
+      // --- industries table ---
+      `CREATE TABLE IF NOT EXISTS \`industries\` (
+        \`id\` VARCHAR(64) PRIMARY KEY,
+        \`name\` VARCHAR(120) NOT NULL UNIQUE,
+        \`slug\` VARCHAR(120) NOT NULL UNIQUE,
+        \`icon_name\` VARCHAR(80) DEFAULT 'Briefcase',
+        \`description\` TEXT DEFAULT NULL,
+        \`recommended_categories\` JSON DEFAULT NULL,
+        \`image\` VARCHAR(500) DEFAULT NULL,
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+      // --- platform_stats table ---
+      `CREATE TABLE IF NOT EXISTS \`platform_stats\` (
+        \`id\` VARCHAR(64) PRIMARY KEY,
+        \`creators_display\` VARCHAR(20) DEFAULT '500+',
+        \`cities_display\` VARCHAR(20) DEFAULT '50+',
+        \`categories_display\` VARCHAR(20) DEFAULT '20+',
+        \`brand_connections_display\` VARCHAR(20) DEFAULT '200+',
+        \`custom_override\` TINYINT(1) DEFAULT 0,
+        \`updated_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+      // --- creator_reviews table ---
+      `CREATE TABLE IF NOT EXISTS \`creator_reviews\` (
+        \`id\` VARCHAR(64) PRIMARY KEY,
+        \`creator_id\` VARCHAR(64) NOT NULL,
+        \`brand_name\` VARCHAR(150) NOT NULL,
+        \`rating\` TINYINT UNSIGNED NOT NULL,
+        \`review_text\` TEXT NOT NULL,
+        \`campaign_type\` VARCHAR(80) DEFAULT NULL,
+        \`verified_collaboration\` TINYINT(1) DEFAULT 0,
+        \`brand_user_id\` VARCHAR(64) DEFAULT NULL,
+        \`campaign_id\` VARCHAR(64) DEFAULT NULL,
+        \`conversation_id\` VARCHAR(64) DEFAULT NULL,
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX \`idx_creator_reviews_creator\` (\`creator_id\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+      // --- categories table ---
+      `CREATE TABLE IF NOT EXISTS \`categories\` (
+        \`id\` VARCHAR(64) PRIMARY KEY,
+        \`name\` VARCHAR(100) NOT NULL UNIQUE,
+        \`slug\` VARCHAR(100) NOT NULL UNIQUE,
+        \`icon_name\` VARCHAR(80) DEFAULT 'Sparkles',
+        \`image\` VARCHAR(500) DEFAULT NULL,
+        \`description\` TEXT DEFAULT NULL,
+        \`count\` INT UNSIGNED DEFAULT 0,
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+      // --- cities table ---
+      `CREATE TABLE IF NOT EXISTS \`cities\` (
+        \`id\` VARCHAR(64) PRIMARY KEY,
+        \`name\` VARCHAR(100) NOT NULL UNIQUE,
+        \`slug\` VARCHAR(100) NOT NULL UNIQUE,
+        \`state\` VARCHAR(80) DEFAULT NULL,
+        \`tier\` VARCHAR(10) DEFAULT '1',
+        \`image\` VARCHAR(500) DEFAULT NULL,
+        \`count\` INT UNSIGNED DEFAULT 0,
+        \`latitude\` DECIMAL(10,7) DEFAULT NULL,
+        \`longitude\` DECIMAL(10,7) DEFAULT NULL,
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+      // --- blog_posts table ---
+      `CREATE TABLE IF NOT EXISTS \`blog_posts\` (
+        \`id\` VARCHAR(64) PRIMARY KEY,
+        \`title\` VARCHAR(300) NOT NULL,
+        \`slug\` VARCHAR(300) NOT NULL UNIQUE,
+        \`excerpt\` TEXT DEFAULT NULL,
+        \`content\` LONGTEXT DEFAULT NULL,
+        \`cover_image\` VARCHAR(500) DEFAULT NULL,
+        \`author_name\` VARCHAR(120) DEFAULT 'thebrandsstory. Editorial',
+        \`category\` VARCHAR(80) DEFAULT NULL,
+        \`read_time\` VARCHAR(20) DEFAULT '5 min read',
+        \`published_at\` VARCHAR(50) DEFAULT NULL,
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+      // --- partner_brands table ---
+      `CREATE TABLE IF NOT EXISTS \`partner_brands\` (
+        \`id\` VARCHAR(64) PRIMARY KEY,
+        \`name\` VARCHAR(150) NOT NULL,
+        \`category\` VARCHAR(80) DEFAULT NULL,
+        \`logo_url\` VARCHAR(500) DEFAULT NULL,
+        \`website\` VARCHAR(255) DEFAULT NULL,
+        \`sort_order\` INT UNSIGNED DEFAULT 0,
+        \`is_active\` TINYINT(1) DEFAULT 1,
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
     ];
 
     for (const query of alterQueries) {
