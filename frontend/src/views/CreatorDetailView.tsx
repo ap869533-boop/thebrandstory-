@@ -115,9 +115,18 @@ export const CreatorDetailView: React.FC = () => {
     return () => { cancelled = true; };
   }, [requestedUsername]);
 
-  const creator: Creator | undefined = fetchedCreator || localCreator || undefined;
+  const baseCreator: Creator | undefined = fetchedCreator || localCreator || undefined;
+  const isOwnerProfile = Boolean(
+    authUser && baseCreator && (
+      authUser.id === baseCreator.id ||
+      authUser.creatorProfile?.id === baseCreator.id ||
+      authUser.creatorProfile?.username === baseCreator.username
+    )
+  );
+  // Prioritize localCreator for the owner so optimistic updates are immediately reflected
+  const creator: Creator | undefined = (isOwnerProfile && localCreator) ? localCreator : baseCreator;
 
-  if (profileLoading) {
+  if (profileLoading && !creator) {
     return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-sm text-slate-300">Loading profile...</div>;
   }
 
