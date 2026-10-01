@@ -266,6 +266,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     else if (view === 'admin-dashboard') path = '/admin';
     else if (view === 'blog') path = '/blog';
     else if (view === 'blog-post' && params.blogSlug) path = `/blog/${params.blogSlug}`;
+    else if (view === 'help-support') path = '/help-support';
     else path = `/${view}`;
     
     // Sync the browser URL using React Router

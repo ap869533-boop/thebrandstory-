@@ -27,6 +27,7 @@ const BlogPostView = lazy(() => import('./views/BlogPostView').then(({ BlogPostV
 const BrandDetailView = lazy(() => import('./views/BrandDetailView').then(({ BrandDetailView }) => ({ default: BrandDetailView })));
 const LoginView = lazy(() => import('./views/LoginView').then(({ LoginView }) => ({ default: LoginView })));
 const ChatView = lazy(() => import('./views/ChatView').then(({ ChatView }) => ({ default: ChatView })));
+const HelpSupportView = lazy(() => import('./views/HelpSupportView').then(({ HelpSupportView }) => ({ default: HelpSupportView })));
 
 const MainAppContent: React.FC = () => {
   return (
@@ -55,6 +56,7 @@ const MainAppContent: React.FC = () => {
             <Route path="/admin" element={<AdminDashboardView />} />
             <Route path="/blog" element={<BlogView />} />
             <Route path="/blog/:blogSlug" element={<BlogPostView />} />
+            <Route path="/help-support" element={<HelpSupportView />} />
             {/* Catch all route - redirect to home */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
