@@ -302,6 +302,38 @@ export const AuthModal: React.FC = () => {
     if (![followers, totalPosts, avgViews, avgLikes, avgComments].every(value => value.trim() !== '') || Number(startingPrice) <= 0) {
       throw new Error('Please enter every Instagram metric and a starting price. Use 0 where a metric is zero.');
     }
+    const instagramHandle = username.match(/instagram\.com\/([^/?#]+)/i)?.[1] || username.trim();
+    const profileUpdates = {
+      username: instagramHandle, gender, currentCity: creatorState.trim(), state: '', primaryCategory: category,
+      avatar: profilePhotoUrl, coverImage: bannerUrl,
+      languages: languages.split(',').map((item) => item.trim()).filter(Boolean), ageGroup,
+      startingPrice: Number(startingPrice), pricing: { startingPrice: Number(startingPrice) },
+      followers: Number(followers) || 0, totalPosts: Number(totalPosts) || 0,
+      avgViews: Number(avgViews) || 0, avgLikes: Number(avgLikes) || 0, avgComments: Number(avgComments) || 0,
+      socialPlatforms: [{ platform: 'instagram', username: instagramHandle, url: username.trim(), followers: Number(followers) || 0, avgViews: Number(avgViews) || 0, verified: false }],
+    };
+    if (pendingSignupToken && !signupCreator) {
+      const response = await fetch(apiUrl('/api/auth/verify-otp'), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email.trim(), password, name: name.trim(), role: 'CREATOR', phone: phone.trim(), countryCode,
+          signupToken: pendingSignupToken, creatorProfile: profileUpdates,
+        }),
+      });
+      const data = await readApiResponse(response);
+      if (!response.ok || !data.success || !data.token || !data.user?.creatorProfile) {
+        throw new Error(data.error || 'Could not save your complete creator profile');
+      }
+      localStorage.setItem('sc_auth_token', data.token);
+      localStorage.setItem('sc_auth_user', JSON.stringify(data.user));
+      setAuthUser(data.user);
+      setCurrentRole('CREATOR');
+      setCreators((prev) => [data.user.creatorProfile, ...prev.filter((creator) => creator.id !== data.user.creatorProfile.id)]);
+      setActiveCreatorId(data.user.creatorProfile.id);
+      closeAuthModal();
+      navigateTo('creator-detail', { username: data.user.creatorProfile.username || data.user.creatorProfile.id });
+      return;
+    }
     let creatorUser = signupCreator;
     let token = localStorage.getItem('sc_auth_token') || '';
     if (!creatorUser) {
@@ -329,17 +361,10 @@ export const AuthModal: React.FC = () => {
     };
     const avatarUrl = await persistImage(profilePhotoUrl, 'avatar');
     const cardPhotoUrl = await persistImage(bannerUrl, 'cover');
-    const instagramHandle = username.match(/instagram\.com\/([^/?#]+)/i)?.[1] || username;
     const updates = {
-      username: instagramHandle, gender, currentCity: creatorState.trim(), state: '', primaryCategory: category,
+      ...profileUpdates,
       avatar: avatarUrl || undefined,
       coverImage: cardPhotoUrl || undefined,
-      languages: languages.split(',').map((item) => item.trim()).filter(Boolean), ageGroup,
-      startingPrice: Number(startingPrice),
-      pricing: { startingPrice: Number(startingPrice) },
-      followers: Number(followers) || 0, totalPosts: Number(totalPosts) || 0,
-      avgViews: Number(avgViews) || 0, avgLikes: Number(avgLikes) || 0, avgComments: Number(avgComments) || 0,
-      socialPlatforms: [{ platform: 'instagram', username: instagramHandle, url: username.trim(), followers: Number(followers) || 0, avgViews: Number(avgViews) || 0, verified: false }],
     };
     const response = await fetch(apiUrl(`/api/creators/${creatorId}`), {
       method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(updates),
