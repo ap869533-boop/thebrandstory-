@@ -91,10 +91,10 @@ export const CreatorDetailView: React.FC = () => {
   const [cropModalData, setCropModalData] = useState<{ src: string, type: string } | null>(null);
   const [uploadingMedia, setUploadingMedia] = useState<string | null>(null);
 
-  // Protect direct profile URLs as well as navigation from creator cards.
   useEffect(() => {
     if (!authUser) navigateTo('login', { mode: 'login' });
-  }, [authUser, navigateTo]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authUser]);
 
   // Cards can be loaded from sections that have more than the initial creator
   // list. Load the individual profile so every active creator remains viewable.
