@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { dbQuery, isDbConnected } from '../config/db';
+import { dbQuery, dbQueryStrict } from '../config/db';
 import { AuthenticatedRequest } from '../middleware/authMiddleware';
 import { creatorsStore, mapDbRowToCreator } from './creatorController';
+import { saveBase64Media } from './uploadController';
 import { Creator } from '../types';
 import { sendOtpEmail, sendWelcomeEmail } from '../utils/mailer';
 import { cleanInstagramHandle } from '../utils/sanitize';
@@ -117,6 +118,9 @@ export async function signup(req: Request, res: Response) {
     if (role !== 'BRAND' && role !== 'CREATOR') {
       return res.status(400).json({ success: false, error: 'Only BRAND or CREATOR accounts can be registered publicly' });
     }
+    if (String(role) === 'CREATOR') {
+      return res.status(400).json({ success: false, error: 'Creator signup must use OTP verification and complete profile onboarding.' });
+    }
 
     if (!name || !email || !password) {
       return res.status(400).json({ success: false, error: 'Name, email and password are required' });
@@ -148,10 +152,10 @@ export async function signup(req: Request, res: Response) {
     const userAvatar = '';
 
     // 1. Insert in MySQL users table
-    await dbQuery(
+    const userInsertSql =
       `INSERT INTO users (id, name, email, password_hash, role, phone, company_name, avatar, is_verified, approval_status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const userInsertParams = [
         userId,
         name,
         cleanEmail,
@@ -162,8 +166,12 @@ export async function signup(req: Request, res: Response) {
         userAvatar,
         1,
         'approved'
-      ]
-    ).catch(err => console.warn('MySQL insert notice:', err));
+      ];
+    if (role === 'CREATOR') {
+      await dbQueryStrict(userInsertSql, userInsertParams);
+    } else {
+      await dbQuery(userInsertSql, userInsertParams);
+    }
 
     // Save in memory store
     const newUser: UserRecord = {
@@ -177,7 +185,7 @@ export async function signup(req: Request, res: Response) {
       avatar: userAvatar,
       created_at: new Date().toISOString(),
     };
-    memoryUsers.push(newUser);
+    if (role !== 'CREATOR') memoryUsers.push(newUser);
 
     if (role === 'BRAND') {
       await ensurePendingBrandProfile({ userId, brandName: companyName, gstNumber, contactPerson: name, phone: normalizedPhone, email: cleanEmail });
@@ -269,17 +277,16 @@ export async function signup(req: Request, res: Response) {
         createdAt: new Date().toISOString(),
       };
 
-      creatorsStore.unshift(createdCreatorProfile);
-
       // Insert into MySQL creators table
-      await dbQuery(
-        `INSERT INTO creators (
+      try {
+        await dbQueryStrict(
+          `INSERT INTO creators (
           id, user_id, name, username, avatar, cover_image, bio, current_city, primary_category,
           followers, avg_views, starting_price, reel_price, story_price, post_price,
           ugc_price, is_barter_available, collaboration_types, preferred_cities, sub_categories,
           languages, phone, email, status, verification_requested, social_platforms
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
+          [
           createdCreatorProfile.id,
           userId,
           createdCreatorProfile.name,
@@ -305,11 +312,17 @@ export async function signup(req: Request, res: Response) {
           createdCreatorProfile.email,
           'pending',
           0,
-          JSON.stringify(createdCreatorProfile.socialPlatforms),
-        ]
-      ).catch((err: any) => {
-        console.error('❌ [SIGNUP] Failed to insert creator into DB:', err?.message || err);
-      });
+            JSON.stringify(createdCreatorProfile.socialPlatforms),
+          ]
+        );
+      } catch (error) {
+        await dbQueryStrict('DELETE FROM users WHERE id = ?', [userId]).catch((cleanupError) => {
+          console.error('Failed to clean up incomplete creator signup:', cleanupError);
+        });
+        throw error;
+      }
+      creatorsStore.unshift(createdCreatorProfile);
+      memoryUsers.push(newUser);
     }
 
     // Generate JWT Token
@@ -339,7 +352,7 @@ export async function signup(req: Request, res: Response) {
   }
 }
 
-export async function fetchOrCreateCreatorProfile(user: any): Promise<Creator | null> {
+export async function fetchOrCreateCreatorProfile(user: any, requirePersistence = false): Promise<Creator | null> {
   if (!user || user.role !== 'CREATOR') return null;
 
   const cleanEmail = (user.email || '').toLowerCase().trim();
@@ -347,7 +360,9 @@ export async function fetchOrCreateCreatorProfile(user: any): Promise<Creator | 
   // 1. Check in MySQL creators table
   try {
     const sqlCreator = 'SELECT * FROM creators WHERE user_id = ? OR LOWER(email) = ? LIMIT 1';
-    const rows = await dbQuery(sqlCreator, [user.id, cleanEmail]);
+    const rows = requirePersistence
+      ? await dbQueryStrict(sqlCreator, [user.id, cleanEmail])
+      : await dbQuery(sqlCreator, [user.id, cleanEmail]);
     if (rows && rows.length > 0) {
       const creator = mapDbRowToCreator(rows[0]);
       // Sync into memory store
@@ -361,13 +376,16 @@ export async function fetchOrCreateCreatorProfile(user: any): Promise<Creator | 
     }
   } catch (err) {
     console.warn('Error querying creator by user_id/email:', err);
+    if (requirePersistence) throw new Error('Could not load the creator profile from the database.');
   }
 
   // 2. Check in memory creatorsStore
-  const memCreator = creatorsStore.find(
-    c => (c.email && c.email.toLowerCase() === cleanEmail) || c.id === user.id
-  );
-  if (memCreator) return memCreator;
+  if (!requirePersistence) {
+    const memCreator = creatorsStore.find(
+      c => (c.email && c.email.toLowerCase() === cleanEmail) || c.id === user.id
+    );
+    if (memCreator) return memCreator;
+  }
 
   // 3. Not found anywhere — auto-create in MySQL & creatorsStore!
   const cleanUsername = createDraftCreatorUsername(user.id || `draft_${Date.now()}`);
@@ -455,17 +473,15 @@ export async function fetchOrCreateCreatorProfile(user: any): Promise<Creator | 
     createdAt: new Date().toISOString(),
   };
 
-  creatorsStore.unshift(newCreator);
-
   try {
-    await dbQuery(
+    const creatorInsertSql =
       `INSERT INTO creators (
         id, user_id, name, username, avatar, cover_image, reel_video_url, bio, current_city, primary_category,
         followers, avg_views, starting_price, reel_price, story_price, post_price,
         ugc_price, is_barter_available, collaboration_types, preferred_cities, sub_categories,
         languages, phone, email, is_verified, verification_requested, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
-      [
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const creatorInsertParams = [
         newCreator.id,
         user.id,
         newCreator.name,
@@ -493,12 +509,18 @@ export async function fetchOrCreateCreatorProfile(user: any): Promise<Creator | 
         0,
         0,
         'pending'
-      ]
-    );
+      ];
+    if (requirePersistence) {
+      await dbQueryStrict(creatorInsertSql, creatorInsertParams);
+    } else {
+      await dbQuery(creatorInsertSql, creatorInsertParams);
+    }
   } catch (err) {
     console.warn('Auto insert creator error in fetchOrCreateCreatorProfile:', err);
+    if (requirePersistence) throw new Error('Could not save the creator profile to the database.');
   }
 
+  creatorsStore.unshift(newCreator);
   return newCreator;
 }
 
@@ -655,7 +677,7 @@ export async function requestOtp(req: Request, res: Response) {
 
 export async function verifyOtp(req: Request, res: Response) {
   try {
-    const { email, otp, name, role: requestedRole, phone, companyName, legalName, gstNumber, username, category, city, password, countryCode, deferCreatorSignup, signupToken } = req.body;
+    const { email, otp, name, role: requestedRole, phone, companyName, legalName, gstNumber, username, category, city, password, countryCode, deferCreatorSignup, signupToken, creatorProfile: creatorProfileInput } = req.body;
     const role = String(requestedRole || '').toUpperCase();
 
     if (requestedRole && role !== 'BRAND' && role !== 'CREATOR') {
@@ -688,6 +710,36 @@ export async function verifyOtp(req: Request, res: Response) {
       otpCache.delete(cleanEmail);
     }
 
+    if (signupToken && role === 'CREATOR') {
+      const requiredProfileFields = [
+        creatorProfileInput?.username,
+        creatorProfileInput?.gender,
+        creatorProfileInput?.ageGroup,
+        creatorProfileInput?.currentCity,
+        creatorProfileInput?.primaryCategory,
+      ];
+      const numericFields = ['followers', 'totalPosts', 'avgViews', 'avgLikes', 'avgComments'];
+      const hasValidMetrics = numericFields.every((field) => {
+        const value = Number(creatorProfileInput?.[field]);
+        return Number.isFinite(value) && value >= 0;
+      });
+      if (
+        !creatorProfileInput ||
+        requiredProfileFields.some((value) => !String(value || '').trim()) ||
+        !Number.isFinite(Number(creatorProfileInput.startingPrice)) || Number(creatorProfileInput.startingPrice) <= 0 ||
+        !hasValidMetrics ||
+        !Array.isArray(creatorProfileInput.languages) ||
+        !Array.isArray(creatorProfileInput.socialPlatforms) || creatorProfileInput.socialPlatforms.length === 0
+      ) {
+        return res.status(400).json({ success: false, error: 'Please complete all required creator profile fields before submitting.' });
+      }
+      for (const image of [creatorProfileInput.avatar, creatorProfileInput.coverImage]) {
+        if (typeof image === 'string' && image.startsWith('data:') && !/^data:image\/(jpeg|png|webp|gif);base64,/i.test(image)) {
+          return res.status(400).json({ success: false, error: 'Profile photos must be valid image files.' });
+        }
+      }
+    }
+
     const isSignupContext = !!(name && role && password); // True when called from signup form
 
     // Check if user exists in DB
@@ -700,6 +752,10 @@ export async function verifyOtp(req: Request, res: Response) {
     const existingDbUser = (dbUsers && dbUsers.length > 0) ? dbUsers[0] : null;
     const existingMemUser = memoryUsers.find((u) => u.email === cleanEmail);
     const existingUser = existingDbUser || existingMemUser;
+
+    if (signupToken && role === 'CREATOR' && existingUser) {
+      return res.status(409).json({ success: false, error: 'This email is already registered. Please sign in instead.' });
+    }
 
     const deferBrandSignup = req.body.deferBrandSignup;
 
@@ -723,7 +779,7 @@ export async function verifyOtp(req: Request, res: Response) {
       // this final, verified confirmation request with its short-lived token.
       if (existingUser) {
         user = existingUser;
-        user.creatorProfile = await fetchOrCreateCreatorProfile(user);
+        user.creatorProfile = await fetchOrCreateCreatorProfile(user, Boolean(signupToken && role === 'CREATOR'));
       }
       // New user signup path
       if (!user) user = null; // will be created below
@@ -742,7 +798,7 @@ export async function verifyOtp(req: Request, res: Response) {
       }
 
       isNewUser = true;
-      const requestedUsername = cleanInstagramHandle(req.body.instagramUrl || username || '');
+      const requestedUsername = cleanInstagramHandle(creatorProfileInput?.username || req.body.instagramUrl || username || '');
       const userId = `usr_${Date.now()}`;
       const cleanUsername = requestedUsername || createDraftCreatorUsername(userId);
       const instagramUrl = requestedUsername ? `https://instagram.com/${cleanUsername}` : '';
@@ -752,12 +808,26 @@ export async function verifyOtp(req: Request, res: Response) {
         return res.status(400).json({ success: false, error: 'Password is required for registration' });
       }
       const hashedPassword = await bcrypt.hash(password, 10);
+      const creatorAvatar = role === 'CREATOR' && creatorProfileInput?.avatar
+        ? saveBase64Media(creatorProfileInput.avatar, 'avatar')
+        : userAvatar;
+      const creatorCoverImage = role === 'CREATOR' && creatorProfileInput?.coverImage
+        ? saveBase64Media(creatorProfileInput.coverImage, 'cover')
+        : '';
 
-      await dbQuery(
+      if (role === 'CREATOR') {
+        await dbQueryStrict(
+          `INSERT INTO users (id, name, email, password_hash, role, phone, company_name, avatar, approval_status)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [userId, name, cleanEmail, hashedPassword, role, normalizedPhone, companyName || null, userAvatar || null, 'approved']
+        );
+      } else {
+        await dbQuery(
         `INSERT INTO users (id, name, email, password_hash, role, phone, company_name, avatar, approval_status)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [userId, name, cleanEmail, hashedPassword, role, normalizedPhone, companyName || null, userAvatar || null, 'approved']
-      ).catch(err => console.warn('MySQL user insert notice:', err));
+          [userId, name, cleanEmail, hashedPassword, role, normalizedPhone, companyName || null, userAvatar || null, 'approved']
+        ).catch(err => console.warn('MySQL user insert notice:', err));
+      }
 
       const newUser: UserRecord = {
         id: userId,
@@ -770,7 +840,7 @@ export async function verifyOtp(req: Request, res: Response) {
         avatar: userAvatar,
         created_at: new Date().toISOString(),
       };
-      memoryUsers.push(newUser);
+      if (role !== 'CREATOR') memoryUsers.push(newUser);
       user = newUser;
 
       if (role === 'BRAND') {
@@ -780,25 +850,31 @@ export async function verifyOtp(req: Request, res: Response) {
       // Auto Creator Profile setup if CREATOR
       if (role === 'CREATOR') {
         const creatorId = `c_${Date.now()}`;
+        const profileCity = creatorProfileInput?.currentCity || city || '';
+        const profileLanguages = creatorProfileInput?.languages || [];
+        const socialPlatforms = creatorProfileInput?.socialPlatforms || [{
+          platform: 'instagram', username: cleanUsername, url: instagramUrl, followers: 0, avgViews: 0, verified: false,
+        }];
         const createdCreatorProfile: Creator = {
           id: creatorId,
           name,
           username: cleanUsername,
-          avatar: userAvatar,
-          coverImage: '',
+          avatar: creatorAvatar,
+          coverImage: creatorCoverImage,
           bio: '',
-          currentCity: city || '',
-          state: '',
-          preferredCities: city ? [city] : [],
-          primaryCategory: category || '',
+          currentCity: profileCity,
+          state: creatorProfileInput?.state || '',
+          preferredCities: profileCity ? [profileCity] : [],
+          primaryCategory: creatorProfileInput?.primaryCategory || category || '',
           subCategories: [],
-          languages: [],
-          gender: undefined,
-          ageGroup: '',
-          followers: 0,
-          avgViews: 0,
-          avgLikes: 0,
-          avgComments: 0,
+          languages: profileLanguages,
+          gender: creatorProfileInput?.gender,
+          ageGroup: creatorProfileInput?.ageGroup || '',
+          followers: Number(creatorProfileInput?.followers) || 0,
+          totalPosts: Number(creatorProfileInput?.totalPosts) || 0,
+          avgViews: Number(creatorProfileInput?.avgViews) || 0,
+          avgLikes: Number(creatorProfileInput?.avgLikes) || 0,
+          avgComments: Number(creatorProfileInput?.avgComments) || 0,
           brandCollaborationsCount: 0,
           trustScore: 0,
           trustSignals: {
@@ -815,34 +891,26 @@ export async function verifyOtp(req: Request, res: Response) {
             accountActivityScore: 0,
           },
           isVerified: false,
-          verificationRequested: false,
+          verificationRequested: true,
           verificationStepsCompleted: [],
           isTop20: false,
           isRising: false,
           isFeatured: false,
           isTrending: false,
           status: 'pending',
-          startingPrice: 0,
+          startingPrice: Number(creatorProfileInput?.startingPrice) || 0,
           pricing: {
-            reelPrice: 0,
-            storyPrice: 0,
-            postPrice: 0,
-            ugcPrice: 0,
+            startingPrice: Number(creatorProfileInput?.startingPrice) || 0,
+            reelPrice: Number(creatorProfileInput?.pricing?.reelPrice) || 0,
+            storyPrice: Number(creatorProfileInput?.pricing?.storyPrice) || 0,
+            postPrice: Number(creatorProfileInput?.pricing?.postPrice) || 0,
+            ugcPrice: Number(creatorProfileInput?.pricing?.ugcPrice) || 0,
             isNegotiable: false,
             isBarterAvailable: false,
             pricingDisplayType: 'starting',
           },
           collaborationTypes: [],
-          socialPlatforms: [
-            {
-              platform: 'instagram',
-              username: cleanUsername,
-              url: instagramUrl,
-              followers: 0,
-              avgViews: 0,
-              verified: false,
-            }
-          ],
+          socialPlatforms,
           audience: {
             topCities: [],
             topCountries: [],
@@ -862,56 +930,80 @@ export async function verifyOtp(req: Request, res: Response) {
           createdAt: new Date().toISOString(),
         };
 
-        creatorsStore.unshift(createdCreatorProfile);
+        const completionFields = [
+          Boolean(createdCreatorProfile.avatar),
+          Boolean(createdCreatorProfile.coverImage),
+          Boolean(createdCreatorProfile.bio && createdCreatorProfile.bio.trim().length > 30),
+          Boolean(createdCreatorProfile.currentCity.trim()),
+          Boolean(createdCreatorProfile.primaryCategory.trim()),
+          createdCreatorProfile.followers > 0,
+          createdCreatorProfile.startingPrice > 0,
+          Boolean(createdCreatorProfile.socialPlatforms.some((platform: any) => platform.platform === 'instagram' && platform.username)),
+          createdCreatorProfile.languages.length > 0,
+        ];
+        const completionPct = Math.round((completionFields.filter(Boolean).length / completionFields.length) * 100);
+        if (completionPct >= 70) {
+          createdCreatorProfile.isVerified = true;
+          createdCreatorProfile.verificationRequested = false;
+          createdCreatorProfile.status = 'active';
+        }
+
         user.creatorProfile = createdCreatorProfile;
 
         // DB Insert
-        const creatorInsertResult = await dbQuery(
-          `INSERT INTO creators (
-            id, user_id, name, username, avatar, cover_image, reel_video_url, bio, current_city, primary_category,
-            followers, avg_views, starting_price, reel_price, story_price, post_price,
-            ugc_price, is_barter_available, collaboration_types, preferred_cities, sub_categories,
-            languages, phone, email, is_verified, verification_requested, status
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
-          [
-            createdCreatorProfile.id,
-            userId,
-            createdCreatorProfile.name,
-            createdCreatorProfile.username,
-            createdCreatorProfile.avatar,
-            createdCreatorProfile.coverImage,
-            createdCreatorProfile.reelVideoUrl || null,
-            createdCreatorProfile.bio,
-            createdCreatorProfile.currentCity,
-            createdCreatorProfile.primaryCategory,
-            createdCreatorProfile.followers,
-            createdCreatorProfile.avgViews,
-            createdCreatorProfile.startingPrice,
-            createdCreatorProfile.pricing.reelPrice,
-            createdCreatorProfile.pricing.storyPrice,
-            createdCreatorProfile.pricing.postPrice,
-            createdCreatorProfile.pricing.ugcPrice,
-            createdCreatorProfile.pricing.isBarterAvailable ? 1 : 0,
-            JSON.stringify(createdCreatorProfile.collaborationTypes),
-            JSON.stringify(createdCreatorProfile.preferredCities),
-            JSON.stringify(createdCreatorProfile.subCategories),
-            JSON.stringify(createdCreatorProfile.languages),
-            createdCreatorProfile.phone || null,
-            createdCreatorProfile.email || null,
-            0,
-            1,
-            'pending'
-          ]
-        );
-        if (creatorInsertResult === null && isDbConnected()) {
-          // Do not leave an account behind if its required creator profile could not be created.
-          const failedCreatorIndex = creatorsStore.findIndex((creator) => creator.id === creatorId);
-          if (failedCreatorIndex !== -1) creatorsStore.splice(failedCreatorIndex, 1);
-          const memoryUserIndex = memoryUsers.findIndex((item) => item.id === userId);
-          if (memoryUserIndex !== -1) memoryUsers.splice(memoryUserIndex, 1);
-          await dbQuery('DELETE FROM users WHERE id = ?', [userId]);
-          throw new Error('Could not create the creator profile. Please try signing up again.');
+        try {
+          await dbQueryStrict(
+            `INSERT INTO creators (
+              id, user_id, name, username, avatar, cover_image, reel_video_url, bio, current_city, primary_category,
+              gender, age_group, followers, total_posts, avg_views, avg_likes, avg_comments, starting_price,
+              reel_price, story_price, post_price, ugc_price, is_barter_available, collaboration_types,
+              preferred_cities, sub_categories, languages, phone, email, is_verified, verification_requested,
+              status, social_platforms
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
+            [
+              createdCreatorProfile.id,
+              userId,
+              createdCreatorProfile.name,
+              createdCreatorProfile.username,
+              createdCreatorProfile.avatar,
+              createdCreatorProfile.coverImage,
+              createdCreatorProfile.reelVideoUrl || null,
+              createdCreatorProfile.bio,
+              createdCreatorProfile.currentCity,
+              createdCreatorProfile.primaryCategory,
+              createdCreatorProfile.gender || null,
+              createdCreatorProfile.ageGroup || null,
+              createdCreatorProfile.followers,
+              createdCreatorProfile.totalPosts,
+              createdCreatorProfile.avgViews,
+              createdCreatorProfile.avgLikes,
+              createdCreatorProfile.avgComments,
+              createdCreatorProfile.startingPrice,
+              createdCreatorProfile.pricing.reelPrice,
+              createdCreatorProfile.pricing.storyPrice,
+              createdCreatorProfile.pricing.postPrice,
+              createdCreatorProfile.pricing.ugcPrice,
+              createdCreatorProfile.pricing.isBarterAvailable ? 1 : 0,
+              JSON.stringify(createdCreatorProfile.collaborationTypes),
+              JSON.stringify(createdCreatorProfile.preferredCities),
+              JSON.stringify(createdCreatorProfile.subCategories),
+              JSON.stringify(createdCreatorProfile.languages),
+              createdCreatorProfile.phone || null,
+              createdCreatorProfile.email || null,
+              createdCreatorProfile.isVerified ? 1 : 0,
+              createdCreatorProfile.verificationRequested ? 1 : 0,
+              createdCreatorProfile.status,
+              JSON.stringify(createdCreatorProfile.socialPlatforms),
+            ]
+          );
+        } catch (error) {
+          await dbQueryStrict('DELETE FROM users WHERE id = ?', [userId]).catch((cleanupError) => {
+            console.error('Failed to clean up incomplete creator signup:', cleanupError);
+          });
+          throw error;
         }
+        creatorsStore.unshift(createdCreatorProfile);
+        memoryUsers.push(newUser);
       }
 
       // Send Welcome Email

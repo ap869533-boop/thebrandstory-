@@ -274,13 +274,46 @@ export const LoginView: React.FC = () => {
       return;
     }
 
+    const parsedStartingPrice = parseStartingPrice(startingPrice);
+    const instagramHandle = username.match(/instagram\.com\/([^/?#]+)/i)?.[1] || username.trim();
+    const updates = {
+      username: instagramHandle, gender, ageGroup, currentCity: creatorState.trim(), state: '', primaryCategory: category,
+      languages: languages.split(',').map(item => item.trim()).filter(Boolean),
+      avatar: profilePhotoUrl || '', coverImage: bannerUrl || '',
+      startingPrice: parsedStartingPrice,
+      pricing: { startingPrice: parsedStartingPrice },
+      followers: Number(followers) || 0, totalPosts: Number(totalPosts) || 0,
+      avgViews: Number(avgViews) || 0, avgLikes: Number(avgLikes) || 0, avgComments: Number(avgComments) || 0,
+      socialPlatforms: [{ platform: 'instagram', username: instagramHandle, url: username.trim(), followers: Number(followers) || 0, avgViews: Number(avgViews) || 0, verified: false }],
+    };
+
+    if (pendingSignupToken && !authUser && !signupCreator) {
+      const res = await fetch(apiUrl('/api/auth/verify-otp'), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email.trim(), password, name: name.trim(), role: 'CREATOR', phone: phone.trim(), countryCode,
+          signupToken: pendingSignupToken, creatorProfile: updates,
+        }),
+      });
+      const data = await readApiResponse(res);
+      if (!res.ok || !data.success || !data.token || !data.user?.creatorProfile) {
+        throw new Error(data.error || 'Could not save your complete creator profile');
+      }
+      localStorage.setItem('sc_auth_token', data.token);
+      localStorage.setItem('sc_auth_user', JSON.stringify(data.user));
+      setAuthUser(data.user);
+      setCurrentRole('CREATOR');
+      setCreators(prev => [data.user.creatorProfile, ...prev.filter(c => c.id !== data.user.creatorProfile.id)]);
+      setActiveCreatorId(data.user.creatorProfile.id);
+      navigateTo('creator-detail', { username: data.user.creatorProfile.username || data.user.creatorProfile.id });
+      return;
+    }
+
     const regData = await ensureRegistered();
     const token = regData.token;
     const creatorUser = regData.user;
     const creatorId = creatorUser?.creatorProfile?.id || creatorUser?.id;
     if (!token || !creatorId) throw new Error('Authentication session expired. Please sign up again.');
-
-    const parsedStartingPrice = parseStartingPrice(startingPrice);
 
     const persistImage = async (dataUrl: string, type: 'avatar' | 'cover'): Promise<string | null> => {
       if (!dataUrl || !dataUrl.startsWith('data:')) return null;
@@ -294,17 +327,8 @@ export const LoginView: React.FC = () => {
     };
     const avatarUrl = await persistImage(profilePhotoUrl, 'avatar');
     const coverUrl = await persistImage(bannerUrl, 'cover');
-    const instagramHandle = username.match(/instagram\.com\/([^/?#]+)/i)?.[1] || username.trim();
-    const updates = {
-      username: instagramHandle, gender, ageGroup, currentCity: creatorState.trim(), state: '', primaryCategory: category,
-      languages: languages.split(',').map(item => item.trim()).filter(Boolean),
-      avatar: avatarUrl || undefined, coverImage: coverUrl || undefined,
-      startingPrice: parsedStartingPrice,
-      pricing: { startingPrice: parsedStartingPrice },
-      followers: Number(followers) || 0, totalPosts: Number(totalPosts) || 0,
-      avgViews: Number(avgViews) || 0, avgLikes: Number(avgLikes) || 0, avgComments: Number(avgComments) || 0,
-      socialPlatforms: [{ platform: 'instagram', username: instagramHandle, url: username.trim(), followers: Number(followers) || 0, avgViews: Number(avgViews) || 0, verified: false }],
-    };
+    updates.avatar = avatarUrl || undefined;
+    updates.coverImage = coverUrl || undefined;
     const res = await fetch(apiUrl(`/api/creators/${creatorId}`), {
       method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(updates),
     });
@@ -895,7 +919,7 @@ export const LoginView: React.FC = () => {
                     <div>
                       <label className="block font-bold text-slate-300 mb-1">Starting Price (₹) *</label>
                       <input
-                        type="text"
+                        type="number"
                         value={startingPrice}
                         onChange={e => setStartingPrice(e.target.value)}
                         placeholder="e.g. 5000 or 5000-15000"
@@ -918,6 +942,7 @@ export const LoginView: React.FC = () => {
                         <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                         <input
                           type="text"
+                          maxLength={30}
                           placeholder="Your Full Name *"
                           value={name}
                           onChange={e => setName(e.target.value)}
@@ -930,6 +955,7 @@ export const LoginView: React.FC = () => {
                           <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                           <input
                             type="text"
+                            maxLength={30}
                             placeholder="Company / Brand Name *"
                             value={companyName}
                             onChange={e => setCompanyName(e.target.value)}
@@ -940,6 +966,7 @@ export const LoginView: React.FC = () => {
                           <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                           <input
                             type="text"
+                            maxLength={30}
                             placeholder="Legal Firm Name *"
                             value={legalName}
                             onChange={e => setLegalName(e.target.value)}
@@ -1021,10 +1048,10 @@ export const LoginView: React.FC = () => {
                         type={showPassword ? 'text' : 'password'}
                         autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                         required
-                        maxLength={8}
+                        maxLength={10}
                         placeholder={mode === 'signup' ? 'Create your password' : 'Password'}
                         value={password}
-                        onChange={e => setPassword(e.target.value.slice(0, 8))}
+                        onChange={e => setPassword(e.target.value.slice(0, 10))}
                         className={`${fieldClass('password', password)} pl-10 pr-10`}
                       />
                       <button type="button" onClick={() => setShowPassword(s => !s)}

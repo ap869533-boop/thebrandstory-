@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { dbQuery } from '../config/db';
+import { dbQuery, dbQueryStrict } from '../config/db';
 import { INITIAL_CREATORS } from '../data/initialData';
 import { Creator } from '../types';
 import { sendApprovalEmail, sendProfileInformationWarningEmail, sendProfileReminderEmail } from '../utils/mailer';
@@ -637,7 +637,7 @@ export async function updateCreator(req: AuthenticatedRequest, res: Response) {
     }
   }
 
-  creatorsStore[index] = {
+  const updatedCreator = {
     ...creatorsStore[index],
     ...body,
     pricing: {
@@ -648,7 +648,7 @@ export async function updateCreator(req: AuthenticatedRequest, res: Response) {
 
   // Comprehensive MySQL Update
   try {
-    await dbQuery(
+    await dbQueryStrict(
       `UPDATE creators SET
         name = COALESCE(?, name),
         username = COALESCE(?, username),
@@ -742,9 +742,14 @@ export async function updateCreator(req: AuthenticatedRequest, res: Response) {
       ]
     );
   } catch (err) {
-    console.warn('MySQL creator full update notice:', err);
+    console.error('Creator profile persistence error:', err);
+    return res.status(503).json({
+      success: false,
+      error: 'Creator profile could not be saved. Please try again.',
+    });
   }
 
+  creatorsStore[index] = updatedCreator;
 
   if (shouldSendApprovalEmail) {
     const creatorName = creatorsStore[index].name;
