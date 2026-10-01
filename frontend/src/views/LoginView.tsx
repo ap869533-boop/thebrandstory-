@@ -46,6 +46,7 @@ export const LoginView: React.FC = () => {
     setCurrentRole,
     setCreators,
     setActiveCreatorId,
+    industries,
     siteLogo
   } = usePlatform();
 
@@ -127,7 +128,7 @@ export const LoginView: React.FC = () => {
     if (!touched[field]) return false;
     if (!value) return true;
     if (field === 'email') return !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
-    if (field === 'password') return value.trim().length < 6 || value.trim().length > 10;
+    if (field === 'password') return value.trim().length < 6 || value.trim().length > 8;
     if (field === 'confirmPassword') return mode === 'signup' && value !== password;
     if (field === 'name' || field === 'companyName') return value.trim().length < 2;
     if (field === 'phone') return value.trim().length < 10;
@@ -136,7 +137,7 @@ export const LoginView: React.FC = () => {
   };
 
   const fieldClass = (field: string, value: string, extra = '') =>
-    `w-full px-4 py-3 bg-white/5 border ${isFieldInvalid(field, value) ? '!border-rose-500/70 !bg-rose-500/10' : 'border-white/10'} rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#D4A338]/60 focus:bg-white/8 text-xs font-medium transition ${extra}`;
+    `w-full px-4 py-3 bg-white/5 border ${isFieldInvalid(field, value) ? '!border-red-500' : 'border-white/10'} rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#D4A338]/60 focus:bg-white/8 text-xs font-medium transition ${extra}`;
 
   const creatorFieldClass = (field: string, value: string, extra = '') =>
     `w-full px-4 py-3 bg-white/5 border ${isFieldInvalid(field, value) ? 'border-rose-500/50 bg-rose-500/5' : 'border-white/10'} rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#D4A338]/60 focus:bg-white/8 text-xs font-medium transition ${extra}`;
@@ -351,8 +352,8 @@ export const LoginView: React.FC = () => {
     if (!validate()) {
       if (mode === 'signup' && password !== confirmPassword) {
         setErrorMsg('Passwords do not match.');
-      } else if (password.trim().length < 6 || password.trim().length > 10) {
-        setErrorMsg('Password must be between 6 and 10 characters long.');
+      } else if (password.trim().length < 6 || password.trim().length > 8) {
+        setErrorMsg('Password must be between 6 and 8 characters long.');
       } else {
         setErrorMsg('Please correct the highlighted fields before submitting.');
       }
@@ -520,7 +521,7 @@ export const LoginView: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#051126] py-12 px-4 sm:px-6 lg:px-8 flex flex-col justify-center items-center font-sans">
 
-      <div className="max-w-md w-full space-y-6">
+      <div className="max-w-sm w-full space-y-6">
         {/* Brand Header */}
         <div className="text-center space-y-3">
           
@@ -696,8 +697,16 @@ export const LoginView: React.FC = () => {
 
                 <div className="space-y-1">
                   <label className="block font-bold text-slate-300 mb-1 text-[11px]">Industry *</label>
-                  <input type="text" value={brandIndustry} onChange={e => { setBrandIndustry(e.target.value); setTouched(t => ({ ...t, brandIndustry: true })); }}
-                    className={creatorFieldClass('brandIndustry', brandIndustry)} placeholder="e.g. Technology, Fashion" />
+                  <select
+                    value={brandIndustry}
+                    onChange={e => { setBrandIndustry(e.target.value); setTouched(t => ({ ...t, brandIndustry: true })); }}
+                    onBlur={() => setTouched(t => ({ ...t, brandIndustry: true }))}
+                    className={creatorFieldClass('brandIndustry', brandIndustry, 'bg-white/5 text-white border-white/10')}>
+                    <option value="" className="bg-[#051126]">Select industry</option>
+                    {industries.map((ind: any) => (
+                      <option key={ind.id || ind.name} value={ind.name} className="bg-[#051126]">{ind.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div className="space-y-1">
                   <label className="block font-bold text-slate-300 mb-1 text-[11px]">City / Location *</label>
@@ -1013,10 +1022,10 @@ export const LoginView: React.FC = () => {
                         type={showPassword ? 'text' : 'password'}
                         autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                         required
-                        maxLength={10}
+                        maxLength={8}
                         placeholder={mode === 'signup' ? 'Create your password' : 'Password'}
                         value={password}
-                        onChange={e => { setPassword(e.target.value.slice(0, 10)); setTouched(t => ({ ...t, password: true })); }}
+                        onChange={e => { setPassword(e.target.value.slice(0, 8)); setTouched(t => ({ ...t, password: true })); }}
                         onBlur={() => setTouched(t => ({ ...t, password: true }))}
                         className={`${fieldClass('password', password)} pl-10 pr-10`}
                       />

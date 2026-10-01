@@ -54,10 +54,61 @@ export const AdminDashboardView: React.FC = () => {
     adminDeleteCreator,
     categories,
     addCategory,
-    deleteCategory,
+        deleteCategory,
+    industries,
   } = usePlatform();
 
-  const [activeTab, setActiveTab] = useState<'creators' | 'stats' | 'campaigns' | 'brands' | 'categories' | 'settings' | 'brand-approvals'>('creators');
+  // Industry management state
+  const [newIndustryName, setNewIndustryName] = useState('');
+  const [industryLoading, setIndustryLoading] = useState(false);
+  const [industrySuccessMsg, setIndustrySuccessMsg] = useState(false);
+  const [industryError, setIndustryError] = useState('');
+  const [localIndustries, setLocalIndustries] = useState<any[]>([]);
+  const [industrySearch, setIndustrySearch] = useState('');
+
+  useEffect(() => {
+    setLocalIndustries(industries || []);
+  }, [industries]);
+
+  const handleAddIndustry = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newIndustryName.trim()) return;
+    setIndustryLoading(true); setIndustryError('');
+    try {
+      const token = localStorage.getItem('sc_auth_token');
+      const res = await fetch(apiUrl('/api/industries'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name: newIndustryName.trim() }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setLocalIndustries(prev => [...prev, data.industry].sort((a, b) => a.name.localeCompare(b.name)));
+        setNewIndustryName('');
+        setIndustrySuccessMsg(true);
+        setTimeout(() => setIndustrySuccessMsg(false), 2500);
+      } else {
+        setIndustryError(data.error || 'Failed to add industry');
+      }
+    } catch {
+      setIndustryError('Network error');
+    } finally {
+      setIndustryLoading(false);
+    }
+  };
+
+  const handleDeleteIndustry = async (id: string, name: string) => {
+    if (!window.confirm(`Delete industry "${name}"?`)) return;
+    try {
+      const token = localStorage.getItem('sc_auth_token');
+      await fetch(apiUrl(`/api/industries/${id}`), { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+      setLocalIndustries(prev => prev.filter(i => i.id !== id));
+    } catch {
+      alert('Failed to delete industry');
+    }
+  };
+
+  const [activeTab, setActiveTab] = useState<'creators' | 'stats' | 'campaigns' | 'brands' | 'categories' | 'industries' | 'settings' | 'brand-approvals'>('creators');
   const [adminBrands, setAdminBrands] = useState<any[]>([]);
   const [adminPendingCampaigns, setAdminPendingCampaigns] = useState<any[]>([]);
 
@@ -882,6 +933,97 @@ export const AdminDashboardView: React.FC = () => {
                 <button type="button" onClick={() => setCreatorPage((current) => current + 1)} disabled={(creatorPage + 1) * creatorPageSize >= creatorTotal || isRefreshingCreators} className="px-4 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold disabled:opacity-40">Next</button>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Tab: Industries Management */}
+        {activeTab === 'industries' && (
+          <div className="space-y-6 animate-fadeIn">
+            {/* Add Industry Card */}
+            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-xs space-y-5">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200/80 text-blue-600 flex items-center justify-center font-bold">
+                    <Plus className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-slate-900">Add Brand Industry</h3>
+                    <p className="text-xs text-slate-400">Add new industries to the database. Brands select from these during signup.</p>
+                  </div>
+                </div>
+                {industrySuccessMsg && (
+                  <span className="px-3 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold rounded-xl flex items-center gap-1.5 animate-fadeIn">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    Industry Added!
+                  </span>
+                )}
+              </div>
+              <form onSubmit={handleAddIndustry} className="flex gap-3 items-end">
+                <div className="flex-1">
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Industry Name *</label>
+                  <input
+                    type="text"
+                    value={newIndustryName}
+                    onChange={e => setNewIndustryName(e.target.value)}
+                    placeholder="e.g. Technology, Fashion, Food & Beverage"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
+                    required
+                  />
+                  {industryError && <p className="text-xs text-rose-600 mt-1 font-semibold">{industryError}</p>}
+                </div>
+                <button
+                  type="submit"
+                  disabled={industryLoading || !newIndustryName.trim()}
+                  className="px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl transition disabled:opacity-50 cursor-pointer"
+                >
+                  {industryLoading ? 'Adding...' : 'Add Industry'}
+                </button>
+              </form>
+            </div>
+
+            {/* Industry List */}
+            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                <div>
+                  <h3 className="text-base font-black text-slate-900">All Industries ({localIndustries.length})</h3>
+                  <p className="text-xs text-slate-400">Industries available in brand signup dropdown</p>
+                </div>
+                <div className="relative max-w-xs w-full">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search industries..."
+                    value={industrySearch}
+                    onChange={e => setIndustrySearch(e.target.value)}
+                    className="w-full pl-9 pr-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
+                  />
+                </div>
+              </div>
+              {localIndustries.length === 0 ? (
+                <div className="text-center py-12">
+                  <Building className="w-12 h-12 mx-auto text-slate-200 mb-3" />
+                  <p className="text-slate-400 text-sm font-semibold">No industries yet. Add one above.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {localIndustries
+                    .filter(ind => !industrySearch.trim() || ind.name.toLowerCase().includes(industrySearch.toLowerCase()))
+                    .map(ind => (
+                      <div key={ind.id} className="p-4 bg-slate-50 hover:bg-white rounded-2xl border border-slate-200/80 transition flex items-center justify-between group">
+                        <span className="font-semibold text-slate-800 text-sm">{ind.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteIndustry(ind.id, ind.name)}
+                          className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-[10px] font-bold transition flex items-center gap-1 cursor-pointer opacity-0 group-hover:opacity-100"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 

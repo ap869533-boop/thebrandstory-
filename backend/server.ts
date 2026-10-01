@@ -28,6 +28,7 @@ import brandRoutes from './routes/brandRoutes';
 import brandInquiryRoutes from './routes/brandInquiryRoutes';
 import conversationRoutes from './routes/conversationRoutes';
 import postRoutes from './routes/postRoutes';
+import industryRoutes from './routes/industryRoutes';
 import { authMiddleware, AuthenticatedRequest } from './middleware/authMiddleware';
 import { dbQuery } from './config/db';
 
@@ -133,6 +134,7 @@ app.use('/api/conversations', conversationRoutes);
 app.use('/api/creator-content', postRoutes);
 app.use('/api', aiRoutes);
 app.use('/api', statsRoutes);
+app.use('/api/industries', industryRoutes);
 
 // In production, optionally serve frontend dist if hosted as unified app
 const possibleDistPaths = [
