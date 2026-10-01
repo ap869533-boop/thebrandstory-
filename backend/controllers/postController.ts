@@ -2,7 +2,7 @@ import { randomUUID } from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import { Response } from 'express';
-import { dbQuery } from '../config/db';
+import { dbQuery, dbQueryStrict } from '../config/db';
 import { AuthenticatedRequest } from '../middleware/authMiddleware';
 import { detectImageMimeFromBuffer, IMAGE_MIME_EXTENSIONS } from '../utils/validation';
 
@@ -88,10 +88,15 @@ export async function createCreatorPost(req: AuthenticatedRequest, res: Response
     const imageUrl = `/api/uploads/${fileName}`;
 
     const postId = `post_${Date.now()}`;
-    await dbQuery(
-      `INSERT INTO creator_posts (id, creator_id, image_url, caption) VALUES (?, ?, ?, ?)`,
-      [postId, creatorId, imageUrl, caption ? String(caption).slice(0, 500) : null]
-    );
+    try {
+      await dbQueryStrict(
+        `INSERT INTO creator_posts (id, creator_id, image_url, caption) VALUES (?, ?, ?, ?)`,
+        [postId, creatorId, imageUrl, caption ? String(caption).slice(0, 500) : null]
+      );
+    } catch (error) {
+      fs.unlinkSync(filePath);
+      throw error;
+    }
     await dbQuery(`UPDATE creators SET total_posts = COALESCE(total_posts, 0) + 1 WHERE id = ?`, [creatorId]).catch(
       () => undefined
     );

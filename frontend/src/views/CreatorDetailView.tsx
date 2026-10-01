@@ -77,6 +77,7 @@ export const CreatorDetailView: React.FC = () => {
   const [profileLoading, setProfileLoading] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [selectedPost, setSelectedPost] = useState<any | null>(null);
+  const [creatorPosts, setCreatorPosts] = useState<any[]>([]);
   const [showRatingForm, setShowRatingForm] = useState(false);
   const [ratingBrand, setRatingBrand] = useState('');
   const [ratingStars, setRatingStars] = useState(5);
@@ -125,6 +126,23 @@ export const CreatorDetailView: React.FC = () => {
   );
   // Prioritize localCreator for the owner so optimistic updates are immediately reflected
   const creator: Creator | undefined = (isOwnerProfile && localCreator) ? localCreator : baseCreator;
+
+  useEffect(() => {
+    if (!creator?.id) {
+      setCreatorPosts([]);
+      return;
+    }
+
+    let cancelled = false;
+    fetch(apiUrl(`/api/creator-content/${encodeURIComponent(creator.id)}/posts`))
+      .then((response) => response.json())
+      .then((data) => {
+        if (!cancelled && data.success && Array.isArray(data.posts)) setCreatorPosts(data.posts);
+      })
+      .catch(() => undefined);
+
+    return () => { cancelled = true; };
+  }, [creator?.id]);
 
   if (profileLoading && !creator) {
     return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-sm text-slate-300">Loading profile...</div>;
@@ -197,6 +215,18 @@ export const CreatorDetailView: React.FC = () => {
     const reader = new FileReader();
     reader.onload = async () => {
       try {
+        if (type.startsWith('portfolio-')) {
+          const response = await fetch(apiUrl('/api/creator-content/posts'), {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({ image: reader.result, caption: '' }),
+          });
+          const data = await response.json();
+          if (!response.ok || !data.success || !data.post) throw new Error(data.error || 'Post upload failed');
+          setCreatorPosts((previous) => [data.post, ...previous]);
+          return;
+        }
+
         const response = await fetch(apiUrl('/api/upload'), {
           method: 'POST',
           headers: { ...authHeaders(), 'Content-Type': 'application/json' },
@@ -209,14 +239,6 @@ export const CreatorDetailView: React.FC = () => {
         
         if (type === 'cover') {
           await updateCreatorProfile(creator.id, { coverImage: fullUrl });
-        } else if (type.startsWith('portfolio-')) {
-          const index = parseInt(type.replace('portfolio-', ''), 10);
-          const newPortfolio = [...(creator.portfolio || [])];
-          while (newPortfolio.length < 5) {
-            newPortfolio.push({ id: Math.random().toString(), type: 'post', title: '', thumbnail: '' } as any);
-          }
-          newPortfolio[index] = { ...newPortfolio[index], thumbnail: fullUrl };
-          await updateCreatorProfile(creator.id, { portfolio: newPortfolio });
         }
       } catch (err: any) {
         console.error('Image upload failed', err);
@@ -669,7 +691,7 @@ export const CreatorDetailView: React.FC = () => {
         )}
 
         {/* 7. Recent Verified Publications (Reels/Portfolio) */}
-        {(isOwner || creator.portfolio?.some(item => item?.thumbnail)) && (
+        {(isOwner || creatorPosts.length > 0 || creator.portfolio?.some(item => item?.thumbnail)) && (
           <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
@@ -680,7 +702,8 @@ export const CreatorDetailView: React.FC = () => {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             {/* Portfolio Items (5 slots) */}
             {[0, 1, 2, 3, 4].map((idx) => {
-              const item = creator.portfolio?.[idx];
+              const post = creatorPosts[idx];
+              const item = post ? { thumbnail: post.imageUrl } : creator.portfolio?.[idx];
               if (!isOwner && !item?.thumbnail) return null;
               
               return (
