@@ -728,6 +728,8 @@ export async function verifyOtp(req: Request, res: Response) {
         requiredProfileFields.some((value) => !String(value || '').trim()) ||
         !Number.isFinite(Number(creatorProfileInput.startingPrice)) || Number(creatorProfileInput.startingPrice) <= 0 ||
         !hasValidMetrics ||
+        typeof creatorProfileInput.avatar !== 'string' || !creatorProfileInput.avatar.trim() ||
+        typeof creatorProfileInput.coverImage !== 'string' || !creatorProfileInput.coverImage.trim() ||
         !Array.isArray(creatorProfileInput.languages) ||
         !Array.isArray(creatorProfileInput.socialPlatforms) || creatorProfileInput.socialPlatforms.length === 0
       ) {

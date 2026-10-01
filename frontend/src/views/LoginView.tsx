@@ -185,7 +185,7 @@ export const LoginView: React.FC = () => {
 
   const validateCreatorSetup = () => {
     if (creatorSetupStep === 1) {
-      return gender && ageGroup && creatorState && category;
+      return gender && ageGroup && creatorState && category && profilePhotoUrl && bannerUrl;
     }
     if (creatorSetupStep === 2) {
       return username.trim() && followers && startingPrice;
@@ -327,10 +327,13 @@ export const LoginView: React.FC = () => {
     };
     const avatarUrl = await persistImage(profilePhotoUrl, 'avatar');
     const coverUrl = await persistImage(bannerUrl, 'cover');
-    updates.avatar = avatarUrl || undefined;
-    updates.coverImage = coverUrl || undefined;
+    const profileUpdates = {
+      ...updates,
+      avatar: avatarUrl || updates.avatar || undefined,
+      coverImage: coverUrl || updates.coverImage || undefined,
+    };
     const res = await fetch(apiUrl(`/api/creators/${creatorId}`), {
-      method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(updates),
+      method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(profileUpdates),
     });
     const data = await readApiResponse(res);
     if (!res.ok || !data.success || !data.creator) throw new Error(data.error || 'Could not save creator profile');
@@ -363,6 +366,9 @@ export const LoginView: React.FC = () => {
       }
       if (!validateCreatorSetup()) {
         setErrorMsg('Please correct the highlighted fields before continuing.');
+        if (creatorSetupStep === 1 && (!profilePhotoUrl || !bannerUrl)) {
+          setErrorMsg('Please upload both a profile photo and card photo to continue.');
+        }
         return;
       }
       setIsLoading(true); setErrorMsg(null);
