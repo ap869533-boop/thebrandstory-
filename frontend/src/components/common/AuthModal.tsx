@@ -134,6 +134,7 @@ export const AuthModal: React.FC = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [instaError, setInstaError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const [creatorProfileSetup, setCreatorProfileSetup] = useState(false);
@@ -348,7 +349,9 @@ export const AuthModal: React.FC = () => {
     const user = { ...creatorUser, creatorProfile: data.creator };
     localStorage.setItem('sc_auth_user', JSON.stringify(user));
     setAuthUser(user); setCreators((prev) => [data.creator, ...prev.filter((c) => c.id !== data.creator.id)]);
-    setActiveCreatorId(data.creator.id); closeAuthModal(); navigateTo('opportunities');
+    setActiveCreatorId(data.creator.id); closeAuthModal(); 
+    const creatorUsername = data.creator?.username || data.creator?.id;
+    navigateTo('creator-detail', { username: creatorUsername });
   };
 
   const uploadCreatorMedia = (file: File, type: 'avatar' | 'cover') => {
@@ -389,7 +392,13 @@ export const AuthModal: React.FC = () => {
         return;
       }
       setIsLoading(true); setErrorMsg(null);
-      try { await completeCreatorSetup(); } catch (err: any) { setErrorMsg(err.message || 'Could not save profile details.'); }
+      try { await completeCreatorSetup(); } catch (err: any) { 
+        if (err.message === 'this insta profile already exit you cannot duplicate it') {
+          setInstaError(err.message);
+        } else {
+          setErrorMsg(err.message || 'Could not save profile details.'); 
+        }
+      }
       finally { setIsLoading(false); }
       return;
     }
@@ -804,7 +813,15 @@ export const AuthModal: React.FC = () => {
                 <div><select value={category} onChange={e => setCategory(e.target.value)} className={`w-full ${creatorFieldClass('category')}`}><option value="">Category *</option>{(categories?.length ? categories : CATEGORIES_LIST).map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}</select>{creatorFieldError('category')}</div>
                 <div><input value={languages} onChange={e => setLanguages(e.target.value)} placeholder="Languages * (e.g. Hindi, English)" className={`w-full ${creatorFieldClass('languages')}`} />{creatorFieldError('languages')}</div>
               </> : <>
-                <div><input value={username} onChange={e => setUsername(e.target.value)} placeholder="Instagram URL * (https://instagram.com/yourhandle)" className={`w-full ${creatorFieldClass('username')}`} />{creatorFieldError('username')}</div>
+                <div>
+                  {instaError && (
+                    <div className="text-red-400 font-bold text-[10px] mb-1.5 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      {instaError}
+                    </div>
+                  )}
+                  <input value={username} onChange={e => { setUsername(e.target.value); setInstaError(null); }} placeholder="Instagram URL * (https://instagram.com/yourhandle)" className={`w-full ${creatorFieldClass('username')} ${instaError ? 'border-red-500/70 focus:border-red-500 shadow-[0_0_10px_rgba(239,68,68,0.1)]' : ''}`} />{creatorFieldError('username')}
+                </div>
                 <div><input type="number" min="1" value={startingPrice} onChange={e => setStartingPrice(e.target.value)} placeholder="Starting price (₹) *" className={`w-full ${creatorFieldClass('startingPrice')}`} />{creatorFieldError('startingPrice')}</div>
                 <div className="grid grid-cols-2 gap-3">{[
                   ['Followers count', followers, setFollowers, 'followers'], ['Total posts', totalPosts, setTotalPosts, 'totalPosts'], ['Average views', avgViews, setAvgViews, 'avgViews'], ['Average likes', avgLikes, setAvgLikes, 'avgLikes'], ['Average comments', avgComments, setAvgComments, 'avgComments'],

@@ -79,6 +79,7 @@ export const LoginView: React.FC = () => {
   // UI State
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [instaError, setInstaError] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [contextualNotice, setContextualNotice] = useState<string | null>(null);
@@ -335,7 +336,13 @@ export const LoginView: React.FC = () => {
         return;
       }
       setIsLoading(true); setErrorMsg(null);
-      try { await completeCreatorSetup(); } catch (err: any) { setErrorMsg(err.message || 'Could not save profile details.'); }
+      try { await completeCreatorSetup(); } catch (err: any) { 
+        if (err.message === 'this insta profile already exit you cannot duplicate it') {
+          setInstaError(err.message);
+        } else {
+          setErrorMsg(err.message || 'Could not save profile details.'); 
+        }
+      }
       finally { setIsLoading(false); }
       return;
     }
@@ -831,13 +838,19 @@ export const LoginView: React.FC = () => {
                   <>
                     {/* Step 2: Instagram Stats */}
                     <div>
+                      {instaError && (
+                        <div className="text-red-400 font-bold text-[10px] mb-1.5 flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          {instaError}
+                        </div>
+                      )}
                       <label className="block font-bold text-slate-300 mb-1">Instagram Profile URL or Handle *</label>
                       <input
                         type="text"
                         value={username}
-                        onChange={e => setUsername(e.target.value)}
+                        onChange={e => { setUsername(e.target.value); setInstaError(null); }}
                         placeholder="@yourhandle or instagram.com/yourhandle"
-                        className={creatorFieldClass('username', username)}
+                        className={`${creatorFieldClass('username', username)} ${instaError ? 'border-red-500/70 focus:border-red-500 shadow-[0_0_10px_rgba(239,68,68,0.1)]' : ''}`}
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
@@ -1001,7 +1014,7 @@ export const LoginView: React.FC = () => {
                         autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                         required
                         maxLength={10}
-                        placeholder="Password"
+                        placeholder={mode === 'signup' ? 'Create your password' : 'Password'}
                         value={password}
                         onChange={e => { setPassword(e.target.value.slice(0, 10)); setTouched(t => ({ ...t, password: true })); }}
                         onBlur={() => setTouched(t => ({ ...t, password: true }))}

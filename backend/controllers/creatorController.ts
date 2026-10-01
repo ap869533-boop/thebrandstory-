@@ -629,7 +629,13 @@ export async function updateCreator(req: AuthenticatedRequest, res: Response) {
 
   const body = req.body;
   const sanitizedUsername = body.username ? cleanInstagramHandle(body.username) : undefined;
-  if (sanitizedUsername) body.username = sanitizedUsername;
+  if (sanitizedUsername) {
+    body.username = sanitizedUsername;
+    const existing = await dbQuery('SELECT id FROM creators WHERE username = ? AND id != ? LIMIT 1', [sanitizedUsername, id]);
+    if (Array.isArray(existing) && existing.length > 0) {
+      return res.status(400).json({ success: false, error: 'this insta profile already exit you cannot duplicate it' });
+    }
+  }
 
   creatorsStore[index] = {
     ...creatorsStore[index],
