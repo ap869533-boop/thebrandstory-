@@ -14,7 +14,8 @@ export const ChatView: React.FC = () => {
   useEffect(() => {
     if (!authUser) navigateTo('login', { mode: 'login' });
     else if (!canUseChat) navigateTo('home');
-  }, [authUser, canUseChat, navigateTo]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authUser, canUseChat]);
 
   if (!canUseChat) return null;
 

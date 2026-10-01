@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Compass, LayoutDashboard, Users } from 'lucide-react';
 import { usePlatform } from '../../context/PlatformContext';
 
@@ -202,8 +202,8 @@ export const HomeHero: React.FC = () => {
 
             <p className="text-[11px] sm:text-xs md:text-[1.1rem] text-[#8eb6ff]/85 font-medium tracking-normal">
               No Middleman{' '}
-              <span className="text-slate-500">â€¢</span> 0% Commission{' '}
-              <span className="text-slate-500">â€¢</span> 100% Free
+              <span className="text-slate-500"> | </span> 0% Commission{' '}
+              <span className="text-slate-500"> | </span> 100% Free
             </p>
           </div>
         </div>

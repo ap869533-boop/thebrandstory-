@@ -126,7 +126,7 @@ export const LoginView: React.FC = () => {
     if (!touched[field]) return false;
     if (!value) return true;
     if (field === 'email') return !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
-    if (field === 'password') return value.trim().length < 6 || value.trim().length > 8;
+    if (field === 'password') return value.trim().length < 6 || value.trim().length > 10;
     if (field === 'confirmPassword') return mode === 'signup' && value !== password;
     if (field === 'name' || field === 'companyName') return value.trim().length < 2;
     if (field === 'phone') return value.trim().length < 10;
@@ -344,8 +344,8 @@ export const LoginView: React.FC = () => {
     if (!validate()) {
       if (mode === 'signup' && password !== confirmPassword) {
         setErrorMsg('Passwords do not match.');
-      } else if (password.trim().length < 6 || password.trim().length > 8) {
-        setErrorMsg('Password must be between 6 and 8 characters long.');
+      } else if (password.trim().length < 6 || password.trim().length > 10) {
+        setErrorMsg('Password must be between 6 and 10 characters long.');
       } else {
         setErrorMsg('Please correct the highlighted fields before submitting.');
       }
@@ -1000,10 +1000,10 @@ export const LoginView: React.FC = () => {
                         type={showPassword ? 'text' : 'password'}
                         autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                         required
-                        maxLength={8}
+                        maxLength={10}
                         placeholder="Password"
                         value={password}
-                        onChange={e => { setPassword(e.target.value.slice(0, 8)); setTouched(t => ({ ...t, password: true })); }}
+                        onChange={e => { setPassword(e.target.value.slice(0, 10)); setTouched(t => ({ ...t, password: true })); }}
                         onBlur={() => setTouched(t => ({ ...t, password: true }))}
                         className={`${fieldClass('password', password)} pl-10 pr-10`}
                       />
@@ -1020,10 +1020,10 @@ export const LoginView: React.FC = () => {
                           type={showConfirmPassword ? 'text' : 'password'}
                           autoComplete="new-password"
                           required
-                          maxLength={8}
+                          maxLength={10}
                           placeholder="Confirm Password"
                           value={confirmPassword}
-                          onChange={e => { setConfirmPassword(e.target.value.slice(0, 8)); setTouched(t => ({ ...t, confirmPassword: true })); }}
+                          onChange={e => { setConfirmPassword(e.target.value.slice(0, 10)); setTouched(t => ({ ...t, confirmPassword: true })); }}
                           onBlur={() => setTouched(t => ({ ...t, confirmPassword: true }))}
                           className={`w-full px-4 py-3 bg-white/5 border ${touched.confirmPassword && password !== confirmPassword ? 'border-rose-500/50 bg-rose-500/5' : 'border-white/10'} rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#D4A338]/60 focus:bg-white/8 text-xs font-medium transition pl-10 pr-10`}
                         />
