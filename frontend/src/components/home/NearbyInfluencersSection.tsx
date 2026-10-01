@@ -13,6 +13,8 @@ export const NearbyInfluencersSection: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [geoStatus, setGeoStatus] = useState<GeoStatus>('idle');
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [nearbyPage, setNearbyPage] = useState(0);
+  const [nearbyTotal, setNearbyTotal] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const mapCreators = (apiCreators: any[]): Creator[] =>
@@ -44,16 +46,20 @@ export const NearbyInfluencersSection: React.FC = () => {
         lat: String(lat),
         lng: String(lng),
         limit: '10',
+        offset: String(nearbyPage * 10),
       });
       const res = await fetch(apiUrl(`/api/creator-content/nearby?${qs.toString()}`));
       const data = await res.json();
       if (data.success && Array.isArray(data.creators)) {
         setNearby(mapCreators(data.creators));
+        setNearbyTotal(Number(data.total) || 0);
       } else {
-        setNearby([]);
+        setNearby(creators.slice(0, 8));
+        setNearbyTotal(creators.length);
       }
     } catch {
-      setNearby([]);
+      setNearby(creators.slice(0, 8));
+      setNearbyTotal(creators.length);
     } finally {
       setLoading(false);
     }
@@ -113,15 +119,19 @@ export const NearbyInfluencersSection: React.FC = () => {
       return;
     }
 
-    // Ask for permission as soon as the home page loads so nearby results can load automatically.
     requestLocation();
   }, []);
 
   useEffect(() => {
-    if (!coords) return;
+    if (!coords) {
+      // Fallback display top creators
+      if (creators.length > 0 && nearby.length === 0) {
+        setNearby(creators.slice(0, 8));
+      }
+      return;
+    }
     void fetchNearby(coords.lat, coords.lng);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetch when coordinates are known
-  }, [coords]);
+  }, [coords, nearbyPage, creators]);
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
@@ -130,33 +140,37 @@ export const NearbyInfluencersSection: React.FC = () => {
     }
   };
 
+  const displayCreators = nearby.length > 0 ? nearby : creators.slice(0, 8);
+
   return (
-    <section className="py-8 sm:py-12 bg-white border-b border-slate-100 font-sans w-full max-w-full overflow-hidden">
+    <section className="py-8 sm:py-14 bg-[#071328] border-b border-slate-800/80 text-white font-sans w-full max-w-full overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-6 sm:mb-8 gap-3 sm:gap-4">
           <div>
-            <div className="flex items-center gap-1.5 text-[#D4A338] text-xs font-extrabold uppercase tracking-wider mb-1">
+            <div className="flex items-center gap-1.5 text-[#D4A338] text-xs font-extrabold uppercase tracking-wider mb-1.5">
               <MapPin className="w-3.5 h-3.5" />
               <span>NEARBY INFLUENCERS</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Nearby Influencers</h2>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight">
+              Nearby Influencers
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-400 mt-1">
               Creators closest to you, based on your live location.
             </p>
           </div>
 
           <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <button
                 onClick={() => scroll('left')}
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl border border-slate-200 hover:bg-slate-100 flex items-center justify-center text-slate-600 transition cursor-pointer"
+                className="w-9 h-9 rounded-full bg-[#0d224b] border border-slate-700/80 hover:border-slate-500 flex items-center justify-center text-slate-300 hover:text-white transition cursor-pointer"
                 title="Scroll Left"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <button
                 onClick={() => scroll('right')}
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl border border-slate-200 hover:bg-slate-100 flex items-center justify-center text-slate-600 transition cursor-pointer"
+                className="w-9 h-9 rounded-full bg-[#0d224b] border border-slate-700/80 hover:border-slate-500 flex items-center justify-center text-slate-300 hover:text-white transition cursor-pointer"
                 title="Scroll Right"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -165,7 +179,7 @@ export const NearbyInfluencersSection: React.FC = () => {
 
             <button
               onClick={() => navigateTo('explore')}
-              className="text-xs font-bold text-[#b88628] hover:text-[#D4A338] flex items-center gap-1 shrink-0 group cursor-pointer"
+              className="text-xs sm:text-sm font-black text-[#D4A338] hover:text-amber-300 flex items-center gap-1 shrink-0 group cursor-pointer"
             >
               <span>View All</span>
               <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition" />
@@ -174,12 +188,12 @@ export const NearbyInfluencersSection: React.FC = () => {
         </div>
 
         {(geoStatus === 'prompt' || geoStatus === 'denied' || geoStatus === 'error' || geoStatus === 'unsupported') && (
-          <div className="mb-6 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-5 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <p className="text-sm text-slate-600">
+          <div className="mb-6 rounded-2xl border border-slate-800 bg-[#0c1e3d]/70 px-4 py-4 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <p className="text-xs sm:text-sm text-slate-300">
               {geoStatus === 'unsupported' && 'Location is not supported in this browser.'}
               {geoStatus === 'denied' && 'Location access was denied. Allow it to see influencers near you.'}
               {geoStatus === 'error' && 'We could not read your location. Try again to see nearby influencers.'}
-              {geoStatus === 'prompt' && 'Allow location to discover influencers near you.'}
+              {geoStatus === 'prompt' && 'Allow location access to discover influencers near your city.'}
             </p>
             {geoStatus !== 'unsupported' && (
               <button
@@ -189,7 +203,7 @@ export const NearbyInfluencersSection: React.FC = () => {
                   sessionStorage.removeItem('sc_nearby_geo_prompted');
                   requestLocation();
                 }}
-                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-[#D4A338] hover:bg-[#b88628] text-black text-xs font-bold cursor-pointer shrink-0"
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-[#D4A338] hover:bg-[#be8f2b] text-slate-950 text-xs font-black cursor-pointer shrink-0"
               >
                 <Navigation className="w-3.5 h-3.5" />
                 Use my location
@@ -199,22 +213,17 @@ export const NearbyInfluencersSection: React.FC = () => {
         )}
 
         {(geoStatus === 'loading' || loading) && (
-          <p className="text-xs text-slate-500 mb-4 flex items-center gap-2">
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          <p className="text-xs text-slate-400 mb-4 flex items-center gap-2">
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-[#D4A338]" />
             Finding nearby influencers...
           </p>
-        )}
-        {geoStatus === 'ready' && !loading && nearby.length === 0 && (
-          <div className="w-full text-center py-8">
-            <p className="text-sm text-slate-400 font-medium">No influencers found near you yet.</p>
-          </div>
         )}
 
         <div
           ref={scrollRef}
-          className="flex gap-3 sm:gap-5 overflow-x-auto pb-4 pt-1 snap-x scrollbar-none no-scrollbar w-full max-w-full"
+          className="flex gap-4 sm:gap-6 overflow-x-auto pb-4 pt-1 snap-x scrollbar-none no-scrollbar w-full max-w-full"
         >
-          {nearby.map((creator) => (
+          {displayCreators.map((creator) => (
             <div key={creator.id} className="snap-start shrink-0">
               <CreatorCard creator={creator} variant="carousel" />
             </div>

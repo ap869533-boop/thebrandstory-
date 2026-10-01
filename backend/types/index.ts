@@ -138,6 +138,7 @@ export interface Creator {
   gender?: 'Female' | 'Male' | 'Non-binary';
   ageGroup?: string;
   followers: number;
+  rating?: number;
   avgViews: number;
   avgLikes: number;
   avgComments: number;

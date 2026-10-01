@@ -1,15 +1,21 @@
-import { Request, Response } from 'express';
-import { dbQuery } from '../config/db';
+import { Response } from 'express';
+import { dbQuery, dbQueryStrict } from '../config/db';
 import { SavedFolder } from '../types';
+import { AuthenticatedRequest } from '../middleware/authMiddleware';
 
-let memoryFolders: SavedFolder[] = [];
+type StoredFolder = SavedFolder & { userId: string };
+let memoryFolders: StoredFolder[] = [];
 
-export async function getShortlists(req: Request, res: Response) {
+function databaseFolderId(id: string, userId: string) {
+  return id === 'f_default' ? `f_default_${userId}` : id;
+}
+
+export async function getShortlists(req: AuthenticatedRequest, res: Response) {
   try {
-    const dbRows = await dbQuery('SELECT * FROM saved_folders ORDER BY created_at DESC');
+    const dbRows = await dbQuery('SELECT * FROM saved_folders WHERE user_id = ? ORDER BY created_at DESC', [req.user!.id]);
     if (dbRows && dbRows.length > 0) {
       const folders: SavedFolder[] = dbRows.map((r: any) => ({
-        id: r.id,
+        id: r.id === `f_default_${req.user!.id}` ? 'f_default' : r.id,
         name: r.name,
         creatorIds: typeof r.creator_ids === 'string' ? JSON.parse(r.creator_ids) : (r.creator_ids || []),
         createdAt: r.created_at,
@@ -20,30 +26,32 @@ export async function getShortlists(req: Request, res: Response) {
     console.warn('MySQL getShortlists notice:', err);
   }
 
-  res.json({ success: true, folders: memoryFolders });
+  res.json({ success: true, folders: memoryFolders.filter((folder) => folder.userId === req.user!.id) });
 }
 
-export async function createShortlist(req: Request, res: Response) {
+export async function createShortlist(req: AuthenticatedRequest, res: Response) {
   try {
-    const { name, creatorIds = [], userId } = req.body;
+    const { name, creatorIds = [], id } = req.body;
     if (!name) {
       return res.status(400).json({ success: false, error: 'Shortlist name is required' });
     }
 
     const newFolder: SavedFolder = {
-      id: `f_${Date.now()}`,
+      id: id || `f_${Date.now()}`,
       name: name.trim(),
       creatorIds: Array.isArray(creatorIds) ? creatorIds : [],
       createdAt: new Date().toISOString().split('T')[0],
     };
 
-    memoryFolders.unshift(newFolder);
+    const dbId = databaseFolderId(newFolder.id, req.user!.id);
 
     // MySQL Insert
-    dbQuery(
+    await dbQueryStrict(
       'INSERT INTO saved_folders (id, user_id, name, creator_ids) VALUES (?, ?, ?, ?)',
-      [newFolder.id, userId || null, newFolder.name, JSON.stringify(newFolder.creatorIds)]
-    ).catch(err => console.warn('MySQL folder insert notice:', err));
+      [dbId, req.user!.id, newFolder.name, JSON.stringify(newFolder.creatorIds)]
+    );
+
+    memoryFolders.unshift({ ...newFolder, userId: req.user!.id });
 
     res.status(201).json({ success: true, folder: newFolder });
   } catch (err: any) {
@@ -51,13 +59,14 @@ export async function createShortlist(req: Request, res: Response) {
   }
 }
 
-export async function updateShortlist(req: Request, res: Response) {
+export async function updateShortlist(req: AuthenticatedRequest, res: Response) {
   try {
     const { id } = req.params;
     const { name, creatorIds } = req.body;
 
+    const dbId = databaseFolderId(id, req.user!.id);
     // Update memory store
-    const folderIndex = memoryFolders.findIndex(f => f.id === id);
+    const folderIndex = memoryFolders.findIndex(f => f.id === id && f.userId === req.user!.id);
     if (folderIndex !== -1) {
       if (name) memoryFolders[folderIndex].name = name;
       if (creatorIds) memoryFolders[folderIndex].creatorIds = creatorIds;
@@ -68,24 +77,25 @@ export async function updateShortlist(req: Request, res: Response) {
         name: name || 'My Saved Creators',
         creatorIds: Array.isArray(creatorIds) ? creatorIds : [],
         createdAt: new Date().toISOString().split('T')[0],
+        userId: req.user!.id,
       });
     }
 
     // MySQL UPSERT: try UPDATE first, if 0 rows affected then INSERT
     try {
-      const result: any = await dbQuery(
-        'UPDATE saved_folders SET name = COALESCE(?, name), creator_ids = COALESCE(?, creator_ids) WHERE id = ?',
-        [name || null, creatorIds ? JSON.stringify(creatorIds) : null, id]
+      const result: any = await dbQueryStrict(
+        'UPDATE saved_folders SET name = COALESCE(?, name), creator_ids = COALESCE(?, creator_ids) WHERE id = ? AND user_id = ?',
+        [name || null, creatorIds ? JSON.stringify(creatorIds) : null, dbId, req.user!.id]
       );
       // If no rows were updated, insert a new record
       if (result && result.affectedRows === 0) {
-        await dbQuery(
+        await dbQueryStrict(
           'INSERT INTO saved_folders (id, user_id, name, creator_ids) VALUES (?, ?, ?, ?)',
-          [id, null, name || 'My Saved Creators', JSON.stringify(Array.isArray(creatorIds) ? creatorIds : [])]
+          [dbId, req.user!.id, name || 'My Saved Creators', JSON.stringify(Array.isArray(creatorIds) ? creatorIds : [])]
         );
       }
     } catch (dbErr) {
-      console.warn('MySQL folder upsert notice:', dbErr);
+      return res.status(503).json({ success: false, error: 'Shortlist could not be saved. Please try again.' });
     }
 
     res.json({ success: true, message: 'Shortlist updated' });
@@ -94,14 +104,12 @@ export async function updateShortlist(req: Request, res: Response) {
   }
 }
 
-export async function deleteShortlist(req: Request, res: Response) {
+export async function deleteShortlist(req: AuthenticatedRequest, res: Response) {
   try {
     const { id } = req.params;
-    memoryFolders = memoryFolders.filter(f => f.id !== id);
+    memoryFolders = memoryFolders.filter(f => !(f.id === id && f.userId === req.user!.id));
 
-    dbQuery('DELETE FROM saved_folders WHERE id = ?', [id]).catch(err =>
-      console.warn('MySQL folder delete notice:', err)
-    );
+    await dbQueryStrict('DELETE FROM saved_folders WHERE id = ? AND user_id = ?', [databaseFolderId(id, req.user!.id), req.user!.id]);
 
     res.json({ success: true, message: 'Shortlist deleted' });
   } catch (err) {

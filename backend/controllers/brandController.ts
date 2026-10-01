@@ -65,12 +65,14 @@ function mapAdminBrandRow(r: any) {
     userEmail: r.user_email,
     userPhone: r.user_phone,
     companyName: r.company_name,
+    legalName: r.legal_name || '',
   };
 }
 
 export async function ensurePendingBrandProfile(opts: {
   userId: string;
   brandName?: string;
+  legalName?: string;
   gstNumber?: string;
   contactPerson?: string;
   phone?: string;
@@ -85,6 +87,7 @@ export async function ensurePendingBrandProfile(opts: {
     id,
     userId: opts.userId,
     brandName,
+    legalName: opts.legalName || '',
     gstNumber: opts.gstNumber || '',
     logoUrl: '',
     coverUrl: '',
@@ -99,20 +102,20 @@ export async function ensurePendingBrandProfile(opts: {
     contactPerson: opts.contactPerson || '',
     phone: opts.phone || '',
     email: opts.email || '',
-    approvalStatus: 'pending' as const,
+    approvalStatus: 'approved' as const,
     rejectionReason: '',
     isFeatured: false,
     createdAt: new Date().toISOString(),
   };
-  brandProfilesStore.unshift(profile);
+  brandProfilesStore.unshift(profile as any);
 
   await dbQuery(
-    `INSERT INTO brand_profiles (id, user_id, brand_name, gst_number, contact_person, phone, email, approval_status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`,
-    [id, opts.userId, brandName, opts.gstNumber || null, opts.contactPerson || null, opts.phone || null, opts.email || null]
+    `INSERT INTO brand_profiles (id, user_id, brand_name, legal_name, gst_number, contact_person, phone, email, approval_status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'approved')`,
+    [id, opts.userId, brandName, opts.legalName || null, opts.gstNumber || null, opts.contactPerson || null, opts.phone || null, opts.email || null]
   );
   await dbQuery(
-    `UPDATE users SET approval_status = 'pending' WHERE id = ? AND (approval_status IS NULL OR approval_status = '')`,
+    `UPDATE users SET approval_status = 'approved' WHERE id = ? AND (approval_status IS NULL OR approval_status = '')`,
     [opts.userId]
   );
   return id;
@@ -273,6 +276,7 @@ export async function updateBrandProfile(req: AuthenticatedRequest, res: Respons
     const userId = req.user.id;
     const {
       brandName,
+      legalName,
       gstNumber,
       logoUrl,
       coverUrl,
@@ -312,8 +316,8 @@ export async function updateBrandProfile(req: AuthenticatedRequest, res: Respons
 
     // Update in MySQL
     await dbQueryStrict(
-      `UPDATE brand_profiles SET brand_name=?, gst_number=?, logo_url=?, cover_url=?, description=?, website=?, facebook_url=?, instagram_url=?, youtube_url=?, linkedin_url=?, industry=?, city=?, contact_person=?, phone=?, email=? WHERE user_id=?`,
-      [brandName, gstNumber || null, logoUrl || null, coverUrl || null, description || null, website || null, facebookUrl || null, instagramUrl || null, youtubeUrl || null, linkedinUrl || null, industry || null, city || null, contactPerson || null, phone || null, email || null, userId]
+      `UPDATE brand_profiles SET brand_name=?, legal_name=?, gst_number=?, logo_url=?, cover_url=?, description=?, website=?, facebook_url=?, instagram_url=?, youtube_url=?, linkedin_url=?, industry=?, city=?, contact_person=?, phone=?, email=? WHERE user_id=?`,
+      [brandName, legalName || null, gstNumber || null, logoUrl || null, coverUrl || null, description || null, website || null, facebookUrl || null, instagramUrl || null, youtubeUrl || null, linkedinUrl || null, industry || null, city || null, contactPerson || null, phone || null, email || null, userId]
     );
 
     // Update in memory
@@ -514,6 +518,12 @@ export async function adminDeleteBrand(req: AuthenticatedRequest, res: Response)
 
 export async function getFeaturedBrands(req: Request, res: Response) {
   try {
+    const searchQuery = String(req.query.searchQuery || '').trim().toLowerCase();
+    const searchCity = String(req.query.city || '').trim().toLowerCase();
+    const pageSize = Math.min(Math.max(parseInt(String(req.query.limit || (searchQuery ? '12' : '16')), 10) || 16, 1), 100);
+    const pageOffset = Math.max(parseInt(String(req.query.offset || '0'), 10) || 0, 0);
+    const searchWhere = `${searchQuery ? ` AND (LOWER(COALESCE(bp.brand_name, u.company_name, u.name, '')) LIKE ? OR LOWER(COALESCE(bp.industry, '')) LIKE ? OR LOWER(COALESCE(bp.city, '')) LIKE ?)` : ''}${searchCity ? ` AND LOWER(COALESCE(bp.city, '')) LIKE ?` : ''}`;
+    const searchParams = [...(searchQuery ? [`%${searchQuery}%`, `%${searchQuery}%`, `%${searchQuery}%`] : []), ...(searchCity ? [`%${searchCity}%`] : [])];
     const rows = await dbQuery(
       `SELECT 
         COALESCE(bp.id, CONCAT('usr_', u.id)) as id,
@@ -540,18 +550,24 @@ export async function getFeaturedBrands(req: Request, res: Response) {
         u.created_at
       FROM users u
       LEFT JOIN brand_profiles bp ON u.id = bp.user_id
-      WHERE u.role = 'BRAND' AND (u.approval_status = 'approved' OR bp.approval_status = 'approved')
+      WHERE u.role = 'BRAND' AND (u.approval_status = 'approved' OR bp.approval_status = 'approved')${searchWhere}
       ORDER BY is_featured DESC, u.created_at DESC
-      LIMIT 16`
+      LIMIT ? OFFSET ?`,
+      [...searchParams, pageSize, pageOffset]
     );
 
-    if (rows && rows.length > 0) {
-      return res.json({ success: true, brands: rows.map(mapDbRowToBrandProfile) });
+    if (rows && (rows.length > 0 || searchQuery || searchCity)) {
+      const countRows = await dbQuery(
+        `SELECT COUNT(*) as total FROM users u LEFT JOIN brand_profiles bp ON u.id = bp.user_id
+         WHERE u.role = 'BRAND' AND (u.approval_status = 'approved' OR bp.approval_status = 'approved')${searchWhere}`,
+        searchParams
+      );
+      return res.json({ success: true, brands: rows.map(mapDbRowToBrandProfile), total: Number(countRows?.[0]?.total) || 0 });
     }
 
     // Fallback: memory store approved brands
-    const approved = brandProfilesStore.filter(p => p.approvalStatus === 'approved');
-    res.json({ success: true, brands: approved });
+    const approved = brandProfilesStore.filter(p => p.approvalStatus === 'approved' && (!searchQuery || [p.brandName, p.industry, p.city].some((value) => String(value || '').toLowerCase().includes(searchQuery))) && (!searchCity || String(p.city || '').toLowerCase().includes(searchCity)));
+    res.json({ success: true, brands: approved.slice(pageOffset, pageOffset + pageSize), total: approved.length });
   } catch (error) {
     console.error('getFeaturedBrands error:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch featured brands' });

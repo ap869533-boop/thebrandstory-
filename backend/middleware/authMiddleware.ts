@@ -10,7 +10,11 @@ export interface AuthenticatedRequest extends Request {
   };
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || 'social_cults_super_secret_jwt_key_2026';
+const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV !== 'production' ? 'development-only-jwt-secret' : '');
+
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET must be configured when NODE_ENV=production');
+}
 
 export function authMiddleware(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;

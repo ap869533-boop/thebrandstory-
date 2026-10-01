@@ -1,299 +1,235 @@
-import React, { useState, useRef, useEffect } from 'react';
-import {
-  Search,
-  Sparkles,
-  MapPin,
-  Layers,
-  Briefcase,
-  ChevronDown,
-  Check,
-} from 'lucide-react';
+﻿import React from 'react';
+import { Compass, LayoutDashboard, Users } from 'lucide-react';
 import { usePlatform } from '../../context/PlatformContext';
-import { CATEGORIES_LIST, CITIES_LIST } from '../../data/initialData';
 
 export const HomeHero: React.FC = () => {
   const {
-    filters,
-    setFilters,
     navigateTo,
-    categories,
-    cities,
-    requireRole,
     authUser,
+    openAuthModal,
   } = usePlatform();
 
-  const [keyword, setKeyword] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState(filters.category || 'all');
-  const [selectedCity, setSelectedCity] = useState(
-    filters.city && filters.city !== 'all' ? filters.city : 'all'
-  );
+  const isCreator = authUser?.role === 'CREATOR';
+  const isBrand = authUser?.role === 'BRAND';
+  const isAdmin = authUser?.role === 'ADMIN';
+  const isSales = authUser?.role === 'SALES';
 
-  const syncCitySelection = (city: string) => {
-    setSelectedCity(city);
+  /*
+   * --------------------------------------------------------------------------
+   * COMMON HERO BUTTON STYLES
+   *
+   * All logged-in and guest buttons now use the same visual system.
+   * Only the button variant/content changes.
+   * --------------------------------------------------------------------------
+   */
+
+  const heroButtonBase =
+    'h-12 sm:h-13 md:h-[56px] rounded-full flex items-center justify-center gap-2 px-4 sm:px-5 md:px-6 font-black text-xs sm:text-sm tracking-wide whitespace-nowrap text-center cursor-pointer transition-all duration-200 hover:-translate-y-0.5';
+
+  const heroPrimaryButton = `${heroButtonBase} bg-white hover:bg-slate-100 text-slate-950 shadow-lg hover:shadow-xl`;
+
+  const heroSecondaryButton = `${heroButtonBase} bg-[#759BF6] hover:bg-[#628bf0] text-white shadow-lg shadow-[#759BF6]/30 hover:shadow-xl`;
+
+  const heroAdminButton = `${heroButtonBase} bg-[#D4A338] hover:bg-[#be8f2b] text-slate-950 shadow-lg shadow-[#D4A338]/30 hover:shadow-xl`;
+
+  /*
+   * --------------------------------------------------------------------------
+   * ROLE BASED HERO ACTIONS
+   * --------------------------------------------------------------------------
+   */
+
+  const renderHeroActions = () => {
+    if (isCreator) {
+      return (
+        <>
+          <button
+            type="button"
+            id="hero-search-brands-btn"
+            onClick={() => navigateTo('opportunities')}
+            className={`${heroPrimaryButton} flex-1 md:flex-none md:min-w-[180px]`}
+          >
+            <Compass className="w-4 h-4 text-[#D4A338] shrink-0" />
+            <span>Search Brands</span>
+          </button>
+
+          <button
+            type="button"
+            id="hero-creator-opportunities-btn"
+            onClick={() => navigateTo('opportunities')}
+            className={`${heroSecondaryButton} flex-1 md:flex-none md:min-w-[180px]`}
+          >
+            <LayoutDashboard className="w-4 h-4 text-white shrink-0" />
+            <span>View Opportunities</span>
+          </button>
+        </>
+      );
+    }
+
+    if (isBrand) {
+      return (
+        <>
+          <button
+            type="button"
+            id="hero-search-influencers-btn"
+            onClick={() => navigateTo('explore')}
+            className={`${heroPrimaryButton} flex-1 md:flex-none md:min-w-[200px]`}
+          >
+            <Users className="w-4 h-4 text-[#D4A338] shrink-0" />
+            <span>Search Influencers</span>
+          </button>
+
+          <button
+            type="button"
+            id="hero-brand-campaigns-btn"
+            onClick={() => navigateTo('brand-campaigns', { slug: 'account' })}
+            className={`${heroSecondaryButton} flex-1 md:flex-none md:min-w-[180px]`}
+          >
+            <LayoutDashboard className="w-4 h-4 text-white shrink-0" />
+            <span>My Campaigns</span>
+          </button>
+        </>
+      );
+    }
+
+    if (isAdmin) {
+      return (
+        <>
+          <button
+            type="button"
+            id="hero-explore-all-btn"
+            onClick={() => navigateTo('explore')}
+            className={`${heroPrimaryButton} flex-1 md:flex-none md:min-w-[200px]`}
+          >
+            <Compass className="w-4 h-4 text-[#D4A338] shrink-0" />
+            <span>Search Influencers</span>
+          </button>
+
+          <button
+            type="button"
+            id="hero-admin-panel-btn"
+            onClick={() => navigateTo('admin-dashboard')}
+            className={`${heroAdminButton} flex-1 md:flex-none md:min-w-[190px]`}
+          >
+            <LayoutDashboard className="w-4 h-4 text-slate-950 shrink-0" />
+            <span>Admin Dashboard</span>
+          </button>
+        </>
+      );
+    }
+
+    if (isSales) {
+      return (
+        <>
+          <button
+            type="button"
+            id="hero-sales-explore-btn"
+            onClick={() => navigateTo('explore')}
+            className={`${heroPrimaryButton} flex-1 md:flex-none md:min-w-[200px]`}
+          >
+            <Compass className="w-4 h-4 text-[#D4A338] shrink-0" />
+            <span>Explore</span>
+          </button>
+
+          <button
+            type="button"
+            id="hero-sales-dashboard-btn"
+            onClick={() => navigateTo('home')}
+            className={`${heroSecondaryButton} flex-1 md:flex-none md:min-w-[180px]`}
+          >
+            <LayoutDashboard className="w-4 h-4 text-white shrink-0" />
+            <span>Dashboard</span>
+          </button>
+        </>
+      );
+    }
+
+    return (
+      <>
+        <button
+          type="button"
+          id="hero-signin-btn"
+          onClick={() => navigateTo('login', { mode: 'login' })}
+          className={`${heroPrimaryButton} flex-1 md:flex-none md:min-w-[150px]`}
+        >
+          <span>Sign in</span>
+        </button>
+
+        <button
+          type="button"
+          id="hero-get-started-btn"
+          onClick={() => navigateTo('login', { mode: 'signup' })}
+          className={`${heroSecondaryButton} flex-1 md:flex-none md:min-w-[220px]`}
+        >
+          <span>Get Started For Free</span>
+        </button>
+      </>
+    );
   };
 
-  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
-  const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
-
-  const categoryRef = useRef<HTMLDivElement>(null);
-  const cityRef = useRef<HTMLDivElement>(null);
-
-  // Close dropdowns on click outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (categoryRef.current && !categoryRef.current.contains(event.target as Node)) {
-        setCategoryDropdownOpen(false);
-      }
-      if (cityRef.current && !cityRef.current.contains(event.target as Node)) {
-        setCityDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const handleSearchSubmit = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    setFilters({
-      ...filters,
-      searchQuery: keyword,
-      category: selectedCategory,
-      city: selectedCity,
-    });
-    navigateTo('explore');
-  };
-
-  const getSelectedCategoryLabel = () => {
-    if (selectedCategory === 'all') return 'All Categories';
-    return selectedCategory;
-  };
-
-  const getSelectedCityLabel = () => {
-    if (selectedCity === 'all') return 'All India';
-    return selectedCity;
-  };
+  /*
+   * --------------------------------------------------------------------------
+   * RENDER
+   * --------------------------------------------------------------------------
+   */
 
   return (
-    <section className="relative overflow-hidden bg-transparent text-slate-900 flex-1 flex flex-col justify-center py-4 xs:py-5 sm:py-10 min-h-0 border-b border-slate-200/80 font-sans w-full max-w-full">
-      {/* Subtle Premium Background Glow */}
+    <section className="relative overflow-hidden bg-gradient-to-b from-[#051126] via-[#071736] to-[#091f48] text-white min-h-[calc(100dvh-75px)] md:min-h-[680px] flex flex-col justify-center py-8 sm:py-10 px-4 sm:px-6 md:px-[6vw] font-sans w-full max-w-full">
+      {/* Background Ambient Glows */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-full overflow-hidden pointer-events-none z-0">
-        <div className="absolute -top-32 left-1/4 w-[600px] h-[450px] bg-[#D4A338]/10 rounded-full blur-[140px]" />
-        <div className="absolute top-1/4 right-1/4 w-[500px] h-[400px] bg-[#D4A338]/5 rounded-full blur-[140px]" />
+        <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[600px] h-[350px] bg-[#D4A338]/10 rounded-full blur-[120px]" />
+
+        <div className="absolute top-1/3 left-1/4 w-[450px] h-[300px] bg-blue-600/10 rounded-full blur-[130px]" />
       </div>
 
-      <div className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 text-center relative z-10 space-y-3 xs:space-y-3.5 sm:space-y-8 my-auto w-full max-w-full">
-        {/* Headline */}
-        <div className="max-w-5xl mx-auto w-full pt-0 pb-2.5 xs:pb-3.5 sm:pb-4">
-          <h1 className="font-sans text-[22px] xs:text-[27px] sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tighter leading-none whitespace-nowrap text-slate-900">
-            Biggest Influencer Marketplace
+      {/* ------------------------------------------------------------------ */}
+      {/* HERO CONTENT */}
+      {/* ------------------------------------------------------------------ */}
+
+      <div className="max-w-2xl md:max-w-none mx-auto w-full text-center md:text-left relative z-10 flex flex-col items-center justify-center my-auto space-y-4 sm:space-y-6 md:grid md:grid-cols-2 md:items-center md:gap-x-0 md:gap-y-10 md:space-y-0">
+
+        {/* Main Title */}
+        <div className="space-y-2.5 md:space-y-12 max-w-xl mx-auto md:mx-0 md:col-start-1 md:row-start-1 md:self-end">
+          <h1 className="text-4xl sm:text-5xl md:text-[3.5rem] lg:text-[4rem] font-black tracking-tight text-white leading-tight">
+            Your next collab is here
           </h1>
+
+          <div className="space-y-1 md:space-y-3 text-slate-300">
+            <p className="text-xs sm:text-sm md:text-[1.45rem] font-semibold text-[#8eb6ff] tracking-wide">
+              1,00,000+ Influencers{' '}
+              <span className="text-slate-400">|</span>{' '}
+              10,000+ Brands
+            </p>
+
+            <p className="text-[11px] sm:text-xs md:text-[1.1rem] text-[#8eb6ff]/85 font-medium tracking-normal">
+              No Middleman{' '}
+              <span className="text-slate-500"> | </span> 0% Commission{' '}
+              <span className="text-slate-500"> | </span> 100% Free
+            </p>
+          </div>
         </div>
 
-        {/* 3. 🎯 Fully Responsive Smart Search Bar */}
-        <div className="max-w-4xl sm:max-w-5xl mx-auto w-full bg-white/95 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-2 sm:p-3.5 shadow-[0_12px_40px_rgba(0,0,0,0.06)] border border-slate-200 relative z-30">
-          <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row items-center gap-2 sm:gap-2.5 w-full">
-            {/* Keyword Input */}
-            <div className="relative flex-1 w-full flex items-center bg-slate-50 rounded-xl sm:rounded-2xl border border-slate-200 hover:border-slate-300 transition px-3 sm:px-4">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
-              <input
-                type="text"
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-                placeholder="Search Influencers by name, category or city..."
-                className="w-full pl-6 sm:pl-7 pr-3 py-2.5 sm:py-4 bg-transparent text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none"
-              />
-              {keyword && (
-                <button
-                  type="button"
-                  onClick={() => setKeyword('')}
-                  className="text-xs text-slate-400 hover:text-slate-600 font-bold p-1 cursor-pointer"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-
-            {/* Dropdowns: 2-Col Grid on Mobile, Side-by-side on Desktop */}
-            <div className="grid grid-cols-2 sm:flex items-center gap-2 w-full sm:w-auto shrink-0">
-              {/* Category Dropdown */}
-              <div ref={categoryRef} className="relative w-full sm:w-52">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCategoryDropdownOpen(!categoryDropdownOpen);
-                    setCityDropdownOpen(false);
-                  }}
-                  className={`w-full bg-slate-50 rounded-xl sm:rounded-2xl border px-2.5 sm:px-4 py-2.5 sm:py-4 text-[11px] sm:text-xs font-semibold text-slate-700 flex items-center justify-between gap-1 sm:gap-2 transition cursor-pointer ${
-                    categoryDropdownOpen ? 'border-[#D4A338] text-slate-900 bg-white ring-2 ring-[#D4A338]/10' : 'border-slate-200 hover:border-slate-300'
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5 sm:gap-2 truncate">
-                    <Layers className="w-3.5 h-3.5 text-[#D4A338] shrink-0" />
-                    <span className="truncate">{getSelectedCategoryLabel()}</span>
-                  </div>
-                  <ChevronDown
-                    className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform duration-200 ${
-                      categoryDropdownOpen ? 'rotate-180 text-[#D4A338]' : ''
-                    }`}
-                  />
-                </button>
-
-                {/* Popover Menu */}
-                {categoryDropdownOpen && (
-                  <div className="absolute top-full left-0 mt-2 w-56 sm:w-72 bg-white text-slate-900 rounded-2xl shadow-2xl border border-slate-200 p-2 z-50 max-h-64 sm:max-h-72 overflow-y-auto text-left space-y-1 animate-fadeIn">
-                    <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 mb-1">
-                      Select Category
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedCategory('all');
-                        setCategoryDropdownOpen(false);
-                      }}
-                      className={`w-full px-3 py-1.5 sm:py-2 rounded-xl text-xs font-medium flex items-center justify-between transition cursor-pointer ${
-                        selectedCategory === 'all'
-                          ? 'bg-[#D4A338] text-white font-bold'
-                          : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
-                      }`}
-                    >
-                      <span>All Categories</span>
-                      {selectedCategory === 'all' && <Check className="w-3.5 h-3.5" />}
-                    </button>
-
-                    {(categories && categories.length > 0 ? categories : CATEGORIES_LIST).map((cat, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => {
-                          setSelectedCategory(cat.name);
-                          setCategoryDropdownOpen(false);
-                        }}
-                        className={`w-full px-3 py-1.5 sm:py-2 rounded-xl text-xs font-medium flex items-center justify-between transition cursor-pointer ${
-                          selectedCategory === cat.name
-                            ? 'bg-[#D4A338] text-white font-bold'
-                            : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
-                        }`}
-                      >
-                        <span className="truncate">{cat.name}</span>
-                        {selectedCategory === cat.name && <Check className="w-3.5 h-3.5 shrink-0" />}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* City Dropdown */}
-              <div ref={cityRef} className="relative w-full sm:w-48">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCityDropdownOpen(!cityDropdownOpen);
-                    setCategoryDropdownOpen(false);
-                  }}
-                  className={`w-full bg-slate-50 rounded-xl sm:rounded-2xl border px-2.5 sm:px-4 py-2.5 sm:py-4 text-[11px] sm:text-xs font-semibold text-slate-700 flex items-center justify-between gap-1 sm:gap-2 transition cursor-pointer ${
-                    cityDropdownOpen ? 'border-[#D4A338] text-slate-900 bg-white ring-2 ring-[#D4A338]/10' : 'border-slate-200 hover:border-slate-300'
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5 sm:gap-2 truncate">
-                    <MapPin className="w-3.5 h-3.5 text-[#D4A338] shrink-0" />
-                    <span className="truncate">{getSelectedCityLabel()}</span>
-                  </div>
-                  <ChevronDown
-                    className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform duration-200 ${
-                      cityDropdownOpen ? 'rotate-180 text-[#D4A338]' : ''
-                    }`}
-                  />
-                </button>
-
-                {cityDropdownOpen && (
-                  <div className="absolute top-full right-0 sm:left-0 mt-2 w-56 sm:w-72 bg-white text-slate-900 rounded-2xl shadow-2xl border border-slate-200 p-2 z-50 max-h-64 sm:max-h-80 overflow-y-auto text-left space-y-1 animate-fadeIn">
-                    <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 mb-1">
-                      Select City
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        syncCitySelection('all');
-                        setCityDropdownOpen(false);
-                      }}
-                      className={`w-full px-3 py-1.5 sm:py-2 rounded-xl text-xs font-medium flex items-center justify-between transition cursor-pointer ${
-                        selectedCity === 'all'
-                          ? 'bg-[#D4A338] text-white font-bold'
-                          : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
-                      }`}
-                    >
-                      <span>All India</span>
-                      {selectedCity === 'all' && <Check className="w-3.5 h-3.5" />}
-                    </button>
-
-                    {(cities && cities.length > 0 ? cities : CITIES_LIST).map((c, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => {
-                          syncCitySelection(c.name);
-                          setCityDropdownOpen(false);
-                        }}
-                        className={`w-full px-3 py-1.5 sm:py-2 rounded-xl text-xs font-medium flex items-center justify-between transition cursor-pointer ${
-                          selectedCity === c.name
-                            ? 'bg-[#D4A338] text-white font-bold'
-                            : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
-                        }`}
-                      >
-                        <span className="truncate">{c.name}</span>
-                        {selectedCity === c.name && <Check className="w-3.5 h-3.5 shrink-0" />}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Search Button (Full width bar on mobile, icon button on desktop) */}
-            <button
-              type="submit"
-              id="hero-search-btn"
-              title="Search Influencers"
-              className="w-full sm:w-12 sm:h-12 py-2.5 sm:py-0 bg-[#D4A338] hover:bg-[#b88628] text-white rounded-xl sm:rounded-2xl transition flex items-center justify-center shrink-0 cursor-pointer shadow-md shadow-[#D4A338]/30 gap-2 font-bold text-xs sm:text-base"
-            >
-              <Search className="w-4 h-4 sm:w-5 sm:h-5 text-white shrink-0" />
-              <span className="sm:hidden text-white font-bold">Search Influencers</span>
-            </button>
-          </form>
+        {/* Creator Illustration */}
+        <div className="w-full max-w-[300px] sm:max-w-[420px] md:max-w-[560px] mx-auto py-1 sm:py-2 md:mx-0 md:col-start-2 md:row-span-2 md:row-start-1 md:self-center">
+          <img
+            src="/creator-selfie.png"
+            alt="Two creators taking a selfie"
+            className="block w-full h-auto object-contain drop-shadow-lg"
+            loading="eager"
+            decoding="async"
+          />
         </div>
 
-        {/* 4. Responsive 2-Action CTA Row */}
-        <div className="pt-0.5 sm:pt-1 flex flex-row items-center justify-center gap-1.5 sm:gap-3 relative z-10 w-full max-w-md mx-auto">
-          <button
-            type="button"
-            id="hero-join-brand-btn"
-            onClick={() => {
-              if (authUser?.role === 'BRAND') {
-                navigateTo('brand-dashboard');
-                return;
-              }
-              navigateTo('login', { mode: 'signup', role: 'BRAND' });
-            }}
-            className="flex-1 sm:flex-none sm:w-auto px-2 sm:px-6 py-2 sm:py-2.5 rounded-xl bg-[#D4A338] hover:bg-[#b88628] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-[#D4A338]/25 transition cursor-pointer whitespace-nowrap"
-          >
-            <Briefcase className="w-3.5 h-3.5 text-white shrink-0" />
-            <span>Join as a Brand</span>
-          </button>
+        {/* ---------------------------------------------------------------- */}
+        {/* HERO ACTIONS */}
+        {/* ---------------------------------------------------------------- */}
 
-          <button
-            type="button"
-            id="hero-list-free-btn"
-            onClick={() => navigateTo('login', { mode: 'signup', role: 'CREATOR' })}
-            className="flex-1 sm:flex-none sm:w-auto px-2 sm:px-6 py-2 sm:py-2.5 rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-slate-900/15 transition cursor-pointer whitespace-nowrap"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-[#D4A338] shrink-0" />
-            <span>Join as Influencer</span>
-          </button>
+        <div className="w-full max-w-sm sm:max-w-md md:max-w-none mx-auto pt-2 pb-4 md:mx-0 md:col-start-1 md:row-start-2 md:self-start md:justify-self-start">
+          <div className="flex flex-row items-center justify-center md:justify-start gap-2.5 sm:gap-4 w-full md:w-auto">
+            {renderHeroActions()}
+          </div>
         </div>
       </div>
+
     </section>
   );
 };

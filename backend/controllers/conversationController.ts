@@ -4,6 +4,9 @@ import { AuthenticatedRequest } from '../middleware/authMiddleware';
 
 const ONLINE_THRESHOLD_MS = 90_000;
 
+// conversationId -> Map<userId, expireTimeMs>
+export const typingUsers = new Map<string, Map<string, number>>();
+
 async function resolveParticipantIds(user: { id: string; role: string }) {
   if (user.role === 'CREATOR') {
     const rows: any = await dbQuery('SELECT id, user_id FROM creators WHERE id = ? OR user_id = ? LIMIT 1', [
@@ -45,7 +48,8 @@ export async function listConversations(req: AuthenticatedRequest, res: Response
         cr.username as creator_username,
         bu.last_seen_at as brand_last_seen,
         cu.last_seen_at as creator_last_seen,
-        (SELECT COUNT(*) FROM messages m WHERE m.conversation_id = c.id AND m.is_read = FALSE AND m.sender_id <> ?) as unread_count
+        (SELECT COUNT(*) FROM messages m WHERE m.conversation_id = c.id AND m.is_read = FALSE AND m.sender_id <> ?) as unread_count,
+        (SELECT COUNT(*) FROM messages m WHERE m.conversation_id = c.id) as message_count
       FROM conversations c
       LEFT JOIN brand_profiles bp ON bp.user_id = c.brand_user_id
       LEFT JOIN creators cr ON cr.id = c.creator_id
@@ -90,8 +94,21 @@ export async function listConversations(req: AuthenticatedRequest, res: Response
         lastMessage: r.last_message || '',
         lastMessageAt: r.last_message_at,
         unreadCount: Number(r.unread_count) || 0,
+        messageCount: Number(r.message_count) || 0,
         online: isOnline(peerLastSeen, onlineUserIds, peerUserId),
         createdAt: r.created_at,
+        peerTyping: (() => {
+          if (!peerUserId) return false;
+          const convMap = typingUsers.get(r.id);
+          if (!convMap) return false;
+          const expire = convMap.get(peerUserId);
+          if (!expire) return false;
+          if (Date.now() > expire) {
+            convMap.delete(peerUserId);
+            return false;
+          }
+          return true;
+        })(),
       };
     });
 
@@ -137,6 +154,19 @@ export async function getMessages(req: AuthenticatedRequest, res: Response) {
 
     res.json({
       success: true,
+      peerTyping: (() => {
+        const peerUserId = req.user.role === 'BRAND' ? conv.creator_user_id : conv.brand_user_id;
+        if (!peerUserId) return false;
+        const convMap = typingUsers.get(id);
+        if (!convMap) return false;
+        const expire = convMap.get(peerUserId);
+        if (!expire) return false;
+        if (Date.now() > expire) {
+          convMap.delete(peerUserId);
+          return false;
+        }
+        return true;
+      })(),
       messages: (Array.isArray(msgs) ? msgs : []).map((m: any) => ({
         id: m.id,
         conversationId: m.conversation_id,
@@ -145,6 +175,9 @@ export async function getMessages(req: AuthenticatedRequest, res: Response) {
         body: m.body,
         isRead: Boolean(m.is_read),
         createdAt: m.created_at,
+        attachmentUrl: m.attachment_url,
+        attachmentType: m.attachment_type,
+        attachmentName: m.attachment_name,
       })),
     });
   } catch (error) {
@@ -161,7 +194,11 @@ export async function sendMessage(req: AuthenticatedRequest, res: Response) {
 
     const { id } = req.params;
     const body = String(req.body.body || req.body.message || '').trim();
-    if (!body) return res.status(400).json({ success: false, error: 'Message body is required' });
+    const attachmentUrl = req.body.attachmentUrl || null;
+    const attachmentType = req.body.attachmentType || null;
+    const attachmentName = req.body.attachmentName || null;
+
+    if (!body && !attachmentUrl) return res.status(400).json({ success: false, error: 'Message body or attachment is required' });
     if (body.length > 4000) return res.status(400).json({ success: false, error: 'Message too long' });
 
     const convRows: any = await dbQuery('SELECT * FROM conversations WHERE id = ? LIMIT 1', [id]);
@@ -181,13 +218,15 @@ export async function sendMessage(req: AuthenticatedRequest, res: Response) {
 
     const msgId = `msg_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
     await dbQuery(
-      `INSERT INTO messages (id, conversation_id, sender_id, sender_role, body, is_read)
-       VALUES (?, ?, ?, ?, ?, FALSE)`,
-      [msgId, id, req.user.id, req.user.role, body]
+      `INSERT INTO messages (id, conversation_id, sender_id, sender_role, body, is_read, attachment_url, attachment_type, attachment_name)
+       VALUES (?, ?, ?, ?, ?, FALSE, ?, ?, ?)`,
+      [msgId, id, req.user.id, req.user.role, body, attachmentUrl, attachmentType, attachmentName]
     );
+
+    const lastMsgStr = body ? body.slice(0, 500) : (attachmentType ? `[${attachmentType}]` : 'Attachment');
     await dbQuery(
       `UPDATE conversations SET last_message = ?, last_message_at = NOW() WHERE id = ?`,
-      [body.slice(0, 500), id]
+      [lastMsgStr, id]
     );
 
     const message = {
@@ -198,12 +237,37 @@ export async function sendMessage(req: AuthenticatedRequest, res: Response) {
       body,
       isRead: false,
       createdAt: new Date().toISOString(),
+      attachmentUrl,
+      attachmentType,
+      attachmentName,
     };
 
     res.status(201).json({ success: true, message });
   } catch (error) {
     console.error('sendMessage error:', error);
     res.status(500).json({ success: false, error: 'Failed to send message' });
+  }
+}
+
+export async function setTypingStatus(req: AuthenticatedRequest, res: Response) {
+  try {
+    if (!req.user) return res.status(401).json({ success: false, error: 'Authentication required' });
+    const { id } = req.params;
+    const { isTyping } = req.body;
+    
+    if (!typingUsers.has(id)) typingUsers.set(id, new Map());
+    const convTyping = typingUsers.get(id)!;
+    
+    if (isTyping) {
+      convTyping.set(req.user.id, Date.now() + 6000); // Expire in 6 seconds
+    } else {
+      convTyping.delete(req.user.id);
+    }
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('setTypingStatus error:', error);
+    res.status(500).json({ success: false, error: 'Failed to set typing status' });
   }
 }
 

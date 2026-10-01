@@ -1,13 +1,13 @@
 import { randomUUID } from 'crypto';
 import fs from 'fs';
 import path from 'path';
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { dbQuery } from '../config/db';
 import { creatorsStore } from './creatorController';
 import { AuthenticatedRequest } from '../middleware/authMiddleware';
 
 const uploadsDir = path.resolve(__dirname, '../uploads');
-const allowedTypes = new Set(['avatar', 'cover', 'reel_video', 'reel_thumbnail', 'brand_logo']);
+const allowedTypes = new Set(['avatar', 'cover', 'reel_video', 'reel_thumbnail', 'brand_logo', 'chat_attachment']);
 
 function ensureUploadsDirectory() {
   fs.mkdirSync(uploadsDir, { recursive: true });
@@ -23,6 +23,7 @@ function getFileExtension(dataUri: string, type: string) {
     'video/mp4': '.mp4',
     'video/webm': '.webm',
     'video/quicktime': '.mov',
+    'application/pdf': '.pdf',
   };
   return extensions[mimeType || ''] || (type === 'reel_video' ? '.mp4' : '.jpg');
 }
@@ -43,7 +44,7 @@ function getPreviousUrl(creatorId: string, type: string) {
   return undefined;
 }
 
-export function saveBase64Media(dataUri: string, type: 'avatar' | 'cover' | 'reel_video' = 'avatar'): string {
+export function saveBase64Media(dataUri: string, type: 'avatar' | 'cover' | 'reel_video' | 'chat_attachment' | 'brand_logo' = 'avatar'): string {
   if (!dataUri || typeof dataUri !== 'string' || !dataUri.startsWith('data:')) return dataUri || '';
   const encodedData = dataUri.split(',')[1];
   if (!encodedData) return '';
@@ -95,8 +96,16 @@ export async function uploadImage(req: AuthenticatedRequest, res: Response) {
 
     if (creatorId && (type === 'avatar' || type === 'cover')) {
       const field = type === 'cover' ? 'cover_image' : 'avatar';
-      await dbQuery(`UPDATE creators SET ${field} = ? WHERE id = ?`, [imageUrl, creatorId]);
-      removeLocalFile(getPreviousUrl(creatorId, type));
+      // Read the persisted value before replacing it. The in-memory cache can be
+      // empty after a server restart, so it cannot be the source of truth here.
+      const previousRows: any = await dbQuery(`SELECT ${field} AS media_url FROM creators WHERE id = ? LIMIT 1`, [creatorId]);
+      const previousUrl = Array.isArray(previousRows) ? previousRows[0]?.media_url : getPreviousUrl(creatorId, type);
+      const updateResult: any = await dbQuery(`UPDATE creators SET ${field} = ? WHERE id = ?`, [imageUrl, creatorId]);
+      if (!updateResult || updateResult.affectedRows !== 1) {
+        removeLocalFile(imageUrl);
+        return res.status(404).json({ success: false, error: 'Creator profile was not found' });
+      }
+      removeLocalFile(previousUrl);
 
       const cIndex = creatorsStore.findIndex((c) => c.id === creatorId);
       if (cIndex !== -1) {
@@ -116,7 +125,7 @@ export async function uploadImage(req: AuthenticatedRequest, res: Response) {
   }
 }
 
-export async function deleteImage(req: Request, res: Response) {
+export async function deleteImage(req: AuthenticatedRequest, res: Response) {
   try {
     const { creatorId } = req.params;
     const { type } = req.body;
@@ -124,9 +133,21 @@ export async function deleteImage(req: Request, res: Response) {
       return res.status(400).json({ success: false, error: 'Creator and image type are required' });
     }
 
-    const previousUrl = getPreviousUrl(creatorId, type);
+    if (!req.user) return res.status(401).json({ success: false, error: 'Authentication required' });
+    const isAdmin = req.user.role === 'ADMIN' || req.user.role === 'SALES';
+    const ownerRows: any = await dbQuery('SELECT user_id FROM creators WHERE id = ? LIMIT 1', [creatorId]);
+    const ownerId = Array.isArray(ownerRows) ? ownerRows[0]?.user_id : null;
+    if (!isAdmin && ownerId !== req.user.id) {
+      return res.status(403).json({ success: false, error: 'Not authorized to delete media for this profile' });
+    }
+
     const field = type === 'cover' ? 'cover_image' : 'avatar';
-    await dbQuery(`UPDATE creators SET ${field} = NULL WHERE id = ?`, [creatorId]);
+    const previousRows: any = await dbQuery(`SELECT ${field} AS media_url FROM creators WHERE id = ? LIMIT 1`, [creatorId]);
+    const previousUrl = Array.isArray(previousRows) ? previousRows[0]?.media_url : getPreviousUrl(creatorId, type);
+    const updateResult: any = await dbQuery(`UPDATE creators SET ${field} = NULL WHERE id = ?`, [creatorId]);
+    if (!updateResult || updateResult.affectedRows !== 1) {
+      return res.status(404).json({ success: false, error: 'Creator profile was not found' });
+    }
     removeLocalFile(previousUrl);
 
     const cIndex = creatorsStore.findIndex((c) => c.id === creatorId);

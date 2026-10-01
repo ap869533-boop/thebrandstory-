@@ -4,7 +4,7 @@ import path from 'path';
 import { Response } from 'express';
 import { dbQuery } from '../config/db';
 import { AuthenticatedRequest } from '../middleware/authMiddleware';
-import { detectImageMimeFromBuffer, IMAGE_MIME_EXTENSIONS, haversineKm } from '../utils/validation';
+import { detectImageMimeFromBuffer, IMAGE_MIME_EXTENSIONS } from '../utils/validation';
 
 const uploadsDir = path.resolve(__dirname, '../uploads');
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024; // 8MB
@@ -25,19 +25,6 @@ const CITY_COORDS: Record<string, { lat: number, lng: number }> = {
   'chennai': { lat: 13.0827, lng: 80.2707 },
   'ahmedabad': { lat: 23.0225, lng: 72.5714 },
 };
-
-function getCreatorCoords(creator: any) {
-  if (creator.latitude && creator.longitude) {
-    return { lat: Number(creator.latitude), lng: Number(creator.longitude) };
-  }
-  const city = (creator.current_city || '').toLowerCase();
-  for (const key of Object.keys(CITY_COORDS)) {
-    if (city === key || city.includes(key)) {
-      return CITY_COORDS[key];
-    }
-  }
-  return null;
-}
 
 function ensureUploadsDirectory() {
   fs.mkdirSync(uploadsDir, { recursive: true });
@@ -188,70 +175,43 @@ export async function getNearbyCreators(req: AuthenticatedRequest, res: Response
     const city = String(req.query.city || '').trim();
     const radiusKm = Math.min(parseFloat(String(req.query.radiusKm || '50')) || 50, 200);
     const limit = Math.min(parseInt(String(req.query.limit || '12'), 10) || 12, 40);
-
+    const offset = Math.max(parseInt(String(req.query.offset || '0'), 10) || 0, 0);
     let rows: any[] = [];
-    if (Number.isFinite(lat) && Number.isFinite(lng)) {
-      const all: any = await dbQuery(
-        `SELECT id, name, username, avatar, current_city, primary_category, followers, starting_price,
-                is_verified, latitude, longitude, status
-         FROM creators
-         WHERE status = 'active'
-         LIMIT 1000`
-      );
-      rows = (Array.isArray(all) ? all : [])
-        .map((r: any) => {
-          const coords = getCreatorCoords(r);
-          return {
-            ...r,
-            distanceKm: coords ? haversineKm(lat, lng, coords.lat, coords.lng) : 999999,
-          };
-        })
-        .filter((r: any) => r.distanceKm <= radiusKm)
-        .sort((a: any, b: any) => a.distanceKm - b.distanceKm)
-        .slice(0, limit);
-    }
+    let total = 0;
+    let origin = Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
+    const cityLower = city.toLowerCase();
+    const cityKey = Object.keys(CITY_COORDS).find((key) => cityLower === key || cityLower.includes(key) || key.includes(cityLower));
+    if (!origin && cityKey) origin = CITY_COORDS[cityKey];
 
-    if (rows.length === 0 && city && city.toLowerCase() !== 'all' && city.toLowerCase() !== 'all india') {
-      const all: any = await dbQuery(
-        `SELECT id, name, username, avatar, current_city, primary_category, followers, starting_price,
-                is_verified, latitude, longitude, status
-         FROM creators
-         WHERE status = 'active'
-         LIMIT 1000`
-      );
-      
-      const cityLower = city.toLowerCase();
-      const cityKey = Object.keys(CITY_COORDS).find(k => cityLower === k || cityLower.includes(k) || k.includes(cityLower));
-      
-      if (cityKey) {
-        const cityLat = CITY_COORDS[cityKey].lat;
-        const cityLng = CITY_COORDS[cityKey].lng;
-        
-        rows = (Array.isArray(all) ? all : [])
-          .map((r: any) => {
-            const coords = getCreatorCoords(r);
-            return {
-              ...r,
-              distanceKm: coords ? haversineKm(cityLat, cityLng, coords.lat, coords.lng) : 999999,
-            };
-          })
-          .filter((r: any) => r.distanceKm <= radiusKm)
-          .sort((a: any, b: any) => a.distanceKm - b.distanceKm)
-          .slice(0, limit);
-      } else {
-        rows = (Array.isArray(all) ? all : [])
-          .filter((r: any) => {
-            const cc = (r.current_city || '').toLowerCase();
-            return cc === cityLower || cc.includes(cityLower);
-          })
-          .map((r: any) => ({ ...r, distanceKm: null }))
-          .sort((a: any, b: any) => (b.followers || 0) - (a.followers || 0))
-          .slice(0, limit);
-      }
+    if (origin) {
+      const latCase = `CASE ${Object.entries(CITY_COORDS).map(([key, point]) => `WHEN LOWER(current_city) LIKE '%${key}%' THEN ${point.lat}`).join(' ')} ELSE NULL END`;
+      const lngCase = `CASE ${Object.entries(CITY_COORDS).map(([key, point]) => `WHEN LOWER(current_city) LIKE '%${key}%' THEN ${point.lng}`).join(' ')} ELSE NULL END`;
+      const creatorLat = `COALESCE(NULLIF(latitude, 0), (${latCase}))`;
+      const creatorLng = `COALESCE(NULLIF(longitude, 0), (${lngCase}))`;
+      const distanceSql = `(6371 * ACOS(LEAST(1, GREATEST(-1, COS(RADIANS(?)) * COS(RADIANS(${creatorLat})) * COS(RADIANS(${creatorLng}) - RADIANS(?)) + SIN(RADIANS(?)) * SIN(RADIANS(${creatorLat}))))))`;
+      const distanceParams = [origin.lat, origin.lng, origin.lat];
+      const baseSelect = `SELECT id, name, username, avatar, current_city, primary_category, followers, starting_price, is_verified, ${distanceSql} as distance_km FROM creators WHERE status = 'active' AND ${distanceSql} <= ?`;
+      const [pageRows, countRows]: any = await Promise.all([
+        dbQuery(`${baseSelect} ORDER BY distance_km ASC LIMIT ? OFFSET ?`, [...distanceParams, ...distanceParams, radiusKm, limit, offset]),
+        dbQuery(`SELECT COUNT(*) as total FROM creators WHERE status = 'active' AND ${distanceSql} <= ?`, [...distanceParams, radiusKm]),
+      ]);
+      rows = Array.isArray(pageRows) ? pageRows : [];
+      total = Number(countRows?.[0]?.total) || 0;
+    } else if (city && cityLower !== 'all' && cityLower !== 'all india') {
+      const cityPattern = `%${cityLower}%`;
+      const [pageRows, countRows]: any = await Promise.all([
+        dbQuery(`SELECT id, name, username, avatar, current_city, primary_category, followers, starting_price, is_verified, NULL as distance_km FROM creators WHERE status = 'active' AND LOWER(current_city) LIKE ? ORDER BY followers DESC LIMIT ? OFFSET ?`, [cityPattern, limit, offset]),
+        dbQuery(`SELECT COUNT(*) as total FROM creators WHERE status = 'active' AND LOWER(current_city) LIKE ?`, [cityPattern]),
+      ]);
+      rows = Array.isArray(pageRows) ? pageRows : [];
+      total = Number(countRows?.[0]?.total) || 0;
     }
 
     res.json({
       success: true,
+      total,
+      limit,
+      offset,
       creators: rows.map((r: any) => ({
         id: r.id,
         name: r.name,
@@ -262,7 +222,7 @@ export async function getNearbyCreators(req: AuthenticatedRequest, res: Response
         followers: Number(r.followers) || 0,
         startingPrice: Number(r.starting_price) || 0,
         isVerified: Boolean(r.is_verified),
-        distanceKm: r.distanceKm != null ? Math.round(r.distanceKm * 10) / 10 : null,
+        distanceKm: r.distance_km != null ? Math.round(Number(r.distance_km) * 10) / 10 : null,
       })),
     });
   } catch (error) {

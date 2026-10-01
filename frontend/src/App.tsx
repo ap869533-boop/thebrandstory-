@@ -1,58 +1,66 @@
-import React from 'react';
-import { PlatformProvider, usePlatform } from './context/PlatformContext';
-import { Header } from './components/common/Header';
+import React, { lazy, Suspense } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
+import { PlatformProvider } from './context/PlatformContext';
 import { Footer } from './components/common/Footer';
 import { EnquiryModal } from './components/common/EnquiryModal';
 import { CompareDrawer } from './components/common/CompareDrawer';
 import { SavedShortlistDrawer } from './components/common/SavedShortlistDrawer';
 import { CreatorOnboardingModal } from './components/common/CreatorOnboardingModal';
 import { AuthModal } from './components/common/AuthModal';
+import { Navbar } from './components/common/Navbar';
 
-// Views
-import { HomeView } from './views/HomeView';
-import { ExploreView } from './views/ExploreView';
-import { CreatorDetailView } from './views/CreatorDetailView';
-import { CityPageView } from './views/CityPageView';
-import { CategoryPageView } from './views/CategoryPageView';
-import { PostRequirementView } from './views/PostRequirementView';
-import { OpportunitiesView } from './views/OpportunitiesView';
-import { CreatorDashboardView } from './views/CreatorDashboardView';
-import { BrandDashboardView } from './views/BrandDashboardView';
-import { AdminDashboardView } from './views/AdminDashboardView';
-import { BlogView } from './views/BlogView';
-import { BlogPostView } from './views/BlogPostView';
-import { BrandDetailView } from './views/BrandDetailView';
-import { LoginView } from './views/LoginView';
+// Route views are code-split so visitors load only the page they open.
+const HomeView = lazy(() => import('./views/HomeView').then(({ HomeView }) => ({ default: HomeView })));
+const ExploreView = lazy(() => import('./views/ExploreView').then(({ ExploreView }) => ({ default: ExploreView })));
+const CreatorDetailView = lazy(() => import('./views/CreatorDetailView').then(({ CreatorDetailView }) => ({ default: CreatorDetailView })));
+const CityPageView = lazy(() => import('./views/CityPageView').then(({ CityPageView }) => ({ default: CityPageView })));
+const CategoryPageView = lazy(() => import('./views/CategoryPageView').then(({ CategoryPageView }) => ({ default: CategoryPageView })));
+const PostRequirementView = lazy(() => import('./views/PostRequirementView').then(({ PostRequirementView }) => ({ default: PostRequirementView })));
+const OpportunitiesView = lazy(() => import('./views/OpportunitiesView').then(({ OpportunitiesView }) => ({ default: OpportunitiesView })));
+const BrandCampaignsView = lazy(() => import('./views/BrandCampaignsView').then(({ BrandCampaignsView }) => ({ default: BrandCampaignsView })));
 
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { HelmetProvider } from 'react-helmet-async';
+const WalletView = lazy(() => import('./views/WalletView').then(({ WalletView }) => ({ default: WalletView })));
+const AdminDashboardView = lazy(() => import('./views/AdminDashboardView').then(({ AdminDashboardView }) => ({ default: AdminDashboardView })));
+const BlogView = lazy(() => import('./views/BlogView').then(({ BlogView }) => ({ default: BlogView })));
+const BlogPostView = lazy(() => import('./views/BlogPostView').then(({ BlogPostView }) => ({ default: BlogPostView })));
+const BrandDetailView = lazy(() => import('./views/BrandDetailView').then(({ BrandDetailView }) => ({ default: BrandDetailView })));
+const LoginView = lazy(() => import('./views/LoginView').then(({ LoginView }) => ({ default: LoginView })));
+const ChatView = lazy(() => import('./views/ChatView').then(({ ChatView }) => ({ default: ChatView })));
+const HelpSupportView = lazy(() => import('./views/HelpSupportView').then(({ HelpSupportView }) => ({ default: HelpSupportView })));
 
 const MainAppContent: React.FC = () => {
   return (
-    <div className="min-h-screen flex flex-col bg-white text-slate-900 font-sans antialiased selection:bg-blue-100 selection:text-blue-900 w-full max-w-full overflow-x-hidden">
-      {/* Sticky Header Navigation */}
-      <Header />
+    <div className="dark-theme min-h-screen flex flex-col bg-[#051126] text-slate-100 font-sans antialiased selection:bg-[#D4A338]/30 selection:text-white w-full max-w-full overflow-x-hidden">
+      {/* Global Navbar — shown on every page */}
+      <Navbar />
 
       {/* Main Dynamic View */}
       <main className="flex-1 w-full max-w-full overflow-x-hidden">
-        <Routes>
-          <Route path="/" element={<HomeView />} />
-          <Route path="/login" element={<LoginView />} />
-          <Route path="/explore" element={<ExploreView />} />
-          <Route path="/creator/:username" element={<CreatorDetailView />} />
-          <Route path="/brand/:brandId" element={<BrandDetailView />} />
-          <Route path="/city/:citySlug" element={<CityPageView />} />
-          <Route path="/category/:categorySlug" element={<CategoryPageView />} />
-          <Route path="/post-requirement" element={<PostRequirementView />} />
-          <Route path="/opportunities" element={<OpportunitiesView />} />
-          <Route path="/dashboard/creator" element={<CreatorDashboardView />} />
-          <Route path="/dashboard/brand" element={<BrandDashboardView />} />
-          <Route path="/admin" element={<AdminDashboardView />} />
-          <Route path="/blog" element={<BlogView />} />
-          <Route path="/blog/:blogSlug" element={<BlogPostView />} />
-          {/* Catch all route - redirect to home */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <Suspense fallback={<div className="min-h-[40vh]" aria-busy="true" />}>
+          <Routes>
+            <Route path="/" element={<HomeView />} />
+            <Route path="/login" element={<LoginView />} />
+            <Route path="/chat" element={<ChatView />} />
+            <Route path="/:username/chat" element={<ChatView />} />
+            <Route path="/explore" element={<ExploreView />} />
+            <Route path="/creator/:username" element={<CreatorDetailView />} />
+            <Route path="/brand/:brandId" element={<BrandDetailView />} />
+            <Route path="/city/:citySlug" element={<CityPageView />} />
+            <Route path="/category/:categorySlug" element={<CategoryPageView />} />
+            <Route path="/post-requirement" element={<PostRequirementView />} />
+            <Route path="/opportunities" element={<OpportunitiesView />} />
+            <Route path="/brand/:brandSlug/campaigns" element={<BrandCampaignsView />} />
+
+            <Route path="/wallet" element={<WalletView />} />
+            <Route path="/admin" element={<AdminDashboardView />} />
+            <Route path="/blog" element={<BlogView />} />
+            <Route path="/blog/:blogSlug" element={<BlogPostView />} />
+            <Route path="/help-support" element={<HelpSupportView />} />
+            {/* Catch all route - redirect to home */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
       </main>
 
       {/* SEO & Directory Footer */}

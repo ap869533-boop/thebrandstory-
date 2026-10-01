@@ -46,13 +46,7 @@ export async function getEnquiries(req: AuthenticatedRequest, res: Response) {
       sql += ' AND (email = ? OR brand_name = ? OR brand_name IN (SELECT brand_name FROM brand_profiles WHERE user_id = ?))';
       params.push(req.user.email || '', req.user.name || '', req.user.id);
     } else if (!(req.user?.role === 'ADMIN' || req.user?.role === 'SALES')) {
-      // unauthenticated: allow filter by creatorId only for limited public? Prefer auth.
-      if (creatorId) {
-        sql += ' AND creator_id = ?';
-        params.push(String(creatorId));
-      } else {
-        return res.status(401).json({ success: false, error: 'Authentication required' });
-      }
+      return res.status(401).json({ success: false, error: 'Authentication required' });
     }
 
     if (creatorId && (req.user?.role === 'ADMIN' || req.user?.role === 'SALES')) {

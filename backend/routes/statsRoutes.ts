@@ -11,26 +11,18 @@ import {
   detectLocation
 } from '../controllers/statsController';
 
-import { runAutoMigrations } from '../utils/autoMigrate';
+import { authMiddleware, requireRole } from '../middleware/authMiddleware';
 
 const router = Router();
 
 router.get('/health', getHealth);
-router.get('/migrate', async (req, res) => {
-  try {
-    await runAutoMigrations();
-    res.json({ success: true, message: 'Live database auto-migrations executed successfully!' });
-  } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
 router.get('/categories', getCategories);
-router.post('/categories', createCategory);
-router.delete('/categories/:id', deleteCategory);
+router.post('/categories', authMiddleware, requireRole('ADMIN', 'SALES'), createCategory);
+router.delete('/categories/:id', authMiddleware, requireRole('ADMIN', 'SALES'), deleteCategory);
 router.get('/cities', getCities);
 router.get('/industries', getIndustries);
 router.get('/stats', getStats);
-router.put('/stats', updateStats);
+router.put('/stats', authMiddleware, requireRole('ADMIN', 'SALES'), updateStats);
 router.get('/detect-location', detectLocation);
 
 export default router;

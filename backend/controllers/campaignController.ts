@@ -16,7 +16,7 @@ function validateCampaignPhone(raw: string | undefined | null) {
   return result;
 }
 
-function mapCampaignRow(r: any, campApplicants: any[] = []) {
+function mapCampaignRow(r: any, campApplicants: any[] = [], includePrivateContact = false) {
   const maleCount = Number(r.male_count) || 0;
   const femaleCount = Number(r.female_count) || 0;
   const totalCount = maleCount + femaleCount;
@@ -25,9 +25,9 @@ function mapCampaignRow(r: any, campApplicants: any[] = []) {
     userId: r.user_id || null,
     logoUrl: r.logo_url || r.logoUrl || null,
     companyName: r.company_name,
-    contactPerson: r.contact_person,
-    email: r.email,
-    phone: r.phone || '',
+    contactPerson: includePrivateContact ? r.contact_person : '',
+    email: includePrivateContact ? r.email : '',
+    phone: includePrivateContact ? r.phone || '' : '',
     industry: r.industry || 'General',
     campaignTitle: r.campaign_title,
     campaignDescription: r.campaign_description,
@@ -54,9 +54,11 @@ function mapCampaignRow(r: any, campApplicants: any[] = []) {
   };
 }
 
-async function fetchApplicantsByCampaign(): Promise<Record<string, any[]>> {
+async function fetchApplicantsByCampaign(campaignIds: string[]): Promise<Record<string, any[]>> {
   const applicantsByCampaign: Record<string, any[]> = {};
+  if (campaignIds.length === 0) return applicantsByCampaign;
   try {
+    const placeholders = campaignIds.map(() => '?').join(', ');
     const applicantsRows = (await dbQuery(`
       SELECT 
         ca.id,
@@ -75,8 +77,9 @@ async function fetchApplicantsByCampaign(): Promise<Record<string, any[]>> {
       FROM campaign_applicants ca
       LEFT JOIN creators c ON (c.id = ca.creator_id OR c.user_id = ca.creator_id)
       LEFT JOIN users u ON u.id = ca.creator_id
+      WHERE ca.campaign_id IN (${placeholders})
       ORDER BY ca.applied_at DESC
-    `)) as any[];
+    `, campaignIds)) as any[];
 
     if (Array.isArray(applicantsRows)) {
       for (const a of applicantsRows) {
@@ -120,6 +123,9 @@ export async function getCampaigns(req: AuthenticatedRequest, res: Response) {
       LEFT JOIN brand_profiles bp ON c.user_id = bp.user_id
     `;
     const params: any[] = [];
+    const searchQuery = String(req.query.searchQuery || '').trim().toLowerCase();
+    const category = String(req.query.category || '').trim().toLowerCase();
+    const city = String(req.query.city || '').trim().toLowerCase();
 
     if (scope === 'mine' && userId && role === 'BRAND') {
       sql += ' WHERE (c.user_id = ? OR c.email = ?)';
@@ -131,14 +137,39 @@ export async function getCampaigns(req: AuthenticatedRequest, res: Response) {
       sql += ` WHERE c.approval_status = 'approved' AND c.status IN ('Open', 'In Review', 'Filled')`;
     }
 
+    if (searchQuery && scope === 'public') {
+      sql += ' AND (LOWER(c.campaign_title) LIKE ? OR LOWER(c.company_name) LIKE ?)';
+      params.push(`%${searchQuery}%`, `%${searchQuery}%`);
+    }
+    if (category && category !== 'all' && scope === 'public') {
+      sql += ' AND LOWER(c.category) LIKE ?';
+      params.push(`%${category}%`);
+    }
+    if (city && city !== 'all' && scope === 'public') {
+      sql += ' AND (LOWER(c.city) LIKE ? OR c.city = \'Pan India\')';
+      params.push(`%${city}%`);
+    }
+
     sql += ' ORDER BY c.created_at DESC';
+    const limit = Math.min(Math.max(parseInt(String(req.query.limit || '10'), 10) || 10, 1), 100);
+    const offset = Math.max(parseInt(String(req.query.offset || '0'), 10) || 0, 0);
+    const countSql = sql.replace(/SELECT c\.\*, COALESCE\(bp\.logo_url, u\.avatar\) as logo_url/i, 'SELECT COUNT(*) as total')
+      .replace(' ORDER BY c.created_at DESC', '');
+    sql += ' LIMIT ? OFFSET ?';
 
-    const dbRows: any = await dbQuery(sql, params);
-    const applicantsByCampaign = await fetchApplicantsByCampaign();
+    const [dbRows, countRows]: any = await Promise.all([
+      dbQuery(sql, [...params, limit, offset]),
+      dbQuery(countSql, params),
+    ]);
+    // Applicant names and pitches are private to the campaign owner and staff.
+    const canViewApplicants = scope === 'mine' || (scope === 'admin' && (role === 'ADMIN' || role === 'SALES'));
+    const applicantsByCampaign = canViewApplicants
+      ? await fetchApplicantsByCampaign((dbRows || []).map((row: any) => row.id))
+      : {};
 
-    const mapped = (dbRows || []).map((r: any) => mapCampaignRow(r, applicantsByCampaign[r.id] || []));
-    campaignsStore = mapped;
-    return res.json({ success: true, total: mapped.length, campaigns: mapped });
+    const mapped = (dbRows || []).map((r: any) => mapCampaignRow(r, applicantsByCampaign[r.id] || [], canViewApplicants));
+    if (scope === 'public') campaignsStore = mapped;
+    return res.json({ success: true, total: Number(countRows?.[0]?.total) || mapped.length, limit, offset, campaigns: mapped });
   } catch (err) {
     console.warn('MySQL getCampaigns notice:', err);
   }
@@ -394,8 +425,11 @@ export async function updateCampaign(req: AuthenticatedRequest, res: Response) {
   export async function applyToCampaign(req: AuthenticatedRequest, res: Response) {
     try {
       const { id } = req.params;
-      const { creatorId, pitch } = req.body;
-      const effectiveCreatorId = req.user?.role === 'CREATOR' ? (creatorId || req.user.id) : creatorId;
+      const { pitch } = req.body;
+      if (!req.user || req.user.role !== 'CREATOR') {
+        return res.status(403).json({ success: false, error: 'Only creator accounts can apply to campaigns' });
+      }
+      const effectiveCreatorId = req.user.id;
 
       if (!effectiveCreatorId) {
         return res.status(400).json({ success: false, error: 'creatorId is required' });

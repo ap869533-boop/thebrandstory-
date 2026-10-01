@@ -13,7 +13,7 @@ export async function getDbPool(): Promise<Pool | null> {
     const host = process.env.DB_HOST || 'localhost';
     const user = process.env.DB_USER || 'root';
     const password = process.env.DB_PASSWORD || '';
-    const database = process.env.DB_NAME || 'brand_db';
+    const database = process.env.DB_NAME || 'brandstory_db';
     const port = process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 3306;
 
     pool = mysql.createPool({
@@ -25,6 +25,7 @@ export async function getDbPool(): Promise<Pool | null> {
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0,
+      connectTimeout: 10_000,
       enableKeepAlive: true,
       keepAliveInitialDelay: 0,
     });

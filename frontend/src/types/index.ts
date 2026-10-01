@@ -147,6 +147,7 @@ export interface Creator {
   
   // Metrics
   followers: number;
+  rating?: number;
   avgViews: number;
   avgLikes: number;
   avgComments: number;
@@ -184,6 +185,8 @@ export interface Creator {
   // Contact details (Private unless enabled)
   phone?: string;
   email?: string;
+  facebookUrl?: string;
+  youtubeUrl?: string;
   isContactPublic?: boolean;
   
   // Metadata
@@ -254,7 +257,9 @@ export interface ConversationThread {
   lastMessage: string;
   lastMessageAt?: string | null;
   unreadCount: number;
+  messageCount?: number;
   online: boolean;
+  peerTyping?: boolean;
   createdAt?: string;
 }
 
@@ -266,6 +271,9 @@ export interface ChatMessage {
   body: string;
   isRead: boolean;
   createdAt: string;
+  attachmentUrl?: string | null;
+  attachmentType?: string | null;
+  attachmentName?: string | null;
 }
 
 export interface CreatorPost {

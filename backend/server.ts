@@ -28,6 +28,7 @@ import brandRoutes from './routes/brandRoutes';
 import brandInquiryRoutes from './routes/brandInquiryRoutes';
 import conversationRoutes from './routes/conversationRoutes';
 import postRoutes from './routes/postRoutes';
+import industryRoutes from './routes/industryRoutes';
 import { authMiddleware, AuthenticatedRequest } from './middleware/authMiddleware';
 import { dbQuery } from './config/db';
 
@@ -133,6 +134,7 @@ app.use('/api/conversations', conversationRoutes);
 app.use('/api/creator-content', postRoutes);
 app.use('/api', aiRoutes);
 app.use('/api', statsRoutes);
+app.use('/api/industries', industryRoutes);
 
 // In production, optionally serve frontend dist if hosted as unified app
 const possibleDistPaths = [
@@ -155,7 +157,9 @@ async function startServer() {
   try {
     await getDbPool();
     console.log('✅ MySQL Database pool ready');
-    await runAutoMigrations();
+    if (process.env.RUN_AUTO_MIGRATIONS === 'true' && process.env.NODE_ENV !== 'production') {
+      await runAutoMigrations();
+    }
   } catch (err: any) {
     console.warn('⚠️ MySQL connection notice:', err.message);
   }
@@ -163,8 +167,33 @@ async function startServer() {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 thebrandsstory. Backend API Server running on http://localhost:${PORT}`);
   });
+
+  // Start media auto-cleanup job (Deletes files older than 30 days)
+  setInterval(async () => {
+    try {
+      const rows: any = await dbQuery(`
+        SELECT id, attachment_url FROM messages 
+        WHERE attachment_url IS NOT NULL 
+        AND created_at < DATE_SUB(NOW(), INTERVAL 30 DAY)
+      `);
+      if (Array.isArray(rows) && rows.length > 0) {
+        for (const row of rows) {
+          if (row.attachment_url) {
+            const fileName = path.basename(row.attachment_url);
+            const filePath = path.resolve(__dirname, 'uploads', fileName);
+            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+            await dbQuery(`UPDATE messages SET attachment_url = NULL, attachment_name = 'Deleted automatically' WHERE id = ?`, [row.id]);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Auto-cleanup failed:', err);
+    }
+  }, 24 * 60 * 60 * 1000); // Check daily
 }
 
 startServer();
 
 export default app;
+
+// touch

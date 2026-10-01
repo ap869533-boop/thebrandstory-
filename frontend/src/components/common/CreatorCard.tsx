@@ -20,6 +20,7 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({
 }) => {
   const {
     navigateTo,
+    authUser,
     isCreatorSaved,
     toggleSaveCreator,
   } = usePlatform();
@@ -38,17 +39,8 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({
     return count.toString();
   };
 
-  const handleCardClick = (event: React.MouseEvent) => {
+  const handleCardClick = () => {
     if (!interactive) return;
-    // Touch devices do not have hover: the first tap previews the reel and the
-    // next tap keeps the original card-navigation behaviour.
-    const isTouchLayout = typeof window !== 'undefined'
-      && !window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-    if (isTouchLayout && isUploadedVideo && !videoError && !isPreviewing) {
-      event.stopPropagation();
-      setIsPreviewing(true);
-      return;
-    }
     navigateTo('creator-detail', { username: creator.username, id: creator.id });
   };
 

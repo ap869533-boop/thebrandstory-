@@ -8,6 +8,7 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "seed": "tsx config/seed.ts",
+    "migrate": "tsx scripts/migrate.ts",
     "lint": "tsc --noEmit"
   },
   "dependencies": {
@@ -18,7 +19,8 @@
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.3",
     "mysql2": "^3.24.3",
-    "nodemailer": "^9.1.1"
+    "nodemailer": "^9.1.1",
+    "uuid": "^14.0.2"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -27,6 +29,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.14.0",
     "@types/nodemailer": "^8.0.1",
+    "@types/uuid": "^10.0.0",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2"
   }

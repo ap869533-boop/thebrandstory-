@@ -14,7 +14,7 @@ const router = Router();
 
 router.get('/', getCreators);
 router.get('/:idOrUsername', getCreatorByIdOrUsername);
-router.post('/', createCreator);
+router.post('/', authMiddleware, requireRole('ADMIN', 'SALES'), createCreator);
 router.put('/:id', authMiddleware, updateCreator);
 router.delete('/:id', authMiddleware, requireRole('ADMIN', 'SALES'), deleteCreator);
 router.post('/:id/review-email', authMiddleware, requireRole('ADMIN', 'SALES'), sendCreatorReviewEmail);

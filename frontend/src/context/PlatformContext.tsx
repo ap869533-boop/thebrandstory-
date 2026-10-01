@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiUrl, authHeaders } from '../config/api';
 import {
@@ -50,7 +50,7 @@ export interface FilterState {
   risingOnly: boolean;
   highEngagementOnly: boolean;
   isTop20?: boolean;
-  sortBy: 'recommended' | 'trust_score' | 'followers' | 'engagement' | 'lowest_price' | 'collaborations' | 'recently_joined' | 'rising';
+  sortBy: 'recommended' | 'trust_score' | 'followers' | 'rating' | 'engagement' | 'lowest_price' | 'collaborations' | 'recently_joined' | 'rising';
 }
 
 export const INITIAL_FILTERS: FilterState = {
@@ -80,7 +80,7 @@ export interface AppNotification {
 
 interface PlatformContextType {
   // Navigation / Route View
-  currentView: string; // 'home' | 'login' | 'influencer-detail' | 'city-page' | 'category-page' | 'city-category-page' | 'explore' | 'post-requirement' | 'opportunities' | 'brand-dashboard' | 'creator-dashboard' | 'admin-dashboard' | 'blog' | 'blog-post'
+  currentView: string; // Current route state used for UI navigation.
   viewParams: { id?: string; slug?: string; username?: string; citySlug?: string; categorySlug?: string; blogSlug?: string; redirectAfter?: string; role?: UserRole; message?: string; mode?: 'login' | 'signup'; brandName?: string; companyName?: string; logoUrl?: string; description?: string; industry?: string; city?: string; website?: string; [key: string]: any };
   navigateTo: (view: string, params?: { id?: string; slug?: string; username?: string; citySlug?: string; categorySlug?: string; blogSlug?: string; redirectAfter?: string; role?: UserRole; message?: string; mode?: 'login' | 'signup'; brandName?: string; companyName?: string; logoUrl?: string; description?: string; industry?: string; city?: string; website?: string; [key: string]: any }) => void;
 
@@ -144,6 +144,7 @@ interface PlatformContextType {
 
   // Campaigns & Requirements
   campaigns: CampaignRequirement[];
+  campaignsTotal: number;
   postCampaignRequirement: (campaign: Omit<CampaignRequirement, 'id' | 'applicantsCount' | 'applicants' | 'createdAt' | 'status'>) => Promise<string>;
   deleteCampaign: (campaignId: string) => Promise<void>;
   applyToCampaign: (campaignId: string, creatorId: string, pitch: string) => void;
@@ -249,6 +250,8 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     let path = '/';
     if (view === 'home') path = '/';
     else if (view === 'login') path = '/login';
+    else if (view === 'chat' && params.username) path = `/${encodeURIComponent(params.username)}/chat`;
+    else if (view === 'chat') path = '/chat';
     else if (view === 'explore') path = '/explore';
     else if (view === 'creator-detail' && params.username) path = `/creator/${params.username}`;
     else if (view === 'creator-detail' && params.id) path = `/creator/${params.id}`; // fallback
@@ -257,11 +260,13 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     else if (view === 'category-page' && params.categorySlug) path = `/category/${params.categorySlug}`;
     else if (view === 'post-requirement') path = '/post-requirement';
     else if (view === 'opportunities') path = '/opportunities';
-    else if (view === 'creator-dashboard') path = '/dashboard/creator';
-    else if (view === 'brand-dashboard') path = '/dashboard/brand';
+    else if (view === 'brand-campaigns' && params.slug) path = `/brand/${encodeURIComponent(params.slug)}/campaigns`;
+    else if (view === 'brand-profile' && params.slug) path = `/brand/${encodeURIComponent(params.slug)}`;
+    else if (view === 'wallet') path = '/wallet';
     else if (view === 'admin-dashboard') path = '/admin';
     else if (view === 'blog') path = '/blog';
     else if (view === 'blog-post' && params.blogSlug) path = `/blog/${params.blogSlug}`;
+    else if (view === 'help-support') path = '/help-support';
     else path = `/${view}`;
     
     // Sync the browser URL using React Router
@@ -354,6 +359,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const parsed = saved ? JSON.parse(saved) : INITIAL_CREATORS;
     return parsed.map(normalizeCreatorMedia);
   });
+  const [campaignsTotal, setCampaignsTotal] = useState(INITIAL_CAMPAIGNS.length);
 
   useEffect(() => {
     localStorage.setItem('sc_creators', JSON.stringify(creators));
@@ -456,6 +462,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   useEffect(() => {
     const fetchLiveDatabaseData = async () => {
       try {
+        const hasAuthToken = Boolean(localStorage.getItem('sc_auth_token'));
         const [
           creatorsRes,
           campaignsRes,
@@ -469,17 +476,17 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           shortlistsRes,
           brandInquiriesRes,
         ] = await Promise.all([
-          fetch(apiUrl('/api/creators?includePending=true')),
-          fetch(apiUrl('/api/campaigns')),
-          fetch(apiUrl('/api/enquiries'), { headers: authHeaders() }),
+          fetch(apiUrl('/api/creators?limit=20')),
+          fetch(apiUrl('/api/campaigns?limit=10')),
+          hasAuthToken ? fetch(apiUrl('/api/enquiries'), { headers: authHeaders() }) : Promise.resolve(null),
           fetch(apiUrl('/api/categories')),
           fetch(apiUrl('/api/cities')),
           fetch(apiUrl('/api/industries')),
           fetch(apiUrl('/api/blogs')),
           fetch(apiUrl('/api/stats')),
           fetch(apiUrl('/api/partner-brands')),
-          fetch(apiUrl('/api/shortlists')),
-          fetch(apiUrl('/api/brand-inquiries'), { headers: authHeaders() }),
+          hasAuthToken ? fetch(apiUrl('/api/shortlists'), { headers: authHeaders() }) : Promise.resolve(null),
+          hasAuthToken ? fetch(apiUrl('/api/brand-inquiries'), { headers: authHeaders() }) : Promise.resolve(null),
         ]);
 
         if (creatorsRes.ok) {
@@ -493,40 +500,18 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           const campData = await campaignsRes.json();
           if (Array.isArray(campData.campaigns)) {
             setCampaigns(campData.campaigns);
+            setCampaignsTotal(Number(campData.total) || campData.campaigns.length);
           }
         }
 
-        const token = localStorage.getItem('sc_auth_token');
-        const savedUser = localStorage.getItem('sc_auth_user');
-        if (token && savedUser) {
-          try {
-            const u = JSON.parse(savedUser);
-            if (u.role === 'BRAND') {
-              const mineRes = await fetch(apiUrl('/api/campaigns?scope=mine'), { headers: authHeaders() });
-              if (mineRes.ok) {
-                const mineData = await mineRes.json();
-                if (Array.isArray(mineData.campaigns)) {
-                  setCampaigns((prev) => {
-                    const byId = new Map(prev.map((c) => [c.id, c]));
-                    for (const c of mineData.campaigns) byId.set(c.id, c);
-                    return Array.from(byId.values());
-                  });
-                }
-              }
-            }
-          } catch {
-            // ignore
-          }
-        }
-
-        if (enquiriesRes.ok) {
+        if (enquiriesRes?.ok) {
           const enqData = await enquiriesRes.json();
           if (enqData.enquiries && enqData.enquiries.length > 0) {
             setEnquiries(enqData.enquiries);
           }
         }
 
-        if (brandInquiriesRes.ok) {
+        if (brandInquiriesRes?.ok) {
           const bInqData = await brandInquiriesRes.json();
           if (bInqData.inquiries && bInqData.inquiries.length > 0) {
             setBrandInquiries(bInqData.inquiries);
@@ -576,7 +561,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
 
         // Fetch saved shortlists/wishlist from server
-        if (shortlistsRes.ok) {
+        if (shortlistsRes?.ok) {
           const slData = await shortlistsRes.json();
           if (slData.folders && slData.folders.length > 0) {
             setSavedFolders(slData.folders);
@@ -712,7 +697,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       // Background MySQL sync - upsert the default folder
       fetch(apiUrl('/api/shortlists/f_default'), {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify({
           name: folderName,
           creatorIds: next,
@@ -721,7 +706,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         // Fallback: try POST if PUT fails (first time)
         fetch(apiUrl('/api/shortlists'), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: authHeaders(),
           body: JSON.stringify({
             id: 'f_default',
             name: folderName,
@@ -746,7 +731,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     fetch(apiUrl('/api/shortlists'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify(newFolder),
     }).catch(() => {});
   };
@@ -756,9 +741,9 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const updated = prev.map(f => f.id === folderId ? { ...f, creatorIds: f.creatorIds.filter(id => id !== creatorId) } : f);
       const target = updated.find(f => f.id === folderId);
       if (target) {
-        fetch(`/api/shortlists/${folderId}`, {
+        fetch(apiUrl(`/api/shortlists/${folderId}`), {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: authHeaders(),
           body: JSON.stringify({ creatorIds: target.creatorIds }),
         }).catch(() => {});
       }
@@ -769,7 +754,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const deleteFolder = (folderId: string) => {
     if (folderId === 'f_default') return;
     setSavedFolders(prev => prev.filter(folder => folder.id !== folderId));
-    fetch(apiUrl(`/api/shortlists/${folderId}`), { method: 'DELETE' }).catch(() => {});
+    fetch(apiUrl(`/api/shortlists/${folderId}`), { method: 'DELETE', headers: authHeaders() }).catch(() => {});
   };
 
   // Compare Creators State
@@ -981,7 +966,9 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       applicants: data.campaign.applicants || [],
       applicantsCount: data.campaign.applicantsCount || 0,
     };
-    setCampaigns(prev => [saved, ...prev.filter((c) => c.id !== saved.id)]);
+    if (saved.approvalStatus === 'approved') {
+      setCampaigns(prev => [saved, ...prev.filter((c) => c.id !== saved.id)]);
+    }
     addNotification({
       title: 'Campaign submitted for approval',
       message: `"${campaign.campaignTitle}" is pending admin review and will go live after approval.`,
@@ -1061,7 +1048,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       title: 'New Pitch Received!',
       message: `${creator.name} pitched for "${targetCamp?.campaignTitle || 'Campaign'}"`,
       type: 'campaign',
-      linkTo: 'brand-dashboard',
+      linkTo: 'brand-campaigns',
     });
   };
 
@@ -1504,22 +1491,11 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Partner Brands Management
   const [partnerBrands, setPartnerBrands] = useState<BrandPartner[]>([]);
 
-  useEffect(() => {
-    fetch(apiUrl('/api/partner-brands'))
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          setPartnerBrands(data.brands || []);
-        }
-      })
-      .catch(() => setPartnerBrands([]));
-  }, []);
-
   const addPartnerBrand = async (brand: Omit<BrandPartner, 'id'>) => {
     try {
       const res = await fetch(apiUrl('/api/partner-brands'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify(brand),
       });
       const data = await res.json();
@@ -1543,7 +1519,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const deletePartnerBrand = async (id: string) => {
     try {
-      const response = await fetch(apiUrl(`/api/partner-brands/${id}`), { method: 'DELETE' });
+      const response = await fetch(apiUrl(`/api/partner-brands/${id}`), { method: 'DELETE', headers: authHeaders() });
       if (!response.ok) {
         throw new Error('Failed to delete brand on server');
       }
@@ -1662,6 +1638,12 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return true;
   }).sort((a, b) => {
     if (filters.sortBy === 'followers') return b.followers - a.followers;
+    if (filters.sortBy === 'rating') {
+      const averageRating = (creator: Creator) => creator.reviews?.length
+        ? creator.reviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) / creator.reviews.length
+        : Number(creator.rating) || 0;
+      return averageRating(b) - averageRating(a);
+    }
     if (filters.sortBy === 'engagement') return b.followers - a.followers;
     if (filters.sortBy === 'lowest_price') return a.startingPrice - b.startingPrice;
     if (filters.sortBy === 'collaborations') return b.brandCollaborationsCount - a.brandCollaborationsCount;
@@ -1738,6 +1720,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         updateBrandInquiryStatus,
 
         campaigns,
+        campaignsTotal,
         postCampaignRequirement,
         deleteCampaign,
         applyToCampaign,

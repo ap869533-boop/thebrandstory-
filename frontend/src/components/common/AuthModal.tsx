@@ -134,6 +134,7 @@ export const AuthModal: React.FC = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [instaError, setInstaError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const [creatorProfileSetup, setCreatorProfileSetup] = useState(false);
@@ -260,9 +261,34 @@ export const AuthModal: React.FC = () => {
   };
 
   const handleBlur = (field: string) => {
-    setTouched((prev) => ({ ...prev, [field]: true }));
+    // Only validate without setting touched to avoid premature red borders
     validate();
   };
+
+  const validateCreatorSetup = () => {
+    const errors: Record<string, string> = {};
+    if (creatorSetupStep === 1) {
+      if (!profilePhotoUrl) errors.profilePhoto = 'Profile photo is required';
+      if (!bannerUrl) errors.bannerPhoto = 'Creator card photo is required';
+      if (!gender) errors.gender = 'Please select your gender';
+      if (!ageGroup || Number(ageGroup) < 13 || Number(ageGroup) > 100) errors.ageGroup = 'Enter an age between 13 and 100';
+      if (!creatorState.trim()) errors.creatorState = 'City is required';
+      if (!category) errors.category = 'Please select a category';
+      if (!languages.trim()) errors.languages = 'Language is required';
+    } else {
+      if (!/^https?:\/\/(www\.)?instagram\.com\/[^/]+/i.test(username.trim())) errors.username = 'Enter a valid Instagram profile URL';
+      if (!Number.isFinite(Number(startingPrice)) || Number(startingPrice) <= 0) errors.startingPrice = 'Enter a valid starting price';
+      for (const [key, value] of [['followers', followers], ['totalPosts', totalPosts], ['avgViews', avgViews], ['avgLikes', avgLikes], ['avgComments', avgComments]]) {
+        if (!value.trim() || !Number.isFinite(Number(value)) || Number(value) < 0) errors[key] = 'Enter a valid number (use 0 if none)';
+      }
+    }
+    setFieldErrors(errors);
+    setTouched(Object.fromEntries(Object.keys(errors).map((key) => [key, true])));
+    return Object.keys(errors).length === 0;
+  };
+
+  const creatorFieldClass = (field: string) => `p-3 bg-slate-50 border rounded-xl ${fieldErrors[field] && touched[field] ? 'border-rose-500 bg-rose-50/40' : 'border-slate-200'}`;
+  const creatorFieldError = (field: string) => touched[field] && fieldErrors[field] ? <span className="-mt-3 block text-[11px] font-semibold text-rose-600">{fieldErrors[field]}</span> : null;
 
   const completeCreatorSetup = async () => {
     if (creatorSetupStep === 1) {
@@ -323,7 +349,9 @@ export const AuthModal: React.FC = () => {
     const user = { ...creatorUser, creatorProfile: data.creator };
     localStorage.setItem('sc_auth_user', JSON.stringify(user));
     setAuthUser(user); setCreators((prev) => [data.creator, ...prev.filter((c) => c.id !== data.creator.id)]);
-    setActiveCreatorId(data.creator.id); closeAuthModal(); navigateTo('creator-dashboard');
+    setActiveCreatorId(data.creator.id); closeAuthModal(); 
+    const creatorUsername = data.creator?.username || data.creator?.id;
+    navigateTo('creator-detail', { username: creatorUsername });
   };
 
   const uploadCreatorMedia = (file: File, type: 'avatar' | 'cover') => {
@@ -359,8 +387,18 @@ export const AuthModal: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (creatorProfileSetup) {
+      if (!validateCreatorSetup()) {
+        setErrorMsg('Please correct the highlighted fields before continuing.');
+        return;
+      }
       setIsLoading(true); setErrorMsg(null);
-      try { await completeCreatorSetup(); } catch (err: any) { setErrorMsg(err.message || 'Could not save profile details.'); }
+      try { await completeCreatorSetup(); } catch (err: any) { 
+        if (err.message === 'this insta profile already exit you cannot duplicate it') {
+          setInstaError(err.message);
+        } else {
+          setErrorMsg(err.message || 'Could not save profile details.'); 
+        }
+      }
       finally { setIsLoading(false); }
       return;
     }
@@ -368,6 +406,7 @@ export const AuthModal: React.FC = () => {
       name: true,
       username: true,
       email: true,
+      password: true,
       phone: true,
       companyName: true,
       otp: true,
@@ -458,9 +497,9 @@ export const AuthModal: React.FC = () => {
             if (authModalRedirectAfter) {
               navigateTo(authModalRedirectAfter);
             } else if (data.user.role === 'CREATOR') {
-              navigateTo('creator-dashboard');
+              navigateTo('opportunities');
             } else if (data.user.role === 'BRAND') {
-              navigateTo('brand-dashboard');
+              navigateTo('brand-campaigns', { slug: 'account' });
             } else if (data.user.role === 'ADMIN') {
               navigateTo('admin-dashboard');
             } else {
@@ -572,8 +611,8 @@ export const AuthModal: React.FC = () => {
             setTimeout(() => {
               setRegistrationSuccess(false);
               closeAuthModal();
-              if (data.user.role === 'CREATOR') navigateTo('creator-dashboard');
-              else if (data.user.role === 'BRAND') navigateTo('brand-dashboard');
+              if (data.user.role === 'CREATOR') navigateTo('opportunities');
+              else if (data.user.role === 'BRAND') navigateTo('brand-campaigns', { slug: 'account' });
               else if (data.user.role === 'ADMIN') navigateTo('admin-dashboard');
               else navigateTo('search');
             }, 800);
@@ -733,7 +772,7 @@ export const AuthModal: React.FC = () => {
               {creatorSetupStep === 1 ? <>
                 <div className="flex items-start justify-center gap-7 sm:gap-10 py-1">
                   <label className="group flex w-28 shrink-0 cursor-pointer flex-col items-center gap-2 text-center">
-                    <span className="relative flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-[#D4A338] bg-amber-50 shadow-sm transition group-hover:border-solid group-hover:shadow-md">
+                    <span className={`relative flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border-2 border-dashed ${fieldErrors.profilePhoto && touched.profilePhoto ? 'border-rose-500 bg-rose-50' : 'border-[#D4A338] bg-amber-50'} shadow-sm transition group-hover:border-solid group-hover:shadow-md`}>
                       {profilePhotoUrl ? (
                         <img src={profilePhotoUrl} alt="Profile photo preview" className="h-full w-full object-cover" />
                       ) : (
@@ -749,7 +788,7 @@ export const AuthModal: React.FC = () => {
                   </label>
 
                   <label className="group flex w-24 shrink-0 cursor-pointer flex-col items-center gap-2 text-center">
-                    <span className="relative flex h-36 w-24 items-center justify-center overflow-hidden rounded-[1.35rem] border-2 border-dashed border-indigo-300 bg-gradient-to-br from-indigo-50 via-white to-blue-100 shadow-sm transition group-hover:border-solid group-hover:shadow-md">
+                    <span className={`relative flex h-36 w-24 items-center justify-center overflow-hidden rounded-[1.35rem] border-2 border-dashed ${fieldErrors.bannerPhoto && touched.bannerPhoto ? 'border-rose-500 bg-rose-50' : 'border-indigo-300 bg-gradient-to-br from-indigo-50 via-white to-blue-100'} shadow-sm transition group-hover:border-solid group-hover:shadow-md`}>
                       {bannerUrl ? (
                         <img src={bannerUrl} alt="Creator card photo preview" className="h-full w-full object-cover" />
                       ) : (
@@ -765,19 +804,28 @@ export const AuthModal: React.FC = () => {
                   </label>
                 </div>
                 <p className="text-center text-[10px] text-slate-500">Use a clear face photo for your round profile image and a vertical photo for your creator card. Both are required.</p>
+                {(creatorFieldError('profilePhoto') || creatorFieldError('bannerPhoto')) && <div className="text-center">{creatorFieldError('profilePhoto')}{creatorFieldError('bannerPhoto')}</div>}
                 <div className="grid grid-cols-2 gap-3">
-                  <select value={gender} onChange={e => setGender(e.target.value)} className="p-3 bg-slate-50 border border-slate-200 rounded-xl"><option value="">Gender *</option><option>Female</option><option>Male</option><option>Non-binary</option></select>
-                  <input type="number" min="13" max="100" value={ageGroup} onChange={e => setAgeGroup(e.target.value)} placeholder="Age *" className="p-3 bg-slate-50 border border-slate-200 rounded-xl" />
+                  <div><select value={gender} onChange={e => setGender(e.target.value)} className={creatorFieldClass('gender')}><option value="">Gender *</option><option>Female</option><option>Male</option><option>Non-binary</option></select>{creatorFieldError('gender')}</div>
+                  <div><input type="number" min="13" max="100" value={ageGroup} onChange={e => setAgeGroup(e.target.value)} placeholder="Age *" className={creatorFieldClass('ageGroup')} />{creatorFieldError('ageGroup')}</div>
                 </div>
-                <input value={creatorState} onChange={e => setCreatorState(e.target.value)} placeholder="City * (e.g. Mumbai, Delhi)" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" />
-                <select value={category} onChange={e => setCategory(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl"><option value="">Category *</option>{(categories?.length ? categories : CATEGORIES_LIST).map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}</select>
-                <input value={languages} onChange={e => setLanguages(e.target.value)} placeholder="Languages * (e.g. Hindi, English)" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" />
+                <div><input value={creatorState} onChange={e => setCreatorState(e.target.value)} placeholder="City * (e.g. Mumbai, Delhi)" className={`w-full ${creatorFieldClass('creatorState')}`} />{creatorFieldError('creatorState')}</div>
+                <div><select value={category} onChange={e => setCategory(e.target.value)} className={`w-full ${creatorFieldClass('category')}`}><option value="">Category *</option>{(categories?.length ? categories : CATEGORIES_LIST).map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}</select>{creatorFieldError('category')}</div>
+                <div><input value={languages} onChange={e => setLanguages(e.target.value)} placeholder="Languages * (e.g. Hindi, English)" className={`w-full ${creatorFieldClass('languages')}`} />{creatorFieldError('languages')}</div>
               </> : <>
-                <input value={username} onChange={e => setUsername(e.target.value)} placeholder="Instagram URL * (https://instagram.com/yourhandle)" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" />
-                <input type="number" min="1" value={startingPrice} onChange={e => setStartingPrice(e.target.value)} placeholder="Starting price (₹) *" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" />
+                <div>
+                  {instaError && (
+                    <div className="text-red-400 font-bold text-[10px] mb-1.5 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      {instaError}
+                    </div>
+                  )}
+                  <input value={username} onChange={e => { setUsername(e.target.value); setInstaError(null); }} placeholder="Instagram URL * (https://instagram.com/yourhandle)" className={`w-full ${creatorFieldClass('username')} ${instaError ? 'border-red-500/70 focus:border-red-500 shadow-[0_0_10px_rgba(239,68,68,0.1)]' : ''}`} />{creatorFieldError('username')}
+                </div>
+                <div><input type="number" min="1" value={startingPrice} onChange={e => setStartingPrice(e.target.value)} placeholder="Starting price (₹) *" className={`w-full ${creatorFieldClass('startingPrice')}`} />{creatorFieldError('startingPrice')}</div>
                 <div className="grid grid-cols-2 gap-3">{[
-                  ['Followers count', followers, setFollowers], ['Total posts', totalPosts, setTotalPosts], ['Average views', avgViews, setAvgViews], ['Average likes', avgLikes, setAvgLikes], ['Average comments', avgComments, setAvgComments],
-                ].map(([label, value, setter]: any) => <input key={label} type="number" min="0" value={value} onChange={e => setter(e.target.value)} placeholder={label} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" />)}</div>
+                  ['Followers count', followers, setFollowers, 'followers'], ['Total posts', totalPosts, setTotalPosts, 'totalPosts'], ['Average views', avgViews, setAvgViews, 'avgViews'], ['Average likes', avgLikes, setAvgLikes, 'avgLikes'], ['Average comments', avgComments, setAvgComments, 'avgComments'],
+                ].map(([label, value, setter, field]: any) => <div key={label}><input type="number" min="0" value={value} onChange={e => setter(e.target.value)} placeholder={label} className={`w-full ${creatorFieldClass(field)}`} />{creatorFieldError(field)}</div>)}</div>
               </>}
             </div>
           )}
@@ -1010,7 +1058,6 @@ export const AuthModal: React.FC = () => {
                     value={email}
                     onChange={(e) => {
                       setEmail(e.target.value);
-                      setTouched((prev) => ({ ...prev, email: true }));
                       if (fieldErrors.email) validate();
                     }}
                     onBlur={() => handleBlur('email')}

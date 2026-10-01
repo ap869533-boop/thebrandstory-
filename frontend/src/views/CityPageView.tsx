@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, ShieldCheck, ArrowLeft, Sparkles, Filter, Users } from 'lucide-react';
+import { MapPin, ArrowLeft, Users } from 'lucide-react';
 import { usePlatform } from '../context/PlatformContext';
 import { CITIES_LIST } from '../data/initialData';
 import { CreatorCard } from '../components/common/CreatorCard';
@@ -16,17 +16,10 @@ export const CityPageView: React.FC = () => {
   const cityCreators = creators.filter((c) => c.status === 'active' && matchesCityLocation(c.currentCity || '', cityData.name));
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-        {/* Back Link */}
-        <button
-          onClick={() => navigateTo('home')}
-          className="text-xs font-bold text-slate-400 hover:text-blue-400 flex items-center gap-1.5 transition cursor-pointer"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back to Home</span>
-        </button>
+    <div className="min-h-screen bg-[#051126] text-white">
+      
 
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         {/* Realistic City Header Hero with Big Image & Overlaid Text */}
         <div className="relative rounded-3xl overflow-hidden min-h-[260px] sm:min-h-[300px] border border-white/15 p-6 sm:p-10 flex flex-col justify-between shadow-2xl">
           {/* Background image with multi-layer gradients */}
@@ -36,8 +29,8 @@ export const CityPageView: React.FC = () => {
               alt={cityData.name}
               className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/85 to-slate-950/40" />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-black/40" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#051126] via-[#051126]/85 to-[#051126]/40" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#051126] via-transparent to-black/40" />
           </div>
 
           <div className="relative z-10 space-y-3 max-w-3xl">
@@ -57,7 +50,7 @@ export const CityPageView: React.FC = () => {
 
           <div className="relative z-10 pt-4 flex flex-wrap items-center justify-between gap-4 border-t border-white/10">
             <div className="flex items-center gap-2 text-xs font-semibold text-slate-300">
-              <Users className="w-4 h-4 text-blue-400" />
+              <Users className="w-4 h-4 text-[#D4A338]" />
               <span>{cityData.count || cityData.influencersCount}+ Local Creators in {cityData.name}</span>
             </div>
 
@@ -66,7 +59,7 @@ export const CityPageView: React.FC = () => {
                 setFilters((prev) => ({ ...prev, city: cityData.name, searchQuery: '', category: 'all' }));
                 navigateTo('explore');
               }}
-              className="px-5 py-2.5 bg-[#D4A338] hover:bg-[#b88628] text-black font-bold text-xs rounded-2xl shadow-lg transition flex items-center gap-2 cursor-pointer"
+              className="px-5 py-2.5 bg-[#D4A338] hover:bg-[#b88628] text-slate-950 font-bold text-xs rounded-2xl shadow-lg transition flex items-center gap-2 cursor-pointer"
             >
               <span>Explore All {cityData.name} Creators</span>
             </button>
@@ -86,6 +79,19 @@ export const CityPageView: React.FC = () => {
               <CreatorCard key={creator.id} creator={creator} />
             ))}
           </div>
+
+          {cityCreators.length === 0 && (
+            <div className="text-center py-16 space-y-3">
+              <MapPin className="w-10 h-10 text-slate-600 mx-auto" />
+              <p className="text-slate-400 font-medium text-sm">No creators found in {cityData.name} yet.</p>
+              <button
+                onClick={() => navigateTo('explore')}
+                className="px-4 py-2 bg-[#D4A338] text-slate-950 font-bold text-xs rounded-xl cursor-pointer transition hover:bg-[#b88628]"
+              >
+                Browse All Creators
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

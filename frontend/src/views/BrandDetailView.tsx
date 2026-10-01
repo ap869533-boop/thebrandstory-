@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import {
   Building2,
   MapPin,
@@ -22,11 +23,13 @@ import {
   TrendingUp,
   Clock,
   Repeat,
-  Check
+  Check,
+  Edit3
 } from 'lucide-react';
 import { usePlatform } from '../context/PlatformContext';
 import { BrandProfile, CampaignRequirement } from '../types';
-import { apiUrl } from '../config/api';
+import { apiUrl, authHeaders } from '../config/api';
+import { EditBrandProfileForm } from '../components/common/EditBrandProfileForm';
 
 export const BrandDetailView: React.FC = () => {
   const {
@@ -39,12 +42,19 @@ export const BrandDetailView: React.FC = () => {
     requireRole,
     isBrandSaved,
     toggleSaveBrand,
-    submitBrandInquiry
+    submitBrandInquiry,
+    setAuthUser
   } = usePlatform();
+  
+  const { brandId: urlBrandId } = useParams<{ brandId: string }>();
 
   const [brand, setBrand] = useState<Partial<BrandProfile> | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'campaigns' | 'reviews' | 'about'>('campaigns');
+  
+  // Edit Profile state
+  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   // Modal pitch state
   const [selectedCampaign, setSelectedCampaign] = useState<CampaignRequirement | null>(null);
@@ -67,9 +77,29 @@ export const BrandDetailView: React.FC = () => {
           const match = d.brands.find(
             (b: any) =>
               (viewParams.id && (b.id === viewParams.id || b.userId === viewParams.id)) ||
-              (viewParams.brandName && b.brandName.toLowerCase() === (viewParams.brandName as string).toLowerCase())
+              (viewParams.brandName && b.brandName.toLowerCase() === (viewParams.brandName as string).toLowerCase()) ||
+              (urlBrandId && b.brandName?.toLowerCase().replace(/[^a-z0-9]+/g, '-') === urlBrandId) ||
+              (urlBrandId && b.id === urlBrandId)
           );
           if (match) {
+            // If the current user is the owner, try fetching their full profile instead
+            if (authUser?.role === 'BRAND' && (match.userId === authUser.id || match.brandName === authUser.companyName)) {
+               fetch(apiUrl('/api/brands/profile'), { headers: authHeaders() })
+                 .then(r => r.json())
+                 .then(profData => {
+                    if (profData.profile) {
+                       setBrand({ ...match, ...profData.profile });
+                    } else {
+                       setBrand(match);
+                    }
+                    setLoading(false);
+                 })
+                 .catch(() => {
+                    setBrand(match);
+                    setLoading(false);
+                 });
+               return;
+            }
             setBrand(match);
             setLoading(false);
             return;
@@ -145,8 +175,15 @@ export const BrandDetailView: React.FC = () => {
     }, 1500);
   };
 
-  const brandId = (brand?.id || (viewParams.id as string) || 'brand_1').toString();
+  const brandId = (brand?.id || (viewParams.id as string) || urlBrandId || 'brand_1').toString();
   const isSaved = isBrandSaved(brandId);
+
+  // Check if the current user is the owner of this profile
+  const isOwner = authUser?.role === 'BRAND' && (
+    brand?.userId === authUser.id ||
+    brand?.brandName === authUser.companyName ||
+    (urlBrandId && urlBrandId.toLowerCase() === authUser.companyName?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''))
+  );
 
   const handleShare = async () => {
     const shareUrl = window.location.href;
@@ -214,8 +251,50 @@ export const BrandDetailView: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-[#051126] flex items-center justify-center p-6">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (isEditing) {
+    return (
+      <div className="min-h-screen bg-[#051126] px-4 py-8 text-white sm:px-8 lg:px-[8vw]">
+        <EditBrandProfileForm
+          profile={brand as any}
+          onSave={async (updates) => {
+            setSaving(true);
+            try {
+              const response = await fetch(apiUrl('/api/brands/profile'), {
+                method: 'PUT',
+                headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+                body: JSON.stringify(updates),
+              });
+              const data = await response.json();
+              if (!response.ok || !data.success)
+                throw new Error(data.error || 'Could not save profile');
+              
+              if (authUser) {
+                setAuthUser({
+                  ...authUser,
+                  name: updates.contactPerson || authUser.name,
+                  companyName: updates.brandName || authUser.companyName,
+                  phone: updates.phone,
+                  avatar: updates.logoUrl || authUser.avatar,
+                  logoUrl: updates.logoUrl || (authUser as any).logoUrl,
+                } as any);
+              }
+              setBrand({ ...brand, ...updates });
+              setIsEditing(false);
+              window.location.reload();
+            } catch (error: any) {
+              console.error(error);
+            } finally {
+              setSaving(false);
+            }
+          }}
+          onCancel={() => setIsEditing(false)}
+        />
       </div>
     );
   }
@@ -242,9 +321,9 @@ export const BrandDetailView: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50/60 pb-16 font-sans">
+    <div className="min-h-screen bg-[#051126] pb-16 font-sans text-white">
       {/* Top Navigation Back Bar - Placed cleanly above the profile with no overlap */}
-      <div className="relative z-10 bg-white border-b border-slate-200/80 px-4 sm:px-6 lg:px-8 py-2.5 shadow-2xs">
+      <div className="sticky top-0 z-40 bg-[#051126]/95 backdrop-blur-md border-b border-white/10 px-4 sm:px-6 lg:px-8 py-2.5 shadow-lg">
         <div className="max-w-6xl mx-auto flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <button
@@ -258,52 +337,65 @@ export const BrandDetailView: React.FC = () => {
           
           {/* Action Buttons */}
           <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
-            <button
-              onClick={() => toggleSaveBrand(brandId)}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-xs font-bold transition cursor-pointer shadow-xs whitespace-nowrap ${
-                isSaved
-                  ? 'bg-rose-50 border-rose-200 text-rose-600 hover:bg-rose-100'
-                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900'
-              }`}
-            >
-              <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-rose-500 text-rose-500' : ''}`} />
-              <span>{isSaved ? 'Saved' : 'Save'}</span>
-            </button>
+            {isOwner ? (
+               <button
+                 type="button"
+                 onClick={() => setIsEditing(true)}
+                 className="flex items-center gap-1.5 px-4 md:px-5 py-1.5 rounded-full bg-[#D4A338] hover:bg-[#be8f2b] text-slate-950 text-xs font-black transition cursor-pointer shadow-xs border border-transparent whitespace-nowrap"
+               >
+                 <Edit3 className="w-3.5 h-3.5" />
+                 <span>Edit Profile</span>
+               </button>
+            ) : (
+              <>
+                <button
+                  onClick={() => toggleSaveBrand(brandId)}
+                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-xs font-bold transition cursor-pointer shadow-xs whitespace-nowrap ${
+                    isSaved
+                      ? 'bg-rose-500/20 border-rose-500/30 text-rose-300 hover:bg-rose-500/30'
+                      : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10 hover:text-white'
+                  }`}
+                >
+                  <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-rose-500 text-rose-500' : ''}`} />
+                  <span>{isSaved ? 'Saved' : 'Save'}</span>
+                </button>
 
-            <button
-              onClick={handleShare}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 text-xs font-bold transition cursor-pointer shadow-xs whitespace-nowrap"
-            >
-              {copied ? (
-                <>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  <span className="text-emerald-600">Copied!</span>
-                </>
-              ) : (
-                <>
-                  <Share2 className="w-3.5 h-3.5" />
-                  <span>Share</span>
-                </>
-              )}
-            </button>
+                <button
+                  onClick={handleShare}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 text-xs font-bold transition cursor-pointer shadow-xs whitespace-nowrap"
+                >
+                  {copied ? (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span className="text-emerald-600">Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Share2 className="w-3.5 h-3.5" />
+                      <span>Share</span>
+                    </>
+                  )}
+                </button>
 
-            <button 
-              onClick={handleInquireClick}
-              className="flex items-center gap-1.5 px-4 md:px-5 py-1.5 rounded-full bg-[#D4A338] hover:bg-[#b88628] text-white text-xs font-bold transition cursor-pointer shadow-xs border border-transparent whitespace-nowrap"
-            >
-              <MessageSquare className="w-3.5 h-3.5" />
-              <span>Inquire</span>
-            </button>
+                <button 
+                  onClick={handleInquireClick}
+                  className="flex items-center gap-1.5 px-4 md:px-5 py-1.5 rounded-full bg-[#D4A338] hover:bg-[#b88628] text-white text-xs font-bold transition cursor-pointer shadow-xs border border-transparent whitespace-nowrap"
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  <span>Inquire</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
         {/* Brand Header / Profile Card */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div className="bg-white/5 rounded-3xl p-6 sm:p-8 border border-white/10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 min-w-0 flex-1">
             {/* Logo */}
-            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-white border border-slate-200 p-2 shadow-sm shrink-0 flex items-center justify-center overflow-hidden">
+            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-white/10 border border-white/20 p-2 shrink-0 flex items-center justify-center overflow-hidden">
               {brand?.logoUrl ? (
                 <img
                   src={brand.logoUrl}

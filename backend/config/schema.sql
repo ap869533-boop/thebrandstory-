@@ -3,8 +3,8 @@
 -- MySQL Database Production Schema
 -- =========================================================
 
-CREATE DATABASE IF NOT EXISTS `brand_db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE `brand_db`;
+CREATE DATABASE IF NOT EXISTS `brandstory_db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `brandstory_db`;
 
 -- 1. Users & Authentication Table
 CREATE TABLE IF NOT EXISTS `users` (
@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS `brand_profiles` (
   `id` VARCHAR(64) PRIMARY KEY,
   `user_id` VARCHAR(64) NOT NULL UNIQUE,
   `brand_name` VARCHAR(150) NOT NULL,
+  `legal_name` VARCHAR(150) DEFAULT NULL,
   `gst_number` VARCHAR(20) DEFAULT NULL,
   `logo_url` VARCHAR(500) DEFAULT NULL,
   `cover_url` VARCHAR(500) DEFAULT NULL,

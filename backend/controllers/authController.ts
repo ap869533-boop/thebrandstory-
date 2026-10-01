@@ -9,7 +9,11 @@ import { sendOtpEmail, sendWelcomeEmail } from '../utils/mailer';
 import { cleanInstagramHandle } from '../utils/sanitize';
 import { ensurePendingBrandProfile } from './brandController';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'social_cults_super_secret_jwt_key_2026';
+const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV !== 'production' ? 'development-only-jwt-secret' : '');
+
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET must be configured when NODE_ENV=production');
+}
 
 function normalizeMobile(phone: unknown, countryCode: unknown = '+91'): string | null {
   const code = String(countryCode || '+91').trim();
@@ -100,7 +104,7 @@ export async function signup(req: Request, res: Response) {
       name,
       email,
       password,
-      role = 'BRAND',
+      role: requestedRole = 'BRAND',
       phone,
       companyName,
       gstNumber,
@@ -108,6 +112,11 @@ export async function signup(req: Request, res: Response) {
       category = '',
       city = '',
     } = req.body;
+
+    const role = String(requestedRole).toUpperCase();
+    if (role !== 'BRAND' && role !== 'CREATOR') {
+      return res.status(400).json({ success: false, error: 'Only BRAND or CREATOR accounts can be registered publicly' });
+    }
 
     if (!name || !email || !password) {
       return res.status(400).json({ success: false, error: 'Name, email and password are required' });
@@ -118,7 +127,8 @@ export async function signup(req: Request, res: Response) {
     if (!normalizedPhone) {
       return res.status(400).json({ success: false, error: 'A valid 10-digit mobile number is required' });
     }
-    const cleanUsername = cleanInstagramHandle(username || (req.body as any).instagramUrl || '');
+    const rawUsername = username || (req.body as any).instagramUrl || '';
+    const cleanUsername = cleanInstagramHandle(rawUsername) || `creator_${Date.now()}`;
     const instagramUrl = cleanUsername ? `https://instagram.com/${cleanUsername}` : '';
 
     // Check if user already exists (MySQL or Memory)
@@ -151,7 +161,7 @@ export async function signup(req: Request, res: Response) {
         companyName || null,
         userAvatar,
         1,
-        role === 'BRAND' ? 'pending' : 'approved'
+        'approved'
       ]
     ).catch(err => console.warn('MySQL insert notice:', err));
 
@@ -267,8 +277,8 @@ export async function signup(req: Request, res: Response) {
           id, user_id, name, username, avatar, cover_image, bio, current_city, primary_category,
           followers, avg_views, starting_price, reel_price, story_price, post_price,
           ugc_price, is_barter_available, collaboration_types, preferred_cities, sub_categories,
-          languages, phone, email
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          languages, phone, email, status, verification_requested, social_platforms
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           createdCreatorProfile.id,
           userId,
@@ -286,15 +296,20 @@ export async function signup(req: Request, res: Response) {
           createdCreatorProfile.pricing.storyPrice,
           createdCreatorProfile.pricing.postPrice,
           createdCreatorProfile.pricing.ugcPrice,
-          createdCreatorProfile.pricing.isBarterAvailable,
+          createdCreatorProfile.pricing.isBarterAvailable ? 1 : 0,
           JSON.stringify(createdCreatorProfile.collaborationTypes),
           JSON.stringify(createdCreatorProfile.preferredCities),
           JSON.stringify(createdCreatorProfile.subCategories),
           JSON.stringify(createdCreatorProfile.languages),
           createdCreatorProfile.phone,
           createdCreatorProfile.email,
+          'pending',
+          0,
+          JSON.stringify(createdCreatorProfile.socialPlatforms),
         ]
-      );
+      ).catch((err: any) => {
+        console.error('❌ [SIGNUP] Failed to insert creator into DB:', err?.message || err);
+      });
     }
 
     // Generate JWT Token
@@ -529,6 +544,15 @@ export async function login(req: Request, res: Response) {
       { expiresIn: '7d' }
     );
 
+    // Fetch logo for brand
+    let logoUrl: string | undefined = undefined;
+    if (user.role === 'BRAND') {
+      const dbBrands = await dbQuery('SELECT logo_url FROM brands WHERE user_id = ? LIMIT 1', [user.id]);
+      if (dbBrands && dbBrands.length > 0) {
+        logoUrl = dbBrands[0].logo_url || undefined;
+      }
+    }
+
     res.json({
       success: true,
       message: 'Login successful',
@@ -540,9 +564,10 @@ export async function login(req: Request, res: Response) {
         role: user.role,
         phone: user.phone || '',
         companyName: user.company_name,
-        approvalStatus: user.approval_status || (user.role === 'BRAND' ? 'pending' : 'approved'),
+        approvalStatus: user.approval_status || 'approved',
         avatar: user.avatar,
         creatorProfile: creatorProfile || undefined,
+        logoUrl,
       },
     });
   } catch (error: any) {
@@ -587,12 +612,28 @@ export async function getMe(req: AuthenticatedRequest, res: Response) {
 
 export async function requestOtp(req: Request, res: Response) {
   try {
-    const { email } = req.body;
+    const { email, role } = req.body;
     if (!email) {
       return res.status(400).json({ success: false, error: 'Email is required' });
     }
 
     const cleanEmail = email.toLowerCase().trim();
+
+    // If it's a signup request (role is provided), check if email is already registered
+    if (role) {
+      const { phone, countryCode } = req.body;
+      const normalizedPhone = normalizeMobile(phone, countryCode);
+      if (!normalizedPhone) {
+        return res.status(400).json({ success: false, error: 'A valid 10-digit mobile number is required' });
+      }
+
+      const sqlUser = 'SELECT id FROM users WHERE email = ? LIMIT 1';
+      const dbUsers = await dbQuery(sqlUser, [cleanEmail]);
+      const memUser = memoryUsers.find((u) => u.email === cleanEmail);
+      if ((dbUsers && dbUsers.length > 0) || memUser) {
+        return res.status(409).json({ success: false, error: 'This email is already registered. Please sign in instead.' });
+      }
+    }
 
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -614,7 +655,12 @@ export async function requestOtp(req: Request, res: Response) {
 
 export async function verifyOtp(req: Request, res: Response) {
   try {
-    const { email, otp, name, role, phone, companyName, gstNumber, username, category, city, password, countryCode, deferCreatorSignup, signupToken } = req.body;
+    const { email, otp, name, role: requestedRole, phone, companyName, legalName, gstNumber, username, category, city, password, countryCode, deferCreatorSignup, signupToken } = req.body;
+    const role = String(requestedRole || '').toUpperCase();
+
+    if (requestedRole && role !== 'BRAND' && role !== 'CREATOR') {
+      return res.status(400).json({ success: false, error: 'Only BRAND or CREATOR accounts can be registered publicly' });
+    }
 
     if (!email || (!otp && !signupToken)) {
       return res.status(400).json({ success: false, error: 'Email and OTP are required' });
@@ -625,7 +671,7 @@ export async function verifyOtp(req: Request, res: Response) {
     if (signupToken) {
       try {
         const verifiedSignup: any = jwt.verify(signupToken, JWT_SECRET);
-        if (verifiedSignup?.purpose !== 'creator_signup' || verifiedSignup.email !== cleanEmail || verifiedSignup.role !== 'CREATOR') {
+        if (verifiedSignup?.purpose !== `${role.toLowerCase()}_signup` || verifiedSignup.email !== cleanEmail || verifiedSignup.role !== role) {
           return res.status(401).json({ success: false, error: 'Invalid signup session. Please verify OTP again.' });
         }
       } catch {
@@ -655,17 +701,19 @@ export async function verifyOtp(req: Request, res: Response) {
     const existingMemUser = memoryUsers.find((u) => u.email === cleanEmail);
     const existingUser = existingDbUser || existingMemUser;
 
-    // Creator onboarding must not create any database record at the OTP step.
+    const deferBrandSignup = req.body.deferBrandSignup;
+
+    // Onboarding must not create any database record at the OTP step.
     // It only issues a short-lived proof which is consumed by the final step.
-    if (deferCreatorSignup && role === 'CREATOR' && !signupToken) {
+    if ((deferCreatorSignup && role === 'CREATOR' || deferBrandSignup && role === 'BRAND') && !signupToken) {
       if (existingUser) return res.status(409).json({ success: false, error: 'This email is already registered. Please sign in instead.' });
-      const pendingSignupToken = jwt.sign({ email: cleanEmail, role: 'CREATOR', purpose: 'creator_signup' }, JWT_SECRET, { expiresIn: '20m' });
+      const pendingSignupToken = jwt.sign({ email: cleanEmail, role, purpose: `${role.toLowerCase()}_signup` }, JWT_SECRET, { expiresIn: '20m' });
       return res.json({ success: true, message: 'OTP verified. Complete your profile to create the account.', signupToken: pendingSignupToken });
     }
 
     if (isSignupContext) {
       // This is a SIGNUP attempt — if email already registered, reject it
-      if (existingUser && !(signupToken && role === 'CREATOR' && existingUser.role === 'CREATOR')) {
+      if (existingUser && !(signupToken && (role === 'CREATOR' && existingUser.role === 'CREATOR' || role === 'BRAND' && existingUser.role === 'BRAND'))) {
         return res.status(409).json({
           success: false,
           error: 'This email is already registered. Please sign in instead.'
@@ -708,7 +756,7 @@ export async function verifyOtp(req: Request, res: Response) {
       await dbQuery(
         `INSERT INTO users (id, name, email, password_hash, role, phone, company_name, avatar, approval_status)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [userId, name, cleanEmail, hashedPassword, role, normalizedPhone, companyName || null, userAvatar || null, role === 'BRAND' ? 'pending' : 'approved']
+        [userId, name, cleanEmail, hashedPassword, role, normalizedPhone, companyName || null, userAvatar || null, 'approved']
       ).catch(err => console.warn('MySQL user insert notice:', err));
 
       const newUser: UserRecord = {
@@ -726,7 +774,7 @@ export async function verifyOtp(req: Request, res: Response) {
       user = newUser;
 
       if (role === 'BRAND') {
-        await ensurePendingBrandProfile({ userId, brandName: companyName, gstNumber, contactPerson: name, phone: normalizedPhone, email: cleanEmail });
+        await ensurePendingBrandProfile({ userId, brandName: companyName, legalName, gstNumber, contactPerson: name, phone: normalizedPhone, email: cleanEmail });
       }
 
       // Auto Creator Profile setup if CREATOR

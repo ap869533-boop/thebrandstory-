@@ -54,10 +54,61 @@ export const AdminDashboardView: React.FC = () => {
     adminDeleteCreator,
     categories,
     addCategory,
-    deleteCategory,
+        deleteCategory,
+    industries,
   } = usePlatform();
 
-  const [activeTab, setActiveTab] = useState<'creators' | 'stats' | 'campaigns' | 'brands' | 'categories' | 'settings' | 'brand-approvals'>('creators');
+  // Industry management state
+  const [newIndustryName, setNewIndustryName] = useState('');
+  const [industryLoading, setIndustryLoading] = useState(false);
+  const [industrySuccessMsg, setIndustrySuccessMsg] = useState(false);
+  const [industryError, setIndustryError] = useState('');
+  const [localIndustries, setLocalIndustries] = useState<any[]>([]);
+  const [industrySearch, setIndustrySearch] = useState('');
+
+  useEffect(() => {
+    setLocalIndustries(industries || []);
+  }, [industries]);
+
+  const handleAddIndustry = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newIndustryName.trim()) return;
+    setIndustryLoading(true); setIndustryError('');
+    try {
+      const token = localStorage.getItem('sc_auth_token');
+      const res = await fetch(apiUrl('/api/industries'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name: newIndustryName.trim() }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setLocalIndustries(prev => [...prev, data.industry].sort((a, b) => a.name.localeCompare(b.name)));
+        setNewIndustryName('');
+        setIndustrySuccessMsg(true);
+        setTimeout(() => setIndustrySuccessMsg(false), 2500);
+      } else {
+        setIndustryError(data.error || 'Failed to add industry');
+      }
+    } catch {
+      setIndustryError('Network error');
+    } finally {
+      setIndustryLoading(false);
+    }
+  };
+
+  const handleDeleteIndustry = async (id: string, name: string) => {
+    if (!window.confirm(`Delete industry "${name}"?`)) return;
+    try {
+      const token = localStorage.getItem('sc_auth_token');
+      await fetch(apiUrl(`/api/industries/${id}`), { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+      setLocalIndustries(prev => prev.filter(i => i.id !== id));
+    } catch {
+      alert('Failed to delete industry');
+    }
+  };
+
+  const [activeTab, setActiveTab] = useState<'creators' | 'stats' | 'campaigns' | 'brands' | 'categories' | 'industries' | 'settings' | 'brand-approvals'>('creators');
   const [adminBrands, setAdminBrands] = useState<any[]>([]);
   const [adminPendingCampaigns, setAdminPendingCampaigns] = useState<any[]>([]);
 
@@ -143,6 +194,10 @@ export const AdminDashboardView: React.FC = () => {
   };
   const [creatorFilterTab, setCreatorFilterTab] = useState<'all' | 'pending' | 'active' | 'suspended'>('all');
   const [creatorSearch, setCreatorSearch] = useState('');
+  const [creatorPage, setCreatorPage] = useState(0);
+  const [creatorTotal, setCreatorTotal] = useState(0);
+  const [creatorStatusCounts, setCreatorStatusCounts] = useState({ pending: 0, active: 0, suspended: 0 });
+  const creatorPageSize = 25;
   const [emailMenuCreatorId, setEmailMenuCreatorId] = useState<string | null>(null);
   const [sendingEmail, setSendingEmail] = useState<{ creatorId: string; type: 'complete_profile' | 'information_warning' } | null>(null);
   const [brandSearch, setBrandSearch] = useState('');
@@ -151,21 +206,36 @@ export const AdminDashboardView: React.FC = () => {
   const refreshCreators = async () => {
     setIsRefreshingCreators(true);
     try {
-      const response = await fetch(apiUrl(`/api/creators?includePending=true&_refresh=${Date.now()}`));
+      const params = new URLSearchParams({
+        includePending: 'true',
+        limit: String(creatorPageSize),
+        offset: String(creatorPage * creatorPageSize),
+        _refresh: String(Date.now()),
+      });
+      if (creatorFilterTab !== 'all') params.set('status', creatorFilterTab);
+      if (creatorSearch.trim()) params.set('searchQuery', creatorSearch.trim());
+      const response = await fetch(apiUrl(`/api/creators?${params.toString()}`));
       if (!response.ok) throw new Error('Unable to refresh creators');
       const data = await response.json();
       if (!Array.isArray(data.creators)) throw new Error('Invalid creators response');
       setCreators(data.creators);
+      setCreatorTotal(Number(data.total) || 0);
+      if (data.statusCounts) setCreatorStatusCounts(data.statusCounts);
     } finally {
       setIsRefreshingCreators(false);
     }
   };
 
   useEffect(() => {
-    void refreshCreators().catch((error) => {
-      console.error('Failed to refresh admin creators:', error);
-    });
-  }, []);
+    const timer = window.setTimeout(() => {
+      void refreshCreators().catch((error) => {
+        console.error('Failed to refresh admin creators:', error);
+      });
+    }, 200);
+    return () => window.clearTimeout(timer);
+  }, [creatorFilterTab, creatorSearch, creatorPage]);
+
+  useEffect(() => setCreatorPage(0), [creatorFilterTab, creatorSearch]);
 
   // Selected Creator for Detailed Review Modal
   const [reviewModalCreator, setReviewModalCreator] = useState<Creator | null>(null);
@@ -242,8 +312,8 @@ export const AdminDashboardView: React.FC = () => {
           <div className="pt-2 space-y-2">
             <button
               onClick={() => {
-                if (authUser?.role === 'CREATOR') navigateTo('creator-dashboard');
-                else if (authUser?.role === 'BRAND') navigateTo('brand-dashboard');
+                if (authUser?.role === 'CREATOR') navigateTo('opportunities');
+                else if (authUser?.role === 'BRAND') navigateTo('brand-campaigns', { slug: 'account' });
                 else navigateTo('home');
               }}
               className="w-full py-3 bg-slate-900 hover:bg-black text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
@@ -412,30 +482,11 @@ export const AdminDashboardView: React.FC = () => {
   };
 
   // Filtered Creators calculation
-  const pendingCreators = creators.filter((c) => c.status === 'pending' || c.verificationRequested);
-  const activeCreators = creators.filter((c) => c.status === 'active' && !c.verificationRequested);
-  const suspendedCreators = creators.filter((c) => c.status === 'suspended');
-
-  const displayedCreators = creators.filter((c) => {
-    if (creatorFilterTab === 'pending') {
-      if (c.status !== 'pending' && !c.verificationRequested) return false;
-    } else if (creatorFilterTab === 'active') {
-      if (c.status !== 'active') return false;
-    } else if (creatorFilterTab === 'suspended') {
-      if (c.status !== 'suspended') return false;
-    }
-
-    if (creatorSearch.trim()) {
-      const q = creatorSearch.toLowerCase();
-      return (
-        c.name.toLowerCase().includes(q) ||
-        c.username.toLowerCase().includes(q) ||
-        c.currentCity.toLowerCase().includes(q) ||
-        c.primaryCategory.toLowerCase().includes(q)
-      );
-    }
-    return true;
-  });
+  const pendingCreators = { length: creatorStatusCounts.pending };
+  const activeCreators = { length: creatorStatusCounts.active };
+  const suspendedCreators = { length: creatorStatusCounts.suspended };
+  const allCreatorsCount = pendingCreators.length + activeCreators.length + suspendedCreators.length;
+  const displayedCreators = creators;
 
   return (
     <div className="min-h-screen bg-slate-50/60 py-8 font-sans">
@@ -460,7 +511,7 @@ export const AdminDashboardView: React.FC = () => {
           <div className="flex items-center gap-3 text-xs">
             <div className="p-3 bg-slate-800/80 rounded-2xl border border-slate-700/80 text-center">
               <span className="text-[10px] text-slate-400 uppercase font-bold block">Live Creators</span>
-              <span className="text-base font-black text-white">{creators.length}</span>
+              <span className="text-base font-black text-white">{allCreatorsCount}</span>
             </div>
             <div className="p-3 bg-slate-800/80 rounded-2xl border border-slate-700/80 text-center">
               <span className="text-[10px] text-amber-400 uppercase font-bold block">Pending Approval</span>
@@ -482,7 +533,7 @@ export const AdminDashboardView: React.FC = () => {
             }`}
           >
             <Users className="w-3.5 h-3.5" />
-            <span>Influencer Approvals & Directory ({creators.length})</span>
+            <span>Influencer Approvals & Directory ({allCreatorsCount})</span>
             {pendingCreators.length > 0 && (
               <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-white text-[10px] font-black">
                 {pendingCreators.length}
@@ -570,7 +621,7 @@ export const AdminDashboardView: React.FC = () => {
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
-                  All Influencers ({creators.length})
+                  All Influencers ({allCreatorsCount})
                 </button>
 
                 <button
@@ -874,6 +925,104 @@ export const AdminDashboardView: React.FC = () => {
                   </tbody>
                 </table>
               </div>
+            </div>
+            {creatorTotal > creatorPageSize && (
+              <div className="flex items-center justify-center gap-3 py-3">
+                <button type="button" onClick={() => setCreatorPage((current) => Math.max(0, current - 1))} disabled={creatorPage === 0 || isRefreshingCreators} className="px-4 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold disabled:opacity-40">Previous</button>
+                <span className="text-xs font-medium text-slate-500">Page {creatorPage + 1} of {Math.ceil(creatorTotal / creatorPageSize)}</span>
+                <button type="button" onClick={() => setCreatorPage((current) => current + 1)} disabled={(creatorPage + 1) * creatorPageSize >= creatorTotal || isRefreshingCreators} className="px-4 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold disabled:opacity-40">Next</button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tab: Industries Management */}
+        {activeTab === 'industries' && (
+          <div className="space-y-6 animate-fadeIn">
+            {/* Add Industry Card */}
+            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-xs space-y-5">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200/80 text-blue-600 flex items-center justify-center font-bold">
+                    <Plus className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-slate-900">Add Brand Industry</h3>
+                    <p className="text-xs text-slate-400">Add new industries to the database. Brands select from these during signup.</p>
+                  </div>
+                </div>
+                {industrySuccessMsg && (
+                  <span className="px-3 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold rounded-xl flex items-center gap-1.5 animate-fadeIn">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    Industry Added!
+                  </span>
+                )}
+              </div>
+              <form onSubmit={handleAddIndustry} className="flex gap-3 items-end">
+                <div className="flex-1">
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Industry Name *</label>
+                  <input
+                    type="text"
+                    value={newIndustryName}
+                    onChange={e => setNewIndustryName(e.target.value)}
+                    placeholder="e.g. Technology, Fashion, Food & Beverage"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
+                    required
+                  />
+                  {industryError && <p className="text-xs text-rose-600 mt-1 font-semibold">{industryError}</p>}
+                </div>
+                <button
+                  type="submit"
+                  disabled={industryLoading || !newIndustryName.trim()}
+                  className="px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl transition disabled:opacity-50 cursor-pointer"
+                >
+                  {industryLoading ? 'Adding...' : 'Add Industry'}
+                </button>
+              </form>
+            </div>
+
+            {/* Industry List */}
+            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                <div>
+                  <h3 className="text-base font-black text-slate-900">All Industries ({localIndustries.length})</h3>
+                  <p className="text-xs text-slate-400">Industries available in brand signup dropdown</p>
+                </div>
+                <div className="relative max-w-xs w-full">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search industries..."
+                    value={industrySearch}
+                    onChange={e => setIndustrySearch(e.target.value)}
+                    className="w-full pl-9 pr-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
+                  />
+                </div>
+              </div>
+              {localIndustries.length === 0 ? (
+                <div className="text-center py-12">
+                  <Building className="w-12 h-12 mx-auto text-slate-200 mb-3" />
+                  <p className="text-slate-400 text-sm font-semibold">No industries yet. Add one above.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {localIndustries
+                    .filter(ind => !industrySearch.trim() || ind.name.toLowerCase().includes(industrySearch.toLowerCase()))
+                    .map(ind => (
+                      <div key={ind.id} className="p-4 bg-slate-50 hover:bg-white rounded-2xl border border-slate-200/80 transition flex items-center justify-between group">
+                        <span className="font-semibold text-slate-800 text-sm">{ind.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteIndustry(ind.id, ind.name)}
+                          className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-[10px] font-bold transition flex items-center gap-1 cursor-pointer opacity-0 group-hover:opacity-100"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                </div>
+              )}
             </div>
           </div>
         )}

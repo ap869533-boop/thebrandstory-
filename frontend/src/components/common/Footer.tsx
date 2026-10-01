@@ -81,7 +81,7 @@ export const Footer: React.FC = () => {
                 </button>
               </li>
               <li>
-                <button onClick={() => navigateTo('creator-dashboard')} className="hover:text-white transition">
+                <button onClick={() => navigateTo('opportunities')} className="hover:text-white transition">
                   Creator Portal Login
                 </button>
               </li>
