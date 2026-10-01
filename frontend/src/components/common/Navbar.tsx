@@ -20,7 +20,7 @@ export const Navbar: React.FC = () => {
             setNavLogo(data.profile.logoUrl);
           }
         })
-        .catch(() => {});
+        .catch(() => { });
     } else if (authUser?.role === 'CREATOR' && authUser.creatorProfile?.avatar) {
       setNavLogo(authUser.creatorProfile.avatar);
     } else if (authUser?.avatar || (authUser as any)?.logoUrl) {
@@ -50,20 +50,20 @@ export const Navbar: React.FC = () => {
 
   const matchedCreators = q.length >= 2
     ? creators.filter(c =>
-        c.status === 'active' &&
-        (c.name?.toLowerCase().includes(q) ||
-         c.username?.toLowerCase().includes(q) ||
-         c.primaryCategory?.toLowerCase().includes(q) ||
-         c.currentCity?.toLowerCase().includes(q))
-      ).slice(0, 5)
+      c.status === 'active' &&
+      (c.name?.toLowerCase().includes(q) ||
+        c.username?.toLowerCase().includes(q) ||
+        c.primaryCategory?.toLowerCase().includes(q) ||
+        c.currentCity?.toLowerCase().includes(q))
+    ).slice(0, 5)
     : [];
 
   const matchedBrands = q.length >= 2 && partnerBrands
     ? partnerBrands.filter((b: any) =>
-        b.name?.toLowerCase().includes(q) ||
-        b.brandName?.toLowerCase().includes(q) ||
-        b.category?.toLowerCase().includes(q)
-      ).slice(0, 3)
+      b.name?.toLowerCase().includes(q) ||
+      b.brandName?.toLowerCase().includes(q) ||
+      b.category?.toLowerCase().includes(q)
+    ).slice(0, 3)
     : [];
 
   const hasResults = matchedCreators.length > 0 || matchedBrands.length > 0;
@@ -114,12 +114,12 @@ export const Navbar: React.FC = () => {
                   setShowResults(e.target.value.trim().length >= 2);
                 }}
                 onFocus={() => keyword.trim().length >= 2 && setShowResults(true)}
-                placeholder="Search brands here..."
+                placeholder="Search Influencer here..."
                 className="subpage-search-input w-full bg-transparent text-xs sm:text-base text-slate-900 placeholder:text-slate-500 focus:outline-none min-w-0"
               />
               {keyword && (
                 <button type="button" aria-label="Clear search" onClick={() => { setKeyword(''); setShowResults(false); }} className="text-xs sm:text-sm text-slate-400 hover:text-slate-900 font-bold px-1.5 cursor-pointer shrink-0">
-                  âœ•
+                  clear
                 </button>
               )}
             </form>
@@ -174,7 +174,7 @@ export const Navbar: React.FC = () => {
 
                 <div className="px-4 py-2.5 border-t border-slate-100">
                   <button type="button" onClick={submitSearch} className="text-[11px] font-bold text-[#D4A338] hover:underline cursor-pointer">
-                    See all results for "{keyword}" â†’
+                    See all results for "{keyword}" ’
                   </button>
                 </div>
               </div>
@@ -216,7 +216,7 @@ export const Navbar: React.FC = () => {
               {!authUser ? (
                 <div className="space-y-4">
                   <button type="button" onClick={() => goTo('login', { mode: 'login' })} className="h-11 w-full rounded-full border border-white/20 text-sm font-bold text-white hover:bg-white/10 cursor-pointer">Sign In</button>
-                  <button type="button" onClick={() => { closeMenu(); openAuthModal('signup', 'CREATOR'); }} className="h-11 w-full rounded-full bg-[#D4A338] text-sm font-black text-slate-950 hover:bg-[#be8f2b] cursor-pointer">Get Started</button>
+                  <button type="button" onClick={() => goTo('login', { mode: 'signup', role: 'CREATOR' })} className="h-11 w-full rounded-full bg-[#D4A338] text-sm font-black text-slate-950 hover:bg-[#be8f2b] cursor-pointer">Get Started For Free</button>
                   <div className="mt-6 border-t border-white/10 pt-4"><button type="button" onClick={() => goTo('blog')} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left font-bold hover:bg-white/10 cursor-pointer"><HelpCircle className="h-5 w-5" />Help and Support</button></div>
                 </div>
               ) : (
@@ -237,8 +237,7 @@ export const Navbar: React.FC = () => {
                     <button type="button" onClick={() => { closeMenu(); openSavedDrawer(); }} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer"><Heart className="h-5 w-5" />Wish list</button>
                     {isBrand && <button type="button" onClick={() => goTo('brand-campaigns', { slug: accountSlug })} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer"><Megaphone className="h-5 w-5" />My Campaigns</button>}
                     {isBrand && <button type="button" onClick={() => goTo('brand-profile', { slug: accountSlug })} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer"><User className="h-5 w-5" />My Profile</button>}
-                    {!isBrand && <button type="button" onClick={() => goTo('opportunities')} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer"><Megaphone className="h-5 w-5" />Pitches</button>}
-                    <button type="button" onClick={() => goTo('chat', { username: accountSlug })} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer"><MessageCircle className="h-5 w-5" />Chat</button>
+                    <button type="button" onClick={() => goTo('chat', { username: accountSlug })} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer"><Megaphone className="h-5 w-5" />Pitches</button>
                     <button type="button" onClick={() => goTo('wallet')} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer"><Wallet className="h-5 w-5" />Wallet / Billing</button>
                     <button type="button" onClick={() => goTo('blog')} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer"><HelpCircle className="h-5 w-5" />Help and Support</button>
                   </nav>

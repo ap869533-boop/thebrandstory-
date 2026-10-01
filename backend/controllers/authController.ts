@@ -671,7 +671,7 @@ export async function verifyOtp(req: Request, res: Response) {
     if (signupToken) {
       try {
         const verifiedSignup: any = jwt.verify(signupToken, JWT_SECRET);
-        if (verifiedSignup?.purpose !== 'creator_signup' || verifiedSignup.email !== cleanEmail || verifiedSignup.role !== 'CREATOR') {
+        if (verifiedSignup?.purpose !== `${role.toLowerCase()}_signup` || verifiedSignup.email !== cleanEmail || verifiedSignup.role !== role) {
           return res.status(401).json({ success: false, error: 'Invalid signup session. Please verify OTP again.' });
         }
       } catch {

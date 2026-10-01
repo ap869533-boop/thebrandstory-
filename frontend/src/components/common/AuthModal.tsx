@@ -261,7 +261,7 @@ export const AuthModal: React.FC = () => {
   };
 
   const handleBlur = (field: string) => {
-    setTouched((prev) => ({ ...prev, [field]: true }));
+    // Only validate without setting touched to avoid premature red borders
     validate();
   };
 
@@ -1058,7 +1058,6 @@ export const AuthModal: React.FC = () => {
                     value={email}
                     onChange={(e) => {
                       setEmail(e.target.value);
-                      setTouched((prev) => ({ ...prev, email: true }));
                       if (fieldErrors.email) validate();
                     }}
                     onBlur={() => handleBlur('email')}

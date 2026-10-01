@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS `brand_profiles` (
   `id` VARCHAR(64) PRIMARY KEY,
   `user_id` VARCHAR(64) NOT NULL UNIQUE,
   `brand_name` VARCHAR(150) NOT NULL,
+  `legal_name` VARCHAR(150) DEFAULT NULL,
   `gst_number` VARCHAR(20) DEFAULT NULL,
   `logo_url` VARCHAR(500) DEFAULT NULL,
   `cover_url` VARCHAR(500) DEFAULT NULL,

@@ -133,6 +133,7 @@ export const LoginView: React.FC = () => {
     if (field === 'name' || field === 'companyName') return value.trim().length < 2;
     if (field === 'phone') return value.trim().length < 10;
     if (field === 'otp') return value.trim().length < 6;
+    if (field === 'gstNumber') return !/^[A-Z0-9]{15}$/.test(value.trim());
     return false;
   };
 
@@ -174,7 +175,10 @@ export const LoginView: React.FC = () => {
     if (mode === 'signup') {
       if (password !== confirmPassword) return false;
       if (role === 'CREATOR' && (name.trim().length < 2 || phone.trim().length < 10)) return false;
-      if (role === 'BRAND' && (companyName.trim().length < 2 || legalName.trim().length < 2 || phone.trim().length < 10)) return false;
+      if (role === 'BRAND') {
+        if (companyName.trim().length < 2 || legalName.trim().length < 2 || phone.trim().length < 10) return false;
+        if (!/^[A-Z0-9]{15}$/.test(gstNumber.trim())) return false;
+      }
     }
     return true;
   };
@@ -198,7 +202,7 @@ export const LoginView: React.FC = () => {
     });
 
   const validateBrandSetup = () => {
-    return brandIndustry.trim().length > 1 && brandCity.trim().length > 1 && brandWebsite.trim().length > 1 && brandInstagram.trim().length > 1;
+    return !!brandLogoUrl && brandIndustry.trim().length > 1 && brandCity.trim().length > 1 && brandWebsite.trim().length > 1 && brandInstagram.trim().length > 1;
   };
 
   const ensureRegistered = async () => {
@@ -238,6 +242,7 @@ export const LoginView: React.FC = () => {
     const brandUpdates: any = { 
       brandName: companyName.trim(),
       legalName: legalName.trim(),
+      gstNumber: gstNumber.trim(),
       industry: brandIndustry.trim(), 
       city: brandCity.trim(), 
       website: brandWebsite.trim(), 
@@ -316,7 +321,7 @@ export const LoginView: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (brandProfileSetup) {
-      setTouched(t => ({ ...t, brandIndustry: true, brandCity: true, brandWebsite: true, brandInstagram: true }));
+      setTouched(t => ({ ...t, brandLogoUrl: true, brandIndustry: true, brandCity: true, brandWebsite: true, brandInstagram: true }));
       if (!validateBrandSetup()) {
         setErrorMsg('Please correct the highlighted fields before continuing.');
         return;
@@ -347,7 +352,7 @@ export const LoginView: React.FC = () => {
       finally { setIsLoading(false); }
       return;
     }
-    setTouched({ email: true, password: true, confirmPassword: true, name: true, companyName: true, legalName: true, phone: true, otp: true });
+    setTouched({ email: true, password: true, confirmPassword: true, name: true, companyName: true, legalName: true, phone: true, otp: true, gstNumber: true });
 
     if (!validate()) {
       if (mode === 'signup' && password !== confirmPassword) {
@@ -553,7 +558,7 @@ export const LoginView: React.FC = () => {
         {/* Main Card */}
         <div className="bg-white/5 rounded-3xl p-6 sm:p-8 border border-white/10 shadow-xl space-y-5 backdrop-blur-sm">
           {/* Mode Switcher: Login / Signup */}
-          {!isForgotPassword && !creatorProfileSetup && (
+          {!isForgotPassword && !creatorProfileSetup && !brandProfileSetup && (
           <div className="flex p-1 bg-white/5 rounded-xl border border-white/10">
             <button
               type="button"
@@ -591,7 +596,7 @@ export const LoginView: React.FC = () => {
           )}
 
           {/* Role Selector Buttons */}
-          {!isForgotPassword && mode === 'signup' && !creatorProfileSetup && (
+          {!isForgotPassword && mode === 'signup' && !creatorProfileSetup && !brandProfileSetup && (
           <div>
             <label className="block text-slate-300 font-bold mb-1.5 text-xs">
                 I am registering as:
@@ -667,7 +672,7 @@ export const LoginView: React.FC = () => {
                 <div>
                   <label className="block font-bold text-slate-300 mb-1.5">Brand Logo</label>
                   <div className="flex items-center gap-3">
-                    <div className="w-14 h-14 rounded-full overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                    <div className={`w-14 h-14 rounded-full overflow-hidden bg-white/5 border ${isFieldInvalid('brandLogoUrl', brandLogoUrl) ? 'border-red-500' : 'border-white/10'} flex items-center justify-center shrink-0`}>
                       {brandLogoUrl
                         ? <img src={brandLogoUrl} alt="Logo" className="w-full h-full object-cover" />
                         : <div className="w-6 h-6 text-slate-500 flex items-center justify-center"><User className="w-full h-full" /></div>}
@@ -699,8 +704,7 @@ export const LoginView: React.FC = () => {
                   <label className="block font-bold text-slate-300 mb-1 text-[11px]">Industry *</label>
                   <select
                     value={brandIndustry}
-                    onChange={e => { setBrandIndustry(e.target.value); setTouched(t => ({ ...t, brandIndustry: true })); }}
-                    onBlur={() => setTouched(t => ({ ...t, brandIndustry: true }))}
+                    onChange={e => setBrandIndustry(e.target.value)}
                     className={creatorFieldClass('brandIndustry', brandIndustry, 'bg-white/5 text-white border-white/10')}>
                     <option value="" className="bg-[#051126]">Select industry</option>
                     {industries.map((ind: any) => (
@@ -710,17 +714,17 @@ export const LoginView: React.FC = () => {
                 </div>
                 <div className="space-y-1">
                   <label className="block font-bold text-slate-300 mb-1 text-[11px]">City / Location *</label>
-                  <input type="text" value={brandCity} onChange={e => { setBrandCity(e.target.value); setTouched(t => ({ ...t, brandCity: true })); }}
+                  <input type="text" value={brandCity} onChange={e => setBrandCity(e.target.value)}
                     className={creatorFieldClass('brandCity', brandCity)} placeholder="e.g. Mumbai" />
                 </div>
                 <div className="space-y-1">
                   <label className="block font-bold text-slate-300 mb-1 text-[11px]">Website Link *</label>
-                  <input type="url" value={brandWebsite} onChange={e => { setBrandWebsite(e.target.value); setTouched(t => ({ ...t, brandWebsite: true })); }}
+                  <input type="url" value={brandWebsite} onChange={e => setBrandWebsite(e.target.value)}
                     className={creatorFieldClass('brandWebsite', brandWebsite)} placeholder="https://yourbrand.com" />
                 </div>
                 <div className="space-y-1">
                   <label className="block font-bold text-slate-300 mb-1 text-[11px]">Instagram URL *</label>
-                  <input type="url" value={brandInstagram} onChange={e => { setBrandInstagram(e.target.value); setTouched(t => ({ ...t, brandInstagram: true })); }}
+                  <input type="url" value={brandInstagram} onChange={e => setBrandInstagram(e.target.value)}
                     className={creatorFieldClass('brandInstagram', brandInstagram)} placeholder="https://instagram.com/yourbrand" />
                 </div>
                 <div className="space-y-1">
@@ -904,7 +908,7 @@ export const LoginView: React.FC = () => {
               </div>
             )}
 
-            {!creatorProfileSetup && (
+            {!creatorProfileSetup && !brandProfileSetup && (
               <>
                 {/* Signup only fields */}
                 {mode === 'signup' && !otpSent && !isForgotPassword && (
@@ -916,8 +920,7 @@ export const LoginView: React.FC = () => {
                           type="text"
                           placeholder="Your Full Name *"
                           value={name}
-                          onChange={e => { setName(e.target.value); setTouched(t => ({ ...t, name: true })); }}
-                          onBlur={() => setTouched(t => ({ ...t, name: true }))}
+                          onChange={e => setName(e.target.value)}
                           className={`${fieldClass('name', name)} pl-10`}
                         />
                       </div>
@@ -929,8 +932,7 @@ export const LoginView: React.FC = () => {
                             type="text"
                             placeholder="Company / Brand Name *"
                             value={companyName}
-                            onChange={e => { setCompanyName(e.target.value); setTouched(t => ({ ...t, companyName: true })); }}
-                            onBlur={() => setTouched(t => ({ ...t, companyName: true }))}
+                            onChange={e => setCompanyName(e.target.value)}
                             className={`${fieldClass('companyName', companyName)} pl-10`}
                           />
                         </div>
@@ -940,8 +942,7 @@ export const LoginView: React.FC = () => {
                             type="text"
                             placeholder="Legal Firm Name *"
                             value={legalName}
-                            onChange={e => { setLegalName(e.target.value); setTouched(t => ({ ...t, legalName: true })); }}
-                            onBlur={() => setTouched(t => ({ ...t, legalName: true }))}
+                            onChange={e => setLegalName(e.target.value)}
                             className={`${fieldClass('legalName', legalName)} pl-10`}
                           />
                         </div>
@@ -949,10 +950,11 @@ export const LoginView: React.FC = () => {
                           <FileText className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                           <input
                             type="text"
-                            placeholder="GST Number (optional)"
+                            placeholder="GST Number"
+                            maxLength={15}
                             value={gstNumber}
-                            onChange={e => setGstNumber(e.target.value)}
-                            className="w-full pl-10 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#D4A338]/60 text-xs font-medium transition"
+                            onChange={e => setGstNumber(e.target.value.toUpperCase())}
+                            className={`${fieldClass('gstNumber', gstNumber)} pl-10`}
                           />
                         </div>
                       </>
@@ -980,9 +982,7 @@ export const LoginView: React.FC = () => {
                           onChange={e => {
                             const val = e.target.value.replace(/\D/g, '').slice(0, 10);
                             setPhone(val);
-                            setTouched(t => ({ ...t, phone: true }));
                           }}
-                          onBlur={() => setTouched(t => ({ ...t, phone: true }))}
                           className={`${fieldClass('phone', phone)} pl-10`}
                         />
                       </div>
@@ -1002,8 +1002,7 @@ export const LoginView: React.FC = () => {
                         disabled={otpSent}
                         placeholder="Email address"
                         value={email}
-                        onChange={e => { setEmail(e.target.value); setTouched(t => ({ ...t, email: true })); setEmailError(null); }}
-                        onBlur={() => setTouched(t => ({ ...t, email: true }))}
+                        onChange={e => { setEmail(e.target.value); setEmailError(null); }}
                         className={`${fieldClass('email', email)} pl-10 ${emailError ? '!border-rose-500/70 !bg-rose-500/10' : ''} ${otpSent ? 'opacity-60 cursor-not-allowed' : ''}`}
                       />
                     </div>
@@ -1025,8 +1024,7 @@ export const LoginView: React.FC = () => {
                         maxLength={8}
                         placeholder={mode === 'signup' ? 'Create your password' : 'Password'}
                         value={password}
-                        onChange={e => { setPassword(e.target.value.slice(0, 8)); setTouched(t => ({ ...t, password: true })); }}
-                        onBlur={() => setTouched(t => ({ ...t, password: true }))}
+                        onChange={e => setPassword(e.target.value.slice(0, 8))}
                         className={`${fieldClass('password', password)} pl-10 pr-10`}
                       />
                       <button type="button" onClick={() => setShowPassword(s => !s)}
@@ -1045,8 +1043,7 @@ export const LoginView: React.FC = () => {
                           maxLength={10}
                           placeholder="Confirm Password"
                           value={confirmPassword}
-                          onChange={e => { setConfirmPassword(e.target.value.slice(0, 10)); setTouched(t => ({ ...t, confirmPassword: true })); }}
-                          onBlur={() => setTouched(t => ({ ...t, confirmPassword: true }))}
+                          onChange={e => setConfirmPassword(e.target.value.slice(0, 10))}
                           className={`w-full px-4 py-3 bg-white/5 border ${touched.confirmPassword && password !== confirmPassword ? 'border-rose-500/50 bg-rose-500/5' : 'border-white/10'} rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#D4A338]/60 focus:bg-white/8 text-xs font-medium transition pl-10 pr-10`}
                         />
                         <button type="button" onClick={() => setShowConfirmPassword(s => !s)}
@@ -1070,8 +1067,7 @@ export const LoginView: React.FC = () => {
                         maxLength={6}
                         placeholder="Enter 6-digit OTP"
                         value={otp}
-                        onChange={e => { setOtp(e.target.value); setTouched(t => ({ ...t, otp: true })); }}
-                        onBlur={() => setTouched(t => ({ ...t, otp: true }))}
+                        onChange={e => setOtp(e.target.value)}
                         className={`${fieldClass('otp', otp)} pl-10 tracking-[0.3em] font-mono`}
                       />
                     </div>
@@ -1083,7 +1079,6 @@ export const LoginView: React.FC = () => {
                           placeholder="New password"
                           value={newPassword}
                           onChange={e => setNewPassword(e.target.value)}
-                          onBlur={() => setTouched(t => ({ ...t, newPassword: true }))}
                           className={`${fieldClass('newPassword', newPassword)} pl-10`}
                         />
                       </div>
@@ -1113,7 +1108,10 @@ export const LoginView: React.FC = () => {
               className="w-full flex items-center justify-center gap-2 py-3 bg-[#D4A338] hover:bg-[#b88628] text-slate-950 font-black text-xs rounded-xl transition cursor-pointer shadow-lg shadow-[#D4A338]/20 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isLoading ? (
-                <span className="inline-block w-4 h-4 border-2 border-slate-950/30 border-t-slate-950 rounded-full animate-spin" />
+                <>
+                  <span className="inline-block w-4 h-4 border-2 border-slate-950/30 border-t-slate-950 rounded-full animate-spin" />
+                  <span>Processing...</span>
+                </>
               ) : (
                 <>
                   <span>
@@ -1142,7 +1140,7 @@ export const LoginView: React.FC = () => {
           </form>
 
           {/* Divider and Terms */}
-          {!creatorProfileSetup && (
+          {!creatorProfileSetup && !brandProfileSetup && (
             <div className="pt-2 border-t border-white/10 text-center space-y-2">
               <p className="text-[10px] text-slate-500">
                 By continuing, you agree to our{' '}
