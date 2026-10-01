@@ -245,7 +245,7 @@ export const Navbar: React.FC = () => {
                 </>
               )}
             </div>
-            <div className="border-t border-white/10 bg-[#0b1b3b] px-6 py-4 text-center text-[11px] text-slate-500">v2.4.1 · {isBrand ? 'Brand' : isCreator ? 'Creator' : 'Guest'} Account</div>
+            <div className="border-t border-white/10 bg-[#0b1b3b] px-6 py-4 text-center text-[11px] text-slate-500">{isBrand ? 'Brand' : isCreator ? 'Creator' : 'Admin'} Account</div>
           </aside>
         </div>
       )}

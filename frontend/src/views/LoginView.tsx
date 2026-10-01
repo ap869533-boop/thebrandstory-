@@ -895,7 +895,7 @@ export const LoginView: React.FC = () => {
                     <div>
                       <label className="block font-bold text-slate-300 mb-1">Starting Price (₹) *</label>
                       <input
-                        type="text"
+                        type="number"
                         value={startingPrice}
                         onChange={e => setStartingPrice(e.target.value)}
                         placeholder="e.g. 5000 or 5000-15000"
@@ -918,6 +918,7 @@ export const LoginView: React.FC = () => {
                         <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                         <input
                           type="text"
+                          maxLength={30}
                           placeholder="Your Full Name *"
                           value={name}
                           onChange={e => setName(e.target.value)}
@@ -930,6 +931,7 @@ export const LoginView: React.FC = () => {
                           <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                           <input
                             type="text"
+                            maxLength={30}
                             placeholder="Company / Brand Name *"
                             value={companyName}
                             onChange={e => setCompanyName(e.target.value)}
@@ -940,6 +942,7 @@ export const LoginView: React.FC = () => {
                           <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                           <input
                             type="text"
+                            maxLength={30}
                             placeholder="Legal Firm Name *"
                             value={legalName}
                             onChange={e => setLegalName(e.target.value)}
@@ -1021,10 +1024,10 @@ export const LoginView: React.FC = () => {
                         type={showPassword ? 'text' : 'password'}
                         autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                         required
-                        maxLength={8}
+                        maxLength={10}
                         placeholder={mode === 'signup' ? 'Create your password' : 'Password'}
                         value={password}
-                        onChange={e => setPassword(e.target.value.slice(0, 8))}
+                        onChange={e => setPassword(e.target.value.slice(0, 10))}
                         className={`${fieldClass('password', password)} pl-10 pr-10`}
                       />
                       <button type="button" onClick={() => setShowPassword(s => !s)}
