@@ -41,10 +41,6 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({
 
   const handleCardClick = () => {
     if (!interactive) return;
-    if (!authUser) {
-      navigateTo('login', { mode: 'login' });
-      return;
-    }
     navigateTo('creator-detail', { username: creator.username, id: creator.id });
   };
 

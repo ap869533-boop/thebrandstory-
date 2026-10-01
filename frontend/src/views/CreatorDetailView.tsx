@@ -91,15 +91,11 @@ export const CreatorDetailView: React.FC = () => {
   const [cropModalData, setCropModalData] = useState<{ src: string, type: string } | null>(null);
   const [uploadingMedia, setUploadingMedia] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!authUser) navigateTo('login', { mode: 'login' });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authUser]);
+  // Direct profile URLs can be visited without authentication.
+  // We removed the redirect to allow public profile sharing.
 
-  // Cards can be loaded from sections that have more than the initial creator
-  // list. Load the individual profile so every active creator remains viewable.
   useEffect(() => {
-    if (!authUser || !requestedUsername) {
+    if (!requestedUsername) {
       setProfileLoading(false);
       return;
     }
@@ -117,9 +113,7 @@ export const CreatorDetailView: React.FC = () => {
       });
 
     return () => { cancelled = true; };
-  }, [authUser, requestedUsername]);
-
-  if (!authUser) return null;
+  }, [requestedUsername]);
 
   const creator: Creator | undefined = fetchedCreator || localCreator || undefined;
 
@@ -666,7 +660,8 @@ export const CreatorDetailView: React.FC = () => {
         )}
 
         {/* 7. Recent Verified Publications (Reels/Portfolio) */}
-        <div className="space-y-3">
+        {(isOwner || creator.portfolio?.some(item => item?.thumbnail)) && (
+          <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
               Best Work & Portfolio
@@ -677,6 +672,8 @@ export const CreatorDetailView: React.FC = () => {
             {/* Portfolio Items (5 slots) */}
             {[0, 1, 2, 3, 4].map((idx) => {
               const item = creator.portfolio?.[idx];
+              if (!isOwner && !item?.thumbnail) return null;
+              
               return (
                 <div key={idx} className="relative h-60 sm:h-80 rounded-2xl overflow-hidden shadow-sm border border-slate-200/80 bg-slate-900 group">
                   {item?.thumbnail ? (
@@ -705,6 +702,7 @@ export const CreatorDetailView: React.FC = () => {
             })}
           </div>
         </div>
+        )}
 
         {/* 8. Brand Performance Rating System */}
         <div className="bg-white rounded-2xl p-5 sm:p-7 border border-slate-200/80 shadow-xs space-y-5">
@@ -724,7 +722,13 @@ export const CreatorDetailView: React.FC = () => {
             </div>
 
             <button
-              onClick={() => setShowRatingForm(!showRatingForm)}
+              onClick={() => {
+                if (!authUser) {
+                  openAuthModal('login', 'BRAND', 'Please log in to submit a rating for this creator.');
+                  return;
+                }
+                setShowRatingForm(!showRatingForm);
+              }}
               className="px-4 py-2 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer shrink-0"
             >
               <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
