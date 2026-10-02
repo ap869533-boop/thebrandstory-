@@ -78,7 +78,7 @@ export async function ensurePendingBrandProfile(opts: {
   phone?: string;
   email?: string;
 }) {
-  const existing = await dbQuery('SELECT id FROM brand_profiles WHERE user_id = ? LIMIT 1', [opts.userId]);
+  const existing = await dbQueryStrict('SELECT id FROM brand_profiles WHERE user_id = ? LIMIT 1', [opts.userId]);
   if (existing && existing.length > 0) return existing[0].id;
 
   const id = `bp_${Date.now()}`;
@@ -107,17 +107,12 @@ export async function ensurePendingBrandProfile(opts: {
     isFeatured: false,
     createdAt: new Date().toISOString(),
   };
-  brandProfilesStore.unshift(profile as any);
-
-  await dbQuery(
+  await dbQueryStrict(
     `INSERT INTO brand_profiles (id, user_id, brand_name, legal_name, gst_number, contact_person, phone, email, approval_status)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'approved')`,
     [id, opts.userId, brandName, opts.legalName || null, opts.gstNumber || null, opts.contactPerson || null, opts.phone || null, opts.email || null]
   );
-  await dbQuery(
-    `UPDATE users SET approval_status = 'approved' WHERE id = ? AND (approval_status IS NULL OR approval_status = '')`,
-    [opts.userId]
-  );
+  brandProfilesStore.unshift(profile as any);
   return id;
 }
 

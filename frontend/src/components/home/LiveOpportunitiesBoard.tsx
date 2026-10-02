@@ -21,6 +21,8 @@ export const LiveOpportunitiesBoard: React.FC = () => {
   const [selectedCampaign, setSelectedCampaign] = useState<CampaignRequirement | null>(null);
   const [pitchText, setPitchText] = useState('');
   const [hasApplied, setHasApplied] = useState<string | null>(null);
+  const [applyError, setApplyError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [campaignPage, setCampaignPage] = useState(0);
   const [pageCampaigns, setPageCampaigns] = useState<CampaignRequirement[]>([]);
   const [pageLoading, setPageLoading] = useState(false);
@@ -63,22 +65,31 @@ export const LiveOpportunitiesBoard: React.FC = () => {
 
   const handleApply = (campaign: CampaignRequirement) => {
     if (!requireRole('CREATOR', 'pitch for a brand campaign', 'home')) return;
+    setApplyError('');
     setSelectedCampaign(campaign);
     setPitchText(
       `Hi ${campaign.companyName}! I am interested in collaborating on this campaign. My audience is based in ${campaign.city} and strongly matches your target audience.`
     );
   };
 
-  const submitApplication = (e: React.FormEvent<HTMLFormElement>) => {
+  const submitApplication = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!selectedCampaign) return;
     if (!requireRole('CREATOR', 'submit a pitch proposal', 'home')) return;
-    applyToCampaign(selectedCampaign.id, activeCreatorId, pitchText);
-    setHasApplied(selectedCampaign.id);
-    setTimeout(() => {
-      setSelectedCampaign(null);
-      setHasApplied(null);
-    }, 1500);
+    setIsSubmitting(true);
+    setApplyError('');
+    try {
+      await applyToCampaign(selectedCampaign.id, activeCreatorId, pitchText);
+      setHasApplied(selectedCampaign.id);
+      setTimeout(() => {
+        setSelectedCampaign(null);
+        setHasApplied(null);
+      }, 1500);
+    } catch (error) {
+      setApplyError(error instanceof Error ? error.message : 'Failed to submit your pitch');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -206,7 +217,7 @@ export const LiveOpportunitiesBoard: React.FC = () => {
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs text-slate-400 font-medium">
                     <strong className="text-slate-800 font-bold">
-                      {Array.isArray(camp.applicants) ? camp.applicants.length : camp.applicantsCount || 0}
+                      {Math.max(Number(camp.applicantsCount) || 0, Array.isArray(camp.applicants) ? camp.applicants.length : 0)}
                     </strong>{' '}
                     applied
                   </span>
@@ -267,6 +278,8 @@ export const LiveOpportunitiesBoard: React.FC = () => {
                 />
               </div>
 
+              {applyError && <p role="alert" className="text-xs font-semibold text-rose-600">{applyError}</p>}
+
               <div className="flex items-center justify-end gap-2 pt-2">
                 <button
                   type="button"
@@ -277,11 +290,11 @@ export const LiveOpportunitiesBoard: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={hasApplied === selectedCampaign.id}
+                  disabled={isSubmitting || hasApplied === selectedCampaign.id}
                   className="px-6 py-2.5 rounded-full bg-[#D4A338] hover:bg-[#be8f2b] text-slate-950 font-black text-xs transition flex items-center gap-1.5 shadow-md shadow-[#D4A338]/30"
                 >
                   <Send className="w-3.5 h-3.5" />
-                  <span>{hasApplied === selectedCampaign.id ? 'Submitted!' : 'Submit Pitch'}</span>
+                  <span>{isSubmitting ? 'Submitting...' : hasApplied === selectedCampaign.id ? 'Submitted!' : 'Submit Pitch'}</span>
                 </button>
               </div>
             </form>

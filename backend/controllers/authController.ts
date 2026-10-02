@@ -167,11 +167,7 @@ export async function signup(req: Request, res: Response) {
         1,
         'approved'
       ];
-    if (role === 'CREATOR') {
-      await dbQueryStrict(userInsertSql, userInsertParams);
-    } else {
-      await dbQuery(userInsertSql, userInsertParams);
-    }
+    await dbQueryStrict(userInsertSql, userInsertParams);
 
     // Save in memory store
     const newUser: UserRecord = {
@@ -185,11 +181,17 @@ export async function signup(req: Request, res: Response) {
       avatar: userAvatar,
       created_at: new Date().toISOString(),
     };
-    if (role !== 'CREATOR') memoryUsers.push(newUser);
-
     if (role === 'BRAND') {
-      await ensurePendingBrandProfile({ userId, brandName: companyName, gstNumber, contactPerson: name, phone: normalizedPhone, email: cleanEmail });
+      try {
+        await ensurePendingBrandProfile({ userId, brandName: companyName, gstNumber, contactPerson: name, phone: normalizedPhone, email: cleanEmail });
+      } catch (error) {
+        await dbQueryStrict('DELETE FROM users WHERE id = ?', [userId]).catch((cleanupError) => {
+          console.error('Failed to clean up incomplete brand signup:', cleanupError);
+        });
+        throw error;
+      }
     }
+    if (role !== 'CREATOR') memoryUsers.push(newUser);
 
     // 2. If Creator, automatically insert full creator profile into MySQL `creators` table
     let createdCreatorProfile: Creator | null = null;
@@ -824,11 +826,11 @@ export async function verifyOtp(req: Request, res: Response) {
           [userId, name, cleanEmail, hashedPassword, role, normalizedPhone, companyName || null, userAvatar || null, 'approved']
         );
       } else {
-        await dbQuery(
+        await dbQueryStrict(
         `INSERT INTO users (id, name, email, password_hash, role, phone, company_name, avatar, approval_status)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [userId, name, cleanEmail, hashedPassword, role, normalizedPhone, companyName || null, userAvatar || null, 'approved']
-        ).catch(err => console.warn('MySQL user insert notice:', err));
+        );
       }
 
       const newUser: UserRecord = {
@@ -842,12 +844,19 @@ export async function verifyOtp(req: Request, res: Response) {
         avatar: userAvatar,
         created_at: new Date().toISOString(),
       };
-      if (role !== 'CREATOR') memoryUsers.push(newUser);
       user = newUser;
 
       if (role === 'BRAND') {
-        await ensurePendingBrandProfile({ userId, brandName: companyName, legalName, gstNumber, contactPerson: name, phone: normalizedPhone, email: cleanEmail });
+        try {
+          await ensurePendingBrandProfile({ userId, brandName: companyName, legalName, gstNumber, contactPerson: name, phone: normalizedPhone, email: cleanEmail });
+        } catch (error) {
+          await dbQueryStrict('DELETE FROM users WHERE id = ?', [userId]).catch((cleanupError) => {
+            console.error('Failed to clean up incomplete brand signup:', cleanupError);
+          });
+          throw error;
+        }
       }
+      if (role !== 'CREATOR') memoryUsers.push(newUser);
 
       // Auto Creator Profile setup if CREATOR
       if (role === 'CREATOR') {

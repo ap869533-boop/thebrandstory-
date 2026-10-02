@@ -40,7 +40,7 @@ export const BrandCampaignsView: React.FC = () => {
             <p className="mt-2 line-clamp-2 text-sm text-slate-400">{campaign.campaignDescription || campaign.requirements}</p>
             <div className="mt-5 flex items-center justify-between border-t border-white/10 pt-4 text-sm">
               <span className="text-slate-400">Budget: {campaign.budget || 'On request'}</span>
-              <span className="flex items-center gap-1 font-bold text-[#D4A338] bg-[#D4A338]/10 px-3 py-1 rounded-full"><Users className="h-4 w-4" />{campaign.applicants?.length || 0} pitches</span>
+              <span className="flex items-center gap-1 font-bold text-[#D4A338] bg-[#D4A338]/10 px-3 py-1 rounded-full"><Users className="h-4 w-4" />{Math.max(Number(campaign.applicantsCount) || 0, campaign.applicants?.length || 0)} pitches</span>
             </div>
           </article>
         ))}

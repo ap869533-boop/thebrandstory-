@@ -10,6 +10,8 @@ export const OpportunitiesView: React.FC = () => {
   const [selectedCampaign, setSelectedCampaign] = useState<CampaignRequirement | null>(null);
   const [pitchText, setPitchText] = useState('');
   const [hasApplied, setHasApplied] = useState<string | null>(null);
+  const [applyError, setApplyError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [campaignPage, setCampaignPage] = useState(0);
   const [filteredCampaigns, setFilteredCampaigns] = useState<CampaignRequirement[]>([]);
   const [campaignTotal, setCampaignTotal] = useState(0);
@@ -58,20 +60,32 @@ export const OpportunitiesView: React.FC = () => {
 
   const handleApply = (campaign: CampaignRequirement) => {
     if (!requireRole('CREATOR', 'pitch for a brand campaign', 'opportunities')) return;
+    setApplyError('');
     setSelectedCampaign(campaign);
     setPitchText(`Hi ${campaign.companyName}! I love this campaign concept. My audience is heavily concentrated in ${campaign.city} and aligns directly with your target demographic.`);
   };
 
-  const submitApplication = (e: React.FormEvent) => {
+  const submitApplication = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCampaign) return;
     if (!requireRole('CREATOR', 'submit a pitch proposal', 'opportunities')) return;
-    applyToCampaign(selectedCampaign.id, activeCreatorId, pitchText);
-    setHasApplied(selectedCampaign.id);
-    setTimeout(() => {
-      setSelectedCampaign(null);
-      setHasApplied(null);
-    }, 1500);
+    setIsSubmitting(true);
+    setApplyError('');
+    try {
+      await applyToCampaign(selectedCampaign.id, activeCreatorId, pitchText);
+      setFilteredCampaigns((prev) => prev.map((campaign) => campaign.id === selectedCampaign.id
+        ? { ...campaign, applicantsCount: Math.max(Number(campaign.applicantsCount) || 0, campaign.applicants?.length || 0) + 1 }
+        : campaign));
+      setHasApplied(selectedCampaign.id);
+      setTimeout(() => {
+        setSelectedCampaign(null);
+        setHasApplied(null);
+      }, 1500);
+    } catch (error) {
+      setApplyError(error instanceof Error ? error.message : 'Failed to submit your pitch');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -104,7 +118,7 @@ export const OpportunitiesView: React.FC = () => {
               className="px-4 py-2.5 bg-[#D4A338] hover:bg-[#c4922b] text-slate-950 font-bold text-[13px] rounded-xl shadow-md transition flex items-center gap-1.5 shrink-0 cursor-pointer"
             >
               <PlusCircle className="w-3.5 h-3.5" />
-              <span>Post New Brand Brief</span>
+              <span>Post New Brand Campaign</span>
             </button>
           </div>
 
@@ -154,7 +168,7 @@ export const OpportunitiesView: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {campaignLoading ? (
-              <div className="col-span-full bg-[#081838] rounded-3xl p-12 text-center text-sm text-slate-400 border border-white/10">Loading campaign briefs…</div>
+              <div className="col-span-full bg-[#081838] rounded-3xl p-12 text-center text-sm text-slate-400 border border-white/10">Loading campaign...</div>
             ) : filteredCampaigns.map((camp) => (
               <div
                 key={camp.id}
@@ -270,7 +284,7 @@ export const OpportunitiesView: React.FC = () => {
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs text-slate-400 font-medium">
                       <strong className="text-white font-bold">
-                        {Array.isArray(camp.applicants) ? camp.applicants.length : camp.applicantsCount || 0}
+                        {Math.max(Number(camp.applicantsCount) || 0, Array.isArray(camp.applicants) ? camp.applicants.length : 0)}
                       </strong>{' '}
                       applied
                     </span>
@@ -348,6 +362,8 @@ export const OpportunitiesView: React.FC = () => {
                   />
                 </div>
 
+                {applyError && <p role="alert" className="text-xs font-semibold text-rose-300">{applyError}</p>}
+
                 <div className="flex items-center justify-end gap-2">
                   <button
                     type="button"
@@ -358,10 +374,11 @@ export const OpportunitiesView: React.FC = () => {
                   </button>
                   <button
                     type="submit"
+                    disabled={isSubmitting}
                     className="px-5 py-2.5 bg-[#D4A338] hover:bg-[#c4922b] text-slate-950 font-bold text-[13px] rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer"
                   >
                     <Send className="w-3.5 h-3.5" />
-                    Send Pitch
+                    {isSubmitting ? 'Sending...' : 'Send Pitch'}
                   </button>
                 </div>
               </form>

@@ -110,6 +110,8 @@ CREATE TABLE IF NOT EXISTS `creators` (
   -- Contact details (Private)
   `phone` VARCHAR(20) DEFAULT NULL,
   `email` VARCHAR(150) DEFAULT NULL,
+  `facebook_url` VARCHAR(500) DEFAULT NULL,
+  `youtube_url` VARCHAR(500) DEFAULT NULL,
   `profile_views` INT UNSIGNED DEFAULT 0,
   `saved_count` INT UNSIGNED DEFAULT 0,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

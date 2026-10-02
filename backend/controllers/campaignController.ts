@@ -48,7 +48,7 @@ function mapCampaignRow(r: any, campApplicants: any[] = [], includePrivateContac
     requirements: r.requirements || r.campaign_description,
     status: r.status || 'Open',
     approvalStatus: r.approval_status || 'pending',
-    applicantsCount: campApplicants.length || Number(r.applicants_count) || 0,
+    applicantsCount: Math.max(campApplicants.length, Number(r.actual_applicants_count ?? r.applicants_count) || 0),
     applicants: campApplicants,
     createdAt: r.created_at ? new Date(r.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short' }) : 'Recently',
   };
@@ -117,7 +117,8 @@ export async function getCampaigns(req: AuthenticatedRequest, res: Response) {
     const role = req.user?.role;
 
     let sql = `
-      SELECT c.*, COALESCE(bp.logo_url, u.avatar) as logo_url
+      SELECT c.*, COALESCE(bp.logo_url, u.avatar) as logo_url,
+        (SELECT COUNT(*) FROM campaign_applicants ca WHERE ca.campaign_id = c.id) as actual_applicants_count
       FROM campaign_requirements c
       LEFT JOIN users u ON c.user_id = u.id
       LEFT JOIN brand_profiles bp ON c.user_id = bp.user_id
@@ -521,22 +522,22 @@ export async function updateCampaign(req: AuthenticatedRequest, res: Response) {
         status: 'Pending' as const,
       };
 
-      if (campaignInMemory) {
-        if (!campaignInMemory.applicants) campaignInMemory.applicants = [];
-        campaignInMemory.applicants.push(application);
-        campaignInMemory.applicantsCount = campaignInMemory.applicants.length;
-      }
-
       try {
-        await dbQuery(
+        await dbQueryStrict(
           `INSERT INTO campaign_applicants (id, campaign_id, creator_id, creator_name, creator_avatar, pitch, status)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
           [`app_${Date.now()}`, id, finalCreatorId, finalCreatorName, finalCreatorAvatar, application.pitch, 'Pending']
         );
-        await dbQuery('UPDATE campaign_requirements SET applicants_count = applicants_count + 1 WHERE id = ?', [id]);
+        await dbQueryStrict('UPDATE campaign_requirements SET applicants_count = applicants_count + 1 WHERE id = ?', [id]);
       } catch (err) {
         console.warn('MySQL applicant insert notice:', err);
         return res.status(500).json({ success: false, error: 'Failed to save application' });
+      }
+
+      if (campaignInMemory) {
+        if (!campaignInMemory.applicants) campaignInMemory.applicants = [];
+        campaignInMemory.applicants.push(application);
+        campaignInMemory.applicantsCount = campaignInMemory.applicants.length;
       }
 
       return res.status(201).json({ success: true, application });
