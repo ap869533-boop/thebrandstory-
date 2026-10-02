@@ -89,6 +89,7 @@ export const CreatorDetailView: React.FC = () => {
   const [profileDraft, setProfileDraft] = useState<Record<string, string>>({});
   const [isEditingRates, setIsEditingRates] = useState(false);
   const [ratesDraft, setRatesDraft] = useState<Record<string, string>>({});
+  const [ratesError, setRatesError] = useState('');
   const [cropModalData, setCropModalData] = useState<{ src: string, type: string } | null>(null);
   const [uploadingMedia, setUploadingMedia] = useState<string | null>(null);
 
@@ -263,6 +264,7 @@ export const CreatorDetailView: React.FC = () => {
   };
 
   const startEditingRates = () => {
+    setRatesError('');
     setRatesDraft({
       reelPrice: String(creator.pricing?.reelPrice || 0),
       storyPrice: String(creator.pricing?.storyPrice || 0),
@@ -274,7 +276,13 @@ export const CreatorDetailView: React.FC = () => {
   };
 
   const saveRates = async () => {
-    await updateCreatorProfile(creator.id, {
+    const prices = Object.values(ratesDraft);
+    if (prices.some((price) => !/^\d+$/.test(price))) {
+      setRatesError('Enter a whole-number rate of 0 or more for each deliverable.');
+      return;
+    }
+
+    const saved = await updateCreatorProfile(creator.id, {
       pricing: {
         ...(creator.pricing || {}),
         reelPrice: Number(ratesDraft.reelPrice || 0),
@@ -284,6 +292,11 @@ export const CreatorDetailView: React.FC = () => {
         eventPrice: Number(ratesDraft.eventPrice || 0),
       } as any
     });
+    if (!saved) {
+      setRatesError('Rates were not saved. Please correct the error and try again.');
+      return;
+    }
+    setRatesError('');
     setIsEditingRates(false);
   };
 
@@ -378,10 +391,9 @@ export const CreatorDetailView: React.FC = () => {
           <EditCreatorProfileForm 
             creator={fullCreator} 
             onSave={async (updates) => {
-              await updateCreatorProfile(fullCreator.id, updates);
+              const saved = await updateCreatorProfile(fullCreator.id, updates);
+              if (!saved) throw new Error('Profile changes were not saved. Please check the save error and try again.');
               setIsEditing(false);
-              // Force local reload by setting fetched creator or reloading page
-              window.location.reload();
             }} 
             onCancel={() => setIsEditing(false)} 
           />
@@ -569,6 +581,8 @@ export const CreatorDetailView: React.FC = () => {
               </button>
             )}
           </div>
+
+          {ratesError && <p role="alert" className="text-sm font-semibold text-rose-600">{ratesError}</p>}
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70 text-center space-y-1">

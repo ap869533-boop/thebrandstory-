@@ -166,6 +166,8 @@ export interface Creator {
   reviews: BrandReview[];
   phone?: string;
   email?: string;
+  facebookUrl?: string;
+  youtubeUrl?: string;
   isContactPublic?: boolean;
   profileViews: number;
   savedCount: number;

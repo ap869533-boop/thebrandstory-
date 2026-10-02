@@ -31,6 +31,15 @@ import { BrandProfile, CampaignRequirement } from '../types';
 import { apiUrl, authHeaders } from '../config/api';
 import { EditBrandProfileForm } from '../components/common/EditBrandProfileForm';
 
+interface BrandProfileReview {
+  id: string;
+  creatorName: string;
+  creatorAvatar: string;
+  rating: number;
+  reviewText: string;
+  date: string;
+}
+
 export const BrandDetailView: React.FC = () => {
   const {
     viewParams,
@@ -50,6 +59,8 @@ export const BrandDetailView: React.FC = () => {
 
   const [brand, setBrand] = useState<Partial<BrandProfile> | null>(null);
   const [loading, setLoading] = useState(true);
+  const [brandReviews, setBrandReviews] = useState<BrandProfileReview[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'campaigns' | 'reviews' | 'about'>('campaigns');
   
   // Edit Profile state
@@ -60,6 +71,8 @@ export const BrandDetailView: React.FC = () => {
   const [selectedCampaign, setSelectedCampaign] = useState<CampaignRequirement | null>(null);
   const [pitchText, setPitchText] = useState('');
   const [hasApplied, setHasApplied] = useState<string | null>(null);
+  const [applyError, setApplyError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Inquiry state
   const [isInquiryModalOpen, setIsInquiryModalOpen] = useState(false);
@@ -144,6 +157,36 @@ export const BrandDetailView: React.FC = () => {
       });
   }, [viewParams]);
 
+  useEffect(() => {
+    if (!brand?.userId) {
+      setBrandReviews([]);
+      setReviewsLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setBrandReviews([]);
+    setReviewsLoading(true);
+    fetch(apiUrl(`/api/conversations/reviews/brand/${encodeURIComponent(brand.userId)}`))
+      .then((response) => {
+        if (!response.ok) throw new Error('Failed to load brand reviews');
+        return response.json();
+      })
+      .then((data) => {
+        if (!cancelled) {
+          setBrandReviews(data.success && Array.isArray(data.reviews) ? data.reviews : []);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setBrandReviews([]);
+      })
+      .finally(() => {
+        if (!cancelled) setReviewsLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [brand?.userId]);
+
   // Filter campaigns posted by this brand
   const brandNameClean = (brand?.brandName || viewParams.brandName || viewParams.companyName || '').toLowerCase().trim();
   const brandCampaigns = campaigns.filter(c => {
@@ -157,22 +200,31 @@ export const BrandDetailView: React.FC = () => {
 
   const handleApply = (campaign: CampaignRequirement) => {
     if (!requireRole('CREATOR', 'pitch for a brand campaign', 'brand-detail')) return;
+    setApplyError('');
     setSelectedCampaign(campaign);
     setPitchText(
       `Hi ${campaign.companyName}! I am excited about this campaign brief. My audience matches your ideal target demographic perfectly.`
     );
   };
 
-  const submitApplication = (e: React.FormEvent) => {
+  const submitApplication = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCampaign) return;
     if (!requireRole('CREATOR', 'submit a pitch proposal', 'brand-detail')) return;
-    applyToCampaign(selectedCampaign.id, activeCreatorId, pitchText);
-    setHasApplied(selectedCampaign.id);
-    setTimeout(() => {
-      setSelectedCampaign(null);
-      setHasApplied(null);
-    }, 1500);
+    setIsSubmitting(true);
+    setApplyError('');
+    try {
+      await applyToCampaign(selectedCampaign.id, activeCreatorId, pitchText);
+      setHasApplied(selectedCampaign.id);
+      setTimeout(() => {
+        setSelectedCampaign(null);
+        setHasApplied(null);
+      }, 1500);
+    } catch (error) {
+      setApplyError(error instanceof Error ? error.message : 'Failed to submit your pitch');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const brandId = (brand?.id || (viewParams.id as string) || urlBrandId || 'brand_1').toString();
@@ -299,26 +351,9 @@ export const BrandDetailView: React.FC = () => {
     );
   }
 
-  const sampleReviews = [
-    {
-      id: 'rev-1',
-      creatorName: 'Priya Sharma',
-      creatorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400',
-      rating: 5,
-      comment: 'Extremely professional brand! Quick approval on reel concepts, clear brief guidance, and payouts were processed on time.',
-      date: '2 weeks ago',
-      campaignType: 'Instagram Reel & Story'
-    },
-    {
-      id: 'rev-2',
-      creatorName: 'Rohan Verma',
-      creatorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400',
-      rating: 5,
-      comment: 'Loved working with their team. High creative freedom and excellent collaboration experience!',
-      date: '1 month ago',
-      campaignType: 'UGC Video Deliverable'
-    }
-  ];
+  const brandRating = brandReviews.length
+    ? brandReviews.reduce((total, review) => total + Number(review.rating || 0), 0) / brandReviews.length
+    : null;
 
   return (
     <div className="min-h-screen bg-[#051126] pb-16 font-sans text-white">
@@ -459,7 +494,7 @@ export const BrandDetailView: React.FC = () => {
           <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/80 shrink-0 min-w-[200px] text-center space-y-2">
             <div className="flex items-center justify-center gap-1 text-amber-500 text-sm font-bold">
               <Star className="w-4 h-4 fill-amber-500" />
-              <span className="text-slate-900 font-extrabold text-base">4.9 / 5.0</span>
+              <span className="text-slate-900 font-extrabold text-base">{brandRating === null ? 'No ratings' : `${brandRating.toFixed(1)} / 5.0`}</span>
             </div>
             <p className="text-[11px] text-slate-500 font-medium">Creator Satisfaction Score</p>
             <div className="pt-2 border-t border-slate-200/60 text-xs font-bold text-slate-800">
@@ -491,7 +526,7 @@ export const BrandDetailView: React.FC = () => {
             }`}
           >
             <Star className="w-4 h-4" />
-            <span>Creator Reviews ({sampleReviews.length})</span>
+            <span>Creator Reviews ({brandReviews.length})</span>
           </button>
 
           <button
@@ -563,7 +598,7 @@ export const BrandDetailView: React.FC = () => {
 
                       <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between gap-3">
                         <span className="text-xs text-slate-500 font-medium">
-                          <strong>{(camp.applicants || []).length}</strong> pitches received
+                          <strong>{Math.max(Number(camp.applicantsCount) || 0, (camp.applicants || []).length)}</strong> pitches received
                         </span>
 
                         {isAlreadyPitched ? (
@@ -582,7 +617,7 @@ export const BrandDetailView: React.FC = () => {
                             className="px-4 py-2 bg-black hover:bg-zinc-900 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
                           >
                             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                            <span>Pitch My Profile</span>
+                            <span>Pitch Campaign</span>
                           </button>
                         )}
                       </div>
@@ -605,30 +640,40 @@ export const BrandDetailView: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-1.5 bg-amber-50 text-amber-700 px-3 py-1.5 rounded-full font-bold text-xs border border-amber-200">
                   <Star className="w-3.5 h-3.5 fill-amber-500" />
-                  <span>5.0 / 5.0 Rating</span>
+                  <span>{brandRating === null ? 'No ratings yet' : `${brandRating.toFixed(1)} / 5.0 Rating`}</span>
                 </div>
               </div>
 
               <div className="space-y-4">
-                {sampleReviews.map((rev) => (
+                {reviewsLoading ? (
+                  <p className="py-8 text-center text-sm text-slate-500">Loading creator reviews...</p>
+                ) : brandReviews.length === 0 ? (
+                  <p className="py-8 text-center text-sm text-slate-500">No creator reviews yet.</p>
+                ) : brandReviews.map((rev) => (
                   <div key={rev.id} className="bg-slate-50/80 p-5 rounded-2xl border border-slate-200/60 space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <img src={rev.creatorAvatar} alt={rev.creatorName} className="w-10 h-10 rounded-full object-cover border border-slate-200" />
+                        {rev.creatorAvatar ? (
+                          <img src={apiUrl(rev.creatorAvatar)} alt={rev.creatorName} className="w-10 h-10 rounded-full object-cover border border-slate-200" />
+                        ) : (
+                          <div aria-hidden="true" className="w-10 h-10 rounded-full border border-slate-200 bg-slate-200 flex items-center justify-center font-bold text-slate-600">
+                            {rev.creatorName?.charAt(0) || 'C'}
+                          </div>
+                        )}
                         <div>
                           <h4 className="font-bold text-slate-900 text-sm">{rev.creatorName}</h4>
-                          <span className="text-[10px] text-slate-400">{rev.campaignType} • {rev.date}</span>
+                          <span className="text-[10px] text-slate-400">
+                            {rev.date ? new Date(rev.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Date unavailable'}
+                          </span>
                         </div>
                       </div>
                       <div className="flex items-center text-amber-500 gap-0.5">
-                        {[...Array(rev.rating)].map((_, i) => (
+                        {[...Array(Math.max(0, Math.min(5, Number(rev.rating) || 0)))].map((_, i) => (
                           <Star key={i} className="w-3.5 h-3.5 fill-current" />
                         ))}
                       </div>
                     </div>
-                    <p className="text-xs text-slate-700 leading-relaxed italic">
-                      "{rev.comment}"
-                    </p>
+                    <p className="text-xs text-slate-700 leading-relaxed italic">"{rev.reviewText}"</p>
                   </div>
                 ))}
               </div>
@@ -717,12 +762,15 @@ export const BrandDetailView: React.FC = () => {
                   />
                 </div>
 
+                {applyError && <p role="alert" className="text-xs font-semibold text-rose-600">{applyError}</p>}
+
                 <button
                   type="submit"
+                  disabled={isSubmitting}
                   className="w-full py-3 bg-black hover:bg-zinc-900 text-white font-bold text-xs rounded-2xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Send className="w-4 h-4 text-amber-400" />
-                  <span>Submit Pitch Proposal</span>
+                  <span>{isSubmitting ? 'Submitting...' : 'Submit Pitch Proposal'}</span>
                 </button>
               </form>
             )}

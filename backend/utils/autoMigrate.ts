@@ -294,6 +294,7 @@ export async function runAutoMigrations() {
       `ALTER TABLE campaign_requirements ADD COLUMN male_count INT UNSIGNED DEFAULT 0`,
       `ALTER TABLE campaign_requirements ADD COLUMN female_count INT UNSIGNED DEFAULT 0`,
       `ALTER TABLE campaign_requirements ADD COLUMN phone VARCHAR(20) DEFAULT NULL`,
+      `ALTER TABLE campaign_requirements MODIFY COLUMN status ENUM('Open', 'In Review', 'Filled', 'Completed') DEFAULT 'Open'`,
       `ALTER TABLE campaign_applicants MODIFY COLUMN creator_name VARCHAR(120) DEFAULT NULL`,
       `ALTER TABLE campaign_applicants MODIFY COLUMN creator_avatar VARCHAR(500) DEFAULT NULL`,
       `ALTER TABLE brand_profiles ADD COLUMN gst_number VARCHAR(50) DEFAULT NULL`,

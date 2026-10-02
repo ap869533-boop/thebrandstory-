@@ -41,6 +41,8 @@ export function mapDbRowToCreator(row: any): Creator {
     ageGroup: row.age_group || '',
     phone: row.phone || '',
     email: row.email || '',
+    facebookUrl: row.facebook_url || '',
+    youtubeUrl: row.youtube_url || '',
     followers: Number(row.followers) || 0,
     rating: Number(row.rating) || 0,
     totalPosts: Number(row.total_posts) || 0,
@@ -93,6 +95,28 @@ export function mapDbRowToCreator(row: any): Creator {
 
 function withoutPrivateContact(creator: Creator): Creator {
   return { ...creator, phone: '', email: '' };
+}
+
+let creatorSocialColumnsReady = false;
+
+async function ensureCreatorSocialColumns() {
+  if (creatorSocialColumnsReady) return;
+
+  const rows = await dbQueryStrict<{ COLUMN_NAME: string }>(
+    `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'creators'
+       AND COLUMN_NAME IN ('facebook_url', 'youtube_url')`
+  );
+  const existingColumns = new Set(rows.map((row) => row.COLUMN_NAME));
+
+  if (!existingColumns.has('facebook_url')) {
+    await dbQueryStrict('ALTER TABLE creators ADD COLUMN facebook_url VARCHAR(500) DEFAULT NULL');
+  }
+  if (!existingColumns.has('youtube_url')) {
+    await dbQueryStrict('ALTER TABLE creators ADD COLUMN youtube_url VARCHAR(500) DEFAULT NULL');
+  }
+
+  creatorSocialColumnsReady = true;
 }
 
 export async function getCreators(req: Request, res: Response) {
@@ -690,6 +714,9 @@ export async function updateCreator(req: AuthenticatedRequest, res: Response) {
   }
 
   try {
+    if (body.facebookUrl !== undefined || body.youtubeUrl !== undefined) {
+      await ensureCreatorSocialColumns();
+    }
     if (dbFields.length > 0) {
       const assignments = dbFields.map(([column]) => `\`${column}\` = ?`).join(', ');
       await dbQueryStrict(

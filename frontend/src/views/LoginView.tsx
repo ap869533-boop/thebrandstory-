@@ -257,14 +257,13 @@ export const LoginView: React.FC = () => {
     const data = await readApiResponse(res);
     if (!res.ok || !data.success) throw new Error(data.error || 'Could not save brand profile');
     
-    const updatedUser = { ...user, logoUrl: data.brandProfile?.logoUrl || finalLogoUrl };
+    const updatedUser = { ...user, logoUrl: data.profile?.logoUrl || finalLogoUrl };
     localStorage.setItem('sc_auth_user', JSON.stringify(updatedUser));
     setAuthUser(updatedUser);
     
     setSuccessMsg('Brand account created successfully!');
-    setTimeout(() => {
-      handlePostAuthRedirect('BRAND', updatedUser);
-    }, 2000);
+    const slug = (updatedUser.companyName || updatedUser.name || 'account').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    setTimeout(() => navigateTo('brand-profile', { slug }), 2000);
   };
 
   const completeCreatorSetup = async () => {

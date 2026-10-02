@@ -147,7 +147,7 @@ interface PlatformContextType {
   campaignsTotal: number;
   postCampaignRequirement: (campaign: Omit<CampaignRequirement, 'id' | 'applicantsCount' | 'applicants' | 'createdAt' | 'status'>) => Promise<string>;
   deleteCampaign: (campaignId: string) => Promise<void>;
-  applyToCampaign: (campaignId: string, creatorId: string, pitch: string) => void;
+  applyToCampaign: (campaignId: string, creatorId: string, pitch: string) => Promise<void>;
   updateApplicantStatus: (campaignId: string, creatorId: string, status: 'Pending' | 'Shortlisted' | 'Accepted' | 'Declined') => void;
 
   // Stats
@@ -156,7 +156,7 @@ interface PlatformContextType {
 
   // Creator Actions
   registerCreator: (newCreator: Partial<Creator>) => Creator;
-  updateCreatorProfile: (creatorId: string, updates: Partial<Creator>) => Promise<void>;
+  updateCreatorProfile: (creatorId: string, updates: Partial<Creator>) => Promise<boolean>;
   requestVerification: (creatorId: string) => void;
   addCreatorReview: (creatorId: string, review: Omit<Creator['reviews'][0], 'id' | 'date'>) => void;
 
@@ -989,7 +989,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setCampaigns((prev) => prev.filter((campaign) => campaign.id !== campaignId));
   };
 
-  const applyToCampaign = (campaignId: string, creatorId: string, pitch: string) => {
+  const applyToCampaign = async (campaignId: string, creatorId: string, pitch: string) => {
     let creator = creators.find(c => c.id === creatorId);
     if (!creator && authUser?.creatorProfile) {
       creator = authUser.creatorProfile;
@@ -1009,40 +1009,32 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (!creator) {
       creator = creators[0];
     }
-    if (!creator) return;
+    if (!creator) throw new Error('Creator profile not found. Please complete your creator profile and try again.');
 
     const targetCamp = campaigns.find(c => c.id === campaignId);
+    const response = await fetch(apiUrl(`/api/campaigns/${campaignId}/apply`), {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ creatorId: creator.id, pitch }),
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success || !data.application) {
+      throw new Error(data.error || 'Failed to submit your pitch');
+    }
 
     setCampaigns(prev => prev.map(camp => {
       if (camp.id === campaignId) {
-        const alreadyApplied = (camp.applicants || []).some(a => a.creatorId === creator.id || a.creatorName === creator.name);
+        const application = data.application;
+        const alreadyApplied = (camp.applicants || []).some(a => a.creatorId === application.creatorId || a.creatorName === application.creatorName);
         if (alreadyApplied) return camp;
-        const newApplicant = {
-          creatorId: creator.id,
-          creatorName: creator.name,
-          creatorAvatar: creator.avatar,
-          pitch,
-          appliedAt: 'Just now',
-          status: 'Pending' as const,
-        };
         return {
           ...camp,
-          applicantsCount: (camp.applicantsCount || 0) + 1,
-          applicants: [newApplicant, ...(camp.applicants || [])],
+          applicantsCount: Math.max(camp.applicantsCount || 0, (camp.applicants || []).length) + 1,
+          applicants: [application, ...(camp.applicants || [])],
         };
       }
       return camp;
     }));
-
-    // Background sync with Backend REST API (relational via creatorId)
-    fetch(apiUrl(`/api/campaigns/${campaignId}/apply`), {
-      method: 'POST',
-      headers: authHeaders(),
-      body: JSON.stringify({ 
-        creatorId: creator.id, 
-        pitch 
-      }),
-    }).catch(err => console.warn('Backend pitch sync notice:', err));
 
     addNotification({
       title: 'New Pitch Received!',
@@ -1211,7 +1203,19 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return completeCreator;
   };
 
-  const updateCreatorProfile = async (creatorId: string, updates: Partial<Creator>) => {
+  const updateCreatorProfile = async (creatorId: string, updates: Partial<Creator>): Promise<boolean> => {
+    const previousCreator = creators.find((creator) => creator.id === creatorId);
+    const previousUser = authUser;
+    const rollbackOptimisticUpdate = () => {
+      if (previousCreator) {
+        setCreators((prev) => prev.map((creator) => creator.id === creatorId ? previousCreator : creator));
+      }
+      if (previousUser) {
+        localStorage.setItem('sc_auth_user', JSON.stringify(previousUser));
+        setAuthUser(previousUser);
+      }
+    };
+
     // Optimistic local update — keeps UI instant
     setCreators(prev => prev.map(c => {
       if (c.id === creatorId) {
@@ -1256,30 +1260,37 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           message: errData?.error || `Server returned error ${res.status}. Please try again.`,
           type: 'system',
         });
-        return;
+        rollbackOptimisticUpdate();
+        return false;
       }
 
       const data = await res.json();
-      if (data?.creator) {
-        // Replace local state with server-confirmed object
-        setCreators(prev => prev.map(c => c.id === creatorId ? data.creator : c));
-        setAuthUser(prev => {
-          if (!prev) return prev;
-          if (prev.creatorProfile && (prev.creatorProfile.id === creatorId || prev.id === creatorId)) {
-            const updated = { ...prev, creatorProfile: data.creator };
-            localStorage.setItem('sc_auth_user', JSON.stringify(updated));
-            return updated;
-          }
-          return prev;
-        });
+      if (!data?.success || !data?.creator) {
+        rollbackOptimisticUpdate();
+        return false;
       }
+
+      // Replace local state with server-confirmed object
+      setCreators(prev => prev.map(c => c.id === creatorId ? data.creator : c));
+      setAuthUser(prev => {
+        if (!prev) return prev;
+        if (prev.creatorProfile && (prev.creatorProfile.id === creatorId || prev.id === creatorId)) {
+          const updated = { ...prev, creatorProfile: data.creator };
+          localStorage.setItem('sc_auth_user', JSON.stringify(updated));
+          return updated;
+        }
+        return prev;
+      });
+      return true;
     } catch (err) {
       console.error('Failed to sync creator update to MySQL DB:', err);
+      rollbackOptimisticUpdate();
       addNotification({
         title: 'Profile Save Failed',
         message: 'Network error — check your connection and try again.',
         type: 'system',
       });
+      return false;
     }
   };
 
