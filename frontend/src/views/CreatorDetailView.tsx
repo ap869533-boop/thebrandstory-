@@ -644,23 +644,15 @@ export const CreatorDetailView: React.FC = () => {
                   <span>Edit Rates</span>
                 </button>
               )
-            ) : (
-              <button
-                onClick={handleInquireClick}
-                className="px-4 py-2 rounded-xl bg-black hover:bg-zinc-900 text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
-              >
-                <MessageSquare className="w-3.5 h-3.5" />
-                <span>Message Creator</span>
-              </button>
-            )}
+            ) : null}
           </div>
 
           {ratesError && <p role="alert" className="text-sm font-semibold text-rose-600">{ratesError}</p>}
 
           <div className="overflow-x-auto pb-2" role="region" aria-label="Commercial deliverable rates" tabIndex={0}>
           <div className="grid min-w-[1120px] grid-cols-7 gap-3">
-            <div className="min-w-0 p-3 rounded-xl bg-amber-50 border border-amber-200 text-center space-y-1">
-              <span className="text-[11px] font-bold text-amber-800 uppercase tracking-wider block">minimum collaboration</span>
+            <div className="min-w-0 p-3 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
+              <span className="text-[11px] font-bold text-[#D4A338] uppercase tracking-wider block">Starting Price</span>
               <span className="text-base font-black text-slate-900 block flex items-center justify-center h-8">
                 {isEditingRates ? (
                   <div className="flex items-center justify-center gap-1">
@@ -671,7 +663,7 @@ export const CreatorDetailView: React.FC = () => {
                   `₹${(creator.startingPrice ?? creator.pricing?.startingPrice ?? 0).toLocaleString('en-IN')}`
                 )}
               </span>
-              <span className="text-[10px] text-amber-800 font-semibold block">Starting price</span>
+            
             </div>
             <div className="min-w-0 p-3 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
               <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block">per reel</span>
@@ -685,7 +677,6 @@ export const CreatorDetailView: React.FC = () => {
                   `₹${(creator.pricing?.reelPrice || 0).toLocaleString('en-IN')}`
                 )}
               </span>
-              <span className="text-[10px] text-emerald-600 font-semibold block">High Reach</span>
             </div>
 
             <div className="min-w-0 p-3 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
@@ -700,7 +691,7 @@ export const CreatorDetailView: React.FC = () => {
                   `₹${(creator.pricing?.storyPrice || 0).toLocaleString('en-IN')}`
                 )}
               </span>
-              <span className="text-[10px] text-amber-700 font-semibold block">Link Click</span>
+         
             </div>
 
             <div className="min-w-0 p-3 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
@@ -715,7 +706,7 @@ export const CreatorDetailView: React.FC = () => {
                   `₹${(creator.pricing?.postPrice || 0).toLocaleString('en-IN')}`
                 )}
               </span>
-              <span className="text-[10px] text-slate-600 font-semibold block">Carousel / Static</span>
+           
             </div>
 
             <div className="min-w-0 p-3 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
@@ -730,7 +721,7 @@ export const CreatorDetailView: React.FC = () => {
                   `₹${(creator.pricing?.ugcPrice || 0).toLocaleString('en-IN')}`
                 )}
               </span>
-              <span className="text-[10px] text-purple-700 font-semibold block">Ad Creative</span>
+
             </div>
 
             <div className="min-w-0 p-3 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
@@ -745,7 +736,7 @@ export const CreatorDetailView: React.FC = () => {
                   `₹${(creator.pricing?.eventPrice || 0).toLocaleString('en-IN')}`
                 )}
               </span>
-              <span className="text-[10px] text-amber-700 font-semibold block">Store Presence</span>
+
             </div>
 
             <div className="min-w-0 p-3 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
