@@ -4,7 +4,7 @@ import { usePlatform } from '../../context/PlatformContext';
 import { apiUrl, authHeaders } from '../../config/api';
 
 export const Navbar: React.FC = () => {
-  const { authUser, filters, navigateTo, setFilters, creators, partnerBrands, openAuthModal, openSavedDrawer, logout } = usePlatform();
+  const { authUser, filters, navigateTo, setFilters, creators, partnerBrands, openAuthModal, openSavedDrawer, logout, unreadPitchesCount } = usePlatform();
   const [keyword, setKeyword] = useState('');
   const [showResults, setShowResults] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -236,7 +236,16 @@ export const Navbar: React.FC = () => {
                   <nav className="mt-5 space-y-1 text-sm font-bold">
                     <button type="button" onClick={() => { closeMenu(); openSavedDrawer(); }} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer"><Heart className="h-5 w-5" />Wish list</button>
                     {isBrand && <button type="button" onClick={() => goTo('brand-campaigns', { slug: accountSlug })} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer"><Megaphone className="h-5 w-5" />My Campaigns</button>}
-                    <button type="button" onClick={() => goTo('pitches', { username: accountSlug })} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer"><Megaphone className="h-5 w-5" />Pitches</button>
+                    <button type="button" onClick={() => goTo('pitches', { username: accountSlug })} className="flex w-full items-center justify-between gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer">
+                      <div className="flex items-center gap-4">
+                        <Megaphone className="h-5 w-5" />Pitches
+                      </div>
+                      {unreadPitchesCount > 0 && (
+                        <span className="flex h-5 items-center justify-center rounded-full bg-rose-500 px-2 text-[10px] font-black text-white">
+                          {unreadPitchesCount}
+                        </span>
+                      )}
+                    </button>
                     <button type="button" onClick={() => goTo('wallet')} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer"><Wallet className="h-5 w-5" />Wallet / Billing</button>
                     <button type="button" onClick={() => goTo('help-support')} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer"><HelpCircle className="h-5 w-5" />Help and Support</button>
                   </nav>
