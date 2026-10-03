@@ -126,7 +126,7 @@ export const BrandCampaignCard: React.FC<Props> = ({ brand, compact = false }) =
         })}
         className="w-full py-3 bg-[#0a1835] hover:bg-black text-white font-extrabold text-xs sm:text-sm rounded-full transition flex items-center justify-center gap-2 shadow-md shadow-slate-900/20 group-hover:shadow-lg cursor-pointer mt-auto"
       >
-        <span>View Brand</span>
+        <span>View collab</span>
         <ArrowRight className="w-3.5 h-3.5" />
       </button>
     </div>

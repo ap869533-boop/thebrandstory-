@@ -81,10 +81,6 @@ export const RegionalShowcases: React.FC = () => {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-6 sm:mb-8 gap-3 sm:gap-4">
           <div>
-            <div className="flex items-center gap-1.5 text-[#D4A338] text-[11px] sm:text-xs font-extrabold uppercase tracking-wider mb-1">
-              <MapPin className="w-3.5 h-3.5 text-[#D4A338]" />
-              <span>Capital Region Spotlight</span>
-            </div>
             <h2 className="text-xl sm:text-3xl md:text-4xl font-black text-white tracking-tight">
               Top Influencers in Delhi NCR
             </h2>
@@ -120,15 +116,11 @@ export const RegionalShowcases: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-6 sm:mb-8 gap-3 sm:gap-4">
             <div>
-              <div className="flex items-center gap-1.5 text-[#D4A338] text-[11px] sm:text-xs font-extrabold uppercase tracking-wider mb-1">
-                <IndianRupee className="w-3.5 h-3.5 text-[#D4A338]" />
-                <span>High ROI for Startups & Local Outlets</span>
-              </div>
               <h2 className="text-xl sm:text-3xl md:text-4xl font-black text-white tracking-tight">
                 Budget-Friendly Influencers (Under ₹5,000 & Barter)
               </h2>
               <p className="text-xs sm:text-sm text-slate-400 mt-0.5 sm:mt-1">
-                High-converting micro-influencers with engaged niche communities and affordable pricing
+                High-converting micro-influencers with engaged communities and affordable pricing
               </p>
             </div>
 
@@ -138,7 +130,7 @@ export const RegionalShowcases: React.FC = () => {
                 <button type="button" onClick={() => scrollCards(budgetScrollRef, 'right')} aria-label="Next budget influencers" className="w-9 h-9 rounded-full bg-[#0d224b] border border-slate-700/80 hover:border-slate-500 flex items-center justify-center text-slate-300 hover:text-white transition"><ChevronRight className="w-4 h-4" /></button>
               </div>
               <button onClick={exploreBudget} className="text-xs sm:text-sm font-black text-[#D4A338] hover:text-amber-300 flex items-center gap-1 shrink-0 group cursor-pointer">
-                <span>View All Budget Creators</span><ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition" />
+                <span>View All</span><ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition" />
               </button>
             </div>
           </div>
@@ -159,15 +151,11 @@ export const RegionalShowcases: React.FC = () => {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-6 sm:mb-8 gap-3 sm:gap-4">
           <div>
-            <div className="flex items-center gap-1.5 text-[#D4A338] text-[11px] sm:text-xs font-extrabold uppercase tracking-wider mb-1">
-              <Rocket className="w-3.5 h-3.5 text-[#D4A338]" />
-              <span>Fastest Growing Talents</span>
-            </div>
             <h2 className="text-xl sm:text-3xl md:text-4xl font-black text-white tracking-tight">
               Rising Stars & Viral Creators
             </h2>
             <p className="text-xs sm:text-sm text-slate-400 mt-0.5 sm:mt-1">
-              High-growth influencers with industry-leading organic engagement rates &gt;5.0%
+              High-growth influencers with industry-leading
             </p>
           </div>
 
