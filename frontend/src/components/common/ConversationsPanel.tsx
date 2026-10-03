@@ -486,7 +486,7 @@ export const ConversationsPanel: React.FC<{
               <MessageSquare className="w-4 h-4 text-[#D4A338]" />
             </div>
             <div>
-              <h2 className="font-black text-sm text-white tracking-wide">Chats</h2>
+              <h2 className="font-black text-sm text-white tracking-wide">Pitches</h2>
               <p className="text-[10px] text-slate-400 font-medium">
                 {threads.length} {threads.length === 1 ? 'conversation' : 'conversations'}
               </p>

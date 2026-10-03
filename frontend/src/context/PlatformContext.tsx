@@ -250,8 +250,8 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     let path = '/';
     if (view === 'home') path = '/';
     else if (view === 'login') path = '/login';
-    else if (view === 'chat' && params.username) path = `/${encodeURIComponent(params.username)}/chat`;
-    else if (view === 'chat') path = '/chat';
+    else if (view === 'pitches' && params.username) path = `/${encodeURIComponent(params.username)}/pitches`;
+    else if (view === 'pitches') path = '/pitches';
     else if (view === 'explore') path = '/explore';
     else if (view === 'all-brands') path = '/brands';
     else if (view === 'creator-detail' && params.username) path = `/creator/${params.username}`;
