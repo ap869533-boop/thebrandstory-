@@ -239,7 +239,7 @@ export const Navbar: React.FC = () => {
                     {isBrand && <button type="button" onClick={() => goTo('brand-profile', { slug: accountSlug })} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer"><User className="h-5 w-5" />My Profile</button>}
                     <button type="button" onClick={() => goTo('chat', { username: accountSlug })} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer"><Megaphone className="h-5 w-5" />Pitches</button>
                     <button type="button" onClick={() => goTo('wallet')} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer"><Wallet className="h-5 w-5" />Wallet / Billing</button>
-                    <button type="button" onClick={() => goTo('blog')} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer"><HelpCircle className="h-5 w-5" />Help and Support</button>
+                    <button type="button" onClick={() => goTo('help-support')} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer"><HelpCircle className="h-5 w-5" />Help and Support</button>
                   </nav>
                   <button type="button" onClick={() => { closeMenu(); logout(); }} className="mt-6 flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left font-bold text-rose-400 hover:bg-rose-500/10 cursor-pointer"><LogOut className="h-5 w-5" />Log out</button>
                 </>
