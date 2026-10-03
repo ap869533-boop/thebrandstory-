@@ -438,14 +438,16 @@ export async function updateCampaign(req: AuthenticatedRequest, res: Response) {
 
       let campaignExists = false;
       let approvalStatus = 'pending';
+      let brandUserId: string | null = null;
       try {
         const rows: any = await dbQuery(
-          'SELECT id, approval_status, status FROM campaign_requirements WHERE id = ?',
+          'SELECT id, user_id, approval_status, status FROM campaign_requirements WHERE id = ?',
           [id]
         );
         if (Array.isArray(rows) && rows.length > 0) {
           campaignExists = true;
           approvalStatus = rows[0].approval_status || 'pending';
+          brandUserId = rows[0].user_id || null;
           if (approvalStatus !== 'approved') {
             return res.status(403).json({ success: false, error: 'Campaign is not open for applications yet' });
           }
@@ -529,6 +531,35 @@ export async function updateCampaign(req: AuthenticatedRequest, res: Response) {
           [`app_${Date.now()}`, id, finalCreatorId, finalCreatorName, finalCreatorAvatar, application.pitch, 'Pending']
         );
         await dbQueryStrict('UPDATE campaign_requirements SET applicants_count = applicants_count + 1 WHERE id = ?', [id]);
+
+        if (brandUserId) {
+          const existingConv: any = await dbQuery(
+            `SELECT id FROM conversations WHERE brand_user_id = ? AND creator_id = ? AND campaign_id = ? LIMIT 1`,
+            [brandUserId, finalCreatorId, id]
+          );
+          let conversationId = Array.isArray(existingConv) && existingConv.length > 0 ? existingConv[0].id : null;
+          
+          if (!conversationId) {
+            conversationId = `conv_${Date.now()}`;
+            await dbQueryStrict(
+              `INSERT INTO conversations (id, brand_user_id, creator_id, creator_user_id, campaign_id, inquiry_id, last_message, last_message_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+              [conversationId, brandUserId, finalCreatorId, req.user.id, id, null, application.pitch]
+            );
+          } else {
+            await dbQueryStrict(
+              `UPDATE conversations SET last_message = ?, last_message_at = NOW() WHERE id = ?`,
+              [application.pitch, conversationId]
+            );
+          }
+
+          const messageId = `msg_${Date.now()}_${Math.floor(Math.random()*1000)}`;
+          await dbQueryStrict(
+            `INSERT INTO messages (id, conversation_id, sender_id, sender_role, body, is_read)
+             VALUES (?, ?, ?, ?, ?, 0)`,
+            [messageId, conversationId, req.user.id, 'CREATOR', application.pitch]
+          );
+        }
       } catch (err) {
         console.warn('MySQL applicant insert notice:', err);
         return res.status(500).json({ success: false, error: 'Failed to save application' });
