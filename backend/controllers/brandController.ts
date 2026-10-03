@@ -31,8 +31,41 @@ function mapDbRowToBrandProfile(row: any) {
     rejectionReason: row.rejection_reason || '',
     isFeatured: Boolean(row.is_featured),
     totalHiringCount: row.total_hiring_count || 0,
+    totalCampaignCount: row.total_campaign_count || 0,
+    campaignBudgetMin: row.campaign_budget_min ?? null,
+    campaignBudgetMax: row.campaign_budget_max ?? null,
+    lastHiringDate: row.last_hiring_date || null,
     createdAt: row.created_at || new Date().toISOString(),
   };
+}
+
+function parseCampaignBudgetAmounts(budget: unknown): number[] {
+  const text = String(budget || '');
+  const matches = text.matchAll(/(\d[\d,]*(?:\.\d+)?)\s*(k|thousand|l|lakh|lac|cr|crore)?/gi);
+  const multipliers: Record<string, number> = {
+    k: 1_000,
+    thousand: 1_000,
+    l: 100_000,
+    lakh: 100_000,
+    lac: 100_000,
+    cr: 10_000_000,
+    crore: 10_000_000,
+  };
+  const amounts: number[] = [];
+
+  for (const match of matches) {
+    const value = Number(match[1].replace(/,/g, ''));
+    const multiplier = multipliers[String(match[2] || '').toLowerCase()] || 1;
+    if (Number.isFinite(value) && value > 0) amounts.push(value * multiplier);
+  }
+  return amounts;
+}
+
+function formatCampaignDate(value: unknown): string | null {
+  if (!value) return null;
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  const date = String(value).slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null;
 }
 
 function resolveBrandApprovalStatus(profileStatus?: string | null, userStatus?: string | null) {
@@ -524,45 +557,107 @@ export async function getFeaturedBrands(req: Request, res: Response) {
         COALESCE(bp.id, CONCAT('usr_', u.id)) as id,
         u.id as user_id,
         COALESCE(bp.brand_name, u.company_name, u.name) as brand_name,
-        bp.gst_number,
         COALESCE(bp.logo_url, u.avatar, '') as logo_url,
         bp.cover_url,
-        COALESCE(bp.description, CONCAT('Verified partner brand hiring creators on thebrandsstory.')) as description,
+        COALESCE(bp.description, '') as description,
         bp.website,
         bp.facebook_url,
         bp.instagram_url,
         bp.youtube_url,
         bp.linkedin_url,
         bp.twitter_url,
-        COALESCE(bp.industry, 'Brand Partner') as industry,
-        COALESCE(bp.city, 'Pan India') as city,
-        bp.contact_person,
-        bp.phone,
-        u.email,
-        COALESCE(bp.approval_status, u.approval_status) as approval_status,
-        COALESCE(bp.is_featured, 1) as is_featured,
-        (SELECT COALESCE(SUM(male_count + female_count), 0) FROM campaign_requirements cr WHERE cr.user_id = u.id) as total_hiring_count,
-        u.created_at
+        COALESCE(bp.industry, '') as industry,
+        COALESCE(bp.city, '') as city,
+        CASE
+          WHEN bp.approval_status = 'pending' OR u.approval_status = 'pending' THEN 'pending'
+          ELSE COALESCE(bp.approval_status, u.approval_status, 'pending')
+        END as approval_status,
+        COALESCE(bp.is_featured, 0) as is_featured,
+        COALESCE(bp.created_at, u.created_at) as created_at
       FROM users u
       LEFT JOIN brand_profiles bp ON u.id = bp.user_id
-      WHERE u.role = 'BRAND' AND (u.approval_status = 'approved' OR bp.approval_status = 'approved')${searchWhere}
-      ORDER BY is_featured DESC, u.created_at DESC
+      WHERE u.role = 'BRAND'
+        AND COALESCE(bp.approval_status, '') <> 'rejected'
+        AND COALESCE(u.approval_status, '') <> 'rejected'${searchWhere}
+      ORDER BY COALESCE(bp.created_at, u.created_at) DESC, bp.is_featured DESC
       LIMIT ? OFFSET ?`,
       [...searchParams, pageSize, pageOffset]
     );
 
-    if (rows && (rows.length > 0 || searchQuery || searchCity)) {
-      const countRows = await dbQuery(
+    if (rows !== null) {
+      const countRows = await dbQueryStrict(
         `SELECT COUNT(*) as total FROM users u LEFT JOIN brand_profiles bp ON u.id = bp.user_id
-         WHERE u.role = 'BRAND' AND (u.approval_status = 'approved' OR bp.approval_status = 'approved')${searchWhere}`,
+         WHERE u.role = 'BRAND'
+           AND COALESCE(bp.approval_status, '') <> 'rejected'
+           AND COALESCE(u.approval_status, '') <> 'rejected'${searchWhere}`,
         searchParams
       );
-      return res.json({ success: true, brands: rows.map(mapDbRowToBrandProfile), total: Number(countRows?.[0]?.total) || 0 });
+
+      const userIds = rows.map((row: any) => row.user_id);
+      const campaignRows = userIds.length
+        ? await dbQueryStrict(
+          `SELECT user_id, male_count, female_count, budget, DATE_FORMAT(valid_until, '%Y-%m-%d') as valid_until
+           FROM campaign_requirements
+           WHERE user_id IN (${userIds.map(() => '?').join(', ')}) AND approval_status = 'approved'`,
+          userIds
+        )
+        : [];
+      const campaignStats = new Map<string, {
+        totalHiringCount: number;
+        totalCampaignCount: number;
+        campaignBudgetMin: number | null;
+        campaignBudgetMax: number | null;
+        lastHiringDate: string | null;
+      }>();
+
+      for (const campaign of campaignRows) {
+        const userId = String(campaign.user_id);
+        const stats = campaignStats.get(userId) || {
+          totalHiringCount: 0,
+          totalCampaignCount: 0,
+          campaignBudgetMin: null,
+          campaignBudgetMax: null,
+          lastHiringDate: null,
+        };
+        stats.totalHiringCount += (Number(campaign.male_count) || 0) + (Number(campaign.female_count) || 0);
+        stats.totalCampaignCount += 1;
+        const amounts = parseCampaignBudgetAmounts(campaign.budget);
+        if (amounts.length > 0) {
+          const budgetMin = Math.min(...amounts);
+          const budgetMax = Math.max(...amounts);
+          stats.campaignBudgetMin = stats.campaignBudgetMin === null
+            ? budgetMin
+            : Math.min(stats.campaignBudgetMin, budgetMin);
+          stats.campaignBudgetMax = stats.campaignBudgetMax === null
+            ? budgetMax
+            : Math.max(stats.campaignBudgetMax, budgetMax);
+        }
+        const deadline = formatCampaignDate(campaign.valid_until);
+        if (deadline && (!stats.lastHiringDate || deadline > stats.lastHiringDate)) {
+          stats.lastHiringDate = deadline;
+        }
+        campaignStats.set(userId, stats);
+      }
+
+      const brands = rows.map((row: any) => ({
+        ...mapDbRowToBrandProfile(row),
+        ...(campaignStats.get(String(row.user_id)) || {
+          totalHiringCount: 0,
+          totalCampaignCount: 0,
+          campaignBudgetMin: null,
+          campaignBudgetMax: null,
+          lastHiringDate: null,
+        }),
+      }));
+      return res.json({ success: true, brands, total: Number(countRows[0]?.total) || 0 });
     }
 
-    // Fallback: memory store approved brands
-    const approved = brandProfilesStore.filter(p => p.approvalStatus === 'approved' && (!searchQuery || [p.brandName, p.industry, p.city].some((value) => String(value || '').toLowerCase().includes(searchQuery))) && (!searchCity || String(p.city || '').toLowerCase().includes(searchCity)));
-    res.json({ success: true, brands: approved.slice(pageOffset, pageOffset + pageSize), total: approved.length });
+    const visibleProfiles = brandProfilesStore
+      .filter(p => p.approvalStatus !== 'rejected'
+        && (!searchQuery || [p.brandName, p.industry, p.city].some((value) => String(value || '').toLowerCase().includes(searchQuery)))
+        && (!searchCity || String(p.city || '').toLowerCase().includes(searchCity)))
+      .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+    res.json({ success: true, brands: visibleProfiles.slice(pageOffset, pageOffset + pageSize), total: visibleProfiles.length });
   } catch (error) {
     console.error('getFeaturedBrands error:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch featured brands' });
