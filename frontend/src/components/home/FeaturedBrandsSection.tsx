@@ -1,85 +1,60 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Building2, Star, Users, Gift, Calendar, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Building2, Users, Gift, Calendar, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { apiUrl } from '../../config/api';
 import { usePlatform } from '../../context/PlatformContext';
 import { BrandProfile } from '../../types';
 
-const SAMPLE_APPROVED_BRANDS: Partial<BrandProfile>[] = [
-  {
-    id: 'sample-1',
-    brandName: 'Virgo Photography',
-    logoUrl: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=300&q=80',
-    description: 'Media & publishing creator campaigns for photo & video creators.',
-    industry: 'MEDIA & PUBLISHING',
-    city: 'Delhi NCR',
-    website: 'https://virgophotography.com',
-    approvalStatus: 'approved',
-    isFeatured: true,
-  },
-  {
-    id: 'sample-2',
-    brandName: 'Nykaa Beauty',
-    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/0/00/Nykaa_Logo.svg',
-    description: "India's premier online beauty and fashion destination for lifestyle creators.",
-    industry: 'BEAUTY & FASHION',
-    city: 'Mumbai',
-    website: 'https://nykaa.com',
-    approvalStatus: 'approved',
-    isFeatured: true,
-  },
-  {
-    id: 'sample-3',
-    brandName: 'Reliance Retail',
-    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/5/52/Reliance_Retail_Logo.svg',
-    description: "Building India's largest retail company with nationwide creator campaigns.",
-    industry: 'RETAIL & E-COMMERCE',
-    city: 'Mumbai',
-    website: 'https://relianceretail.com',
-    approvalStatus: 'approved',
-    isFeatured: true,
-  },
-  {
-    id: 'sample-4',
-    brandName: 'Infosys BPM',
-    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/9/95/Infosys_logo.svg',
-    description: 'Join us to navigate your next digital transformation journey.',
-    industry: 'TECHNOLOGY & IT',
-    city: 'Bangalore',
-    website: 'https://infosysbpm.com',
-    approvalStatus: 'approved',
-    isFeatured: true,
-  }
-];
-
 export const FeaturedBrandsSection: React.FC = () => {
-  const { navigateTo } = usePlatform();
+  const { authUser, navigateTo } = usePlatform();
   const [featuredBrands, setFeaturedBrands] = useState<BrandProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const brandScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetch(apiUrl('/api/brands/featured'))
-      .then(r => r.json())
-      .then(d => {
-        if (d.success && Array.isArray(d.brands) && d.brands.length > 0) {
-          const approvedOnly = d.brands.filter((b: any) => b.approvalStatus === 'approved');
-          setFeaturedBrands(approvedOnly.length > 0 ? approvedOnly : (SAMPLE_APPROVED_BRANDS as BrandProfile[]));
-        } else {
-          setFeaturedBrands(SAMPLE_APPROVED_BRANDS as BrandProfile[]);
-        }
-        setLoading(false);
-      })
-      .catch(() => {
-        setFeaturedBrands(SAMPLE_APPROVED_BRANDS as BrandProfile[]);
-        setLoading(false);
-      });
-  }, []);
+    let isCurrentRequest = true;
+    setLoading(true);
+    setLoadError('');
 
-  const displayBrands = featuredBrands.length > 0 ? featuredBrands : (SAMPLE_APPROVED_BRANDS as BrandProfile[]);
-  
+    fetch(apiUrl('/api/brands/featured'))
+      .then(response => {
+        if (!response.ok) throw new Error(`Brand request failed (${response.status})`);
+        return response.json();
+      })
+      .then(d => {
+        if (!d.success || !Array.isArray(d.brands)) {
+          throw new Error(d.error || 'The brand list response was invalid');
+        }
+        if (isCurrentRequest) setFeaturedBrands(d.brands);
+      })
+      .catch(error => {
+        console.error('Failed to load featured brands:', error);
+        if (isCurrentRequest) setLoadError('Brand profiles could not be loaded. Please try again later.');
+      })
+      .finally(() => {
+        if (isCurrentRequest) setLoading(false);
+      });
+
+    return () => {
+      isCurrentRequest = false;
+    };
+  }, [authUser?.id]);
+
   const scrollBrands = (direction: 'left' | 'right') => {
     brandScrollRef.current?.scrollBy({ left: direction === 'left' ? -340 : 340, behavior: 'smooth' });
   };
+
+  const formatCurrency = (amount: number) => new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0,
+  }).format(amount);
+
+  const formatDate = (date: string) => new Date(`${date}T12:00:00`).toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
 
   return (
     <section className="py-12 sm:py-20 bg-[#071328] border-b border-slate-800/80 text-white relative overflow-hidden font-sans">
@@ -87,18 +62,18 @@ export const FeaturedBrandsSection: React.FC = () => {
         
         {/* ⭐ VERIFIED BRAND ECOSYSTEM Badge (Photo 3) */}
         <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#0d224b]/90 text-[#D4A338] text-xs font-black tracking-wider uppercase border border-[#D4A338]/50 shadow-sm mb-3">
-          <Star className="w-3.5 h-3.5 text-[#D4A338] fill-[#D4A338]" />
-          <span>VERIFIED BRAND ECOSYSTEM</span>
+          <Building2 className="w-3.5 h-3.5 text-[#D4A338]" />
+          <span>BRAND ECOSYSTEM</span>
         </div>
 
         {/* Heading */}
         <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight mb-2">
-          Top Brands Hiring Influencers
+          Brands & Campaign Hiring
         </h2>
 
         {/* Subtitle */}
         <p className="text-xs sm:text-sm md:text-base text-slate-300 font-medium max-w-2xl mx-auto mb-6">
-          Explore admin-approved enterprise brands hiring creators for active campaign briefs.
+          Brand information and campaign totals from registered brand profiles and approved campaigns.
         </p>
 
         {/* Carousel Arrow Buttons */}
@@ -127,7 +102,7 @@ export const FeaturedBrandsSection: React.FC = () => {
           className="relative w-full overflow-x-auto scroll-smooth py-4 no-scrollbar flex justify-start sm:justify-center"
         >
           <div className="flex gap-6 items-stretch mx-auto">
-            {displayBrands.map((brand, idx) => (
+            {featuredBrands.map((brand, idx) => (
               <div
                 key={`${brand.id || 'brand'}-${idx}`}
                 className="group snap-start bg-white rounded-[28px] border-2 border-[#D4A338]/60 hover:border-[#D4A338] p-6 shadow-2xl hover:-translate-y-1.5 cursor-pointer transition-all duration-300 flex flex-col items-center text-center w-[300px] sm:w-[320px] shrink-0 relative overflow-hidden"
@@ -158,45 +133,68 @@ export const FeaturedBrandsSection: React.FC = () => {
                 <h3 className="font-extrabold text-slate-900 text-lg sm:text-xl mt-4 mb-0.5 tracking-tight">
                   {brand.brandName}
                 </h3>
+                {brand.approvalStatus === 'pending' && (
+                  <span className="mb-2 rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-amber-800">
+                    Registration under review
+                  </span>
+                )}
                 
                 {/* Industry Subtitle */}
-                <p className="text-[11px] font-black tracking-wider uppercase text-slate-400 mb-4">
-                  {brand.industry || 'MEDIA & PUBLISHING'}
+                <p className="text-[11px] font-black tracking-wider uppercase text-slate-400 mb-2">
+                  {brand.industry || 'Industry not added yet'}
                 </p>
+                <p className="text-xs text-slate-600 leading-relaxed line-clamp-2 min-h-9 mb-4">
+                  {brand.description?.trim() || 'Brand bio not added yet.'}
+                </p>
+                {brand.city && (
+                  <p className="text-[10px] font-semibold text-slate-500 -mt-2 mb-3">
+                    {brand.city}
+                  </p>
+                )}
 
-                {/* 3-Column Stats Box (Photo 3) */}
+                {/* Campaign totals include approved campaigns only. */}
                 <div className="grid grid-cols-3 bg-slate-50/90 rounded-2xl border border-slate-200/80 mb-5 overflow-hidden w-full text-left divide-x divide-slate-200/80">
-                  {/* Hiring */}
                   <div className="p-2.5 flex flex-col justify-center">
                     <div className="flex items-center gap-1 text-[8px] font-black text-slate-400 uppercase tracking-wider mb-1">
                       <Users className="w-2.5 h-2.5" /> HIRING
                     </div>
-                    <div className="font-black text-slate-900 text-sm leading-tight">
-                      25+
+                    <div className="font-black text-slate-900 text-sm leading-tight break-words">
+                      {Number(brand.totalHiringCount || 0).toLocaleString('en-IN')}
                     </div>
-                    <div className="text-[10px] font-bold text-slate-500 mt-0.5">Influencers</div>
+                    <div className="text-[10px] font-bold text-slate-500 mt-0.5">
+                      {brand.totalCampaignCount || 0} campaigns
+                    </div>
                   </div>
 
-                  {/* Barter */}
                   <div className="p-2.5 flex flex-col justify-center">
                     <div className="flex items-center gap-1 text-[8px] font-black text-slate-400 uppercase tracking-wider mb-1">
-                      <Gift className="w-2.5 h-2.5" /> BARTER
+                      <Gift className="w-2.5 h-2.5" /> BUDGET RANGE
                     </div>
-                    <div className="font-black text-emerald-600 text-sm leading-tight">
-                      ₹5000
-                    </div>
-                    <div className="text-[10px] font-bold text-emerald-600 mt-0.5">+ product</div>
+                    {brand.campaignBudgetMin !== null && brand.campaignBudgetMin !== undefined ? (
+                      <>
+                        <div className="font-black text-emerald-600 text-xs leading-tight break-words">
+                          {formatCurrency(brand.campaignBudgetMin)}
+                        </div>
+                        <div className="text-[10px] font-bold text-emerald-600 mt-0.5 break-words">
+                          to {formatCurrency(brand.campaignBudgetMax ?? brand.campaignBudgetMin)}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="font-bold text-slate-500 text-xs leading-tight">Not specified</div>
+                    )}
                   </div>
 
-                  {/* Deadline */}
                   <div className="p-2.5 flex flex-col justify-center">
                     <div className="flex items-center gap-1 text-[8px] font-black text-slate-400 uppercase tracking-wider mb-1">
                       <Calendar className="w-2.5 h-2.5" /> DEADLINE
                     </div>
-                    <div className="font-black text-slate-900 text-sm leading-tight">
-                      12 Sep
-                    </div>
-                    <div className="text-[10px] font-bold text-slate-500 mt-0.5">2026</div>
+                    {brand.lastHiringDate ? (
+                      <div className="font-black text-slate-900 text-xs leading-tight">
+                        {formatDate(brand.lastHiringDate)}
+                      </div>
+                    ) : (
+                      <div className="font-bold text-slate-500 text-xs leading-tight">Not specified</div>
+                    )}
                   </div>
                 </div>
 
@@ -223,6 +221,11 @@ export const FeaturedBrandsSection: React.FC = () => {
             ))}
           </div>
         </div>
+        {!loading && featuredBrands.length === 0 && (
+          <p className="py-8 text-sm text-slate-300">
+            {loadError || 'No brand profiles to display yet.'}
+          </p>
+        )}
 
         {/* Bottom thebrandsstory.com badge (Photo 3) */}
         <div className="pt-6">
