@@ -24,7 +24,7 @@ export const Navbar: React.FC = () => {
     } else if (authUser?.role === 'CREATOR' && authUser.creatorProfile?.avatar) {
       setNavLogo(authUser.creatorProfile.avatar);
     } else if (authUser?.avatar || (authUser as any)?.logoUrl) {
-      setNavLogo(authUser.avatar || (authUser as any)?.logoUrl);
+      setNavLogo(authUser?.avatar || (authUser as any)?.logoUrl);
     } else {
       setNavLogo(null);
     }
@@ -236,7 +236,6 @@ export const Navbar: React.FC = () => {
                   <nav className="mt-5 space-y-1 text-sm font-bold">
                     <button type="button" onClick={() => { closeMenu(); openSavedDrawer(); }} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer"><Heart className="h-5 w-5" />Wish list</button>
                     {isBrand && <button type="button" onClick={() => goTo('brand-campaigns', { slug: accountSlug })} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer"><Megaphone className="h-5 w-5" />My Campaigns</button>}
-                    {isBrand && <button type="button" onClick={() => goTo('brand-profile', { slug: accountSlug })} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer"><User className="h-5 w-5" />My Profile</button>}
                     <button type="button" onClick={() => goTo('chat', { username: accountSlug })} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer"><Megaphone className="h-5 w-5" />Pitches</button>
                     <button type="button" onClick={() => goTo('wallet')} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer"><Wallet className="h-5 w-5" />Wallet / Billing</button>
                     <button type="button" onClick={() => goTo('help-support')} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer"><HelpCircle className="h-5 w-5" />Help and Support</button>

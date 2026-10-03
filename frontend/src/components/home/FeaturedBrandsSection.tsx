@@ -112,13 +112,6 @@ export const FeaturedBrandsSection: React.FC = () => {
           </p>
         )}
 
-        {/* Bottom thebrandsstory.com badge (Photo 3) */}
-        <div className="pt-6">
-          <div className="inline-block px-6 py-2 rounded-full bg-[#0d224b]/90 border border-slate-700 text-slate-300 text-xs font-bold shadow-inner">
-            thebrandsstory.com
-          </div>
-        </div>
-
       </div>
     </section>
   );

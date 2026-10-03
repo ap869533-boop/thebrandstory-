@@ -44,10 +44,6 @@ export const TopCreatorsSection: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-6 sm:mb-8 gap-3 sm:gap-4">
           <div>
-            <div className="flex items-center gap-1.5 text-[#D4A338] text-xs font-extrabold uppercase tracking-wider mb-1.5">
-              <Award className="w-3.5 h-3.5" />
-              <span>India's Premier Creator Rankings</span>
-            </div>
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight">
               Top 20 Influencers in India
             </h2>
@@ -97,7 +93,6 @@ export const TopCreatorsSection: React.FC = () => {
             </div>
           )}
         </div>
-        {total > PAGE_SIZE && <p className="text-center text-xs text-slate-400 mt-2">Page {page + 1} of {Math.ceil(total / PAGE_SIZE)}</p>}
       </div>
     </section>
   );

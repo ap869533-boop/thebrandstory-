@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import Cropper from 'react-easy-crop';
 import { X } from 'lucide-react';
 
@@ -75,9 +76,9 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
     }
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col">
+      <div className="bg-white rounded-3xl w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto shadow-2xl flex flex-col">
         <div className="p-4 border-b border-slate-100 flex justify-between items-center">
           <h3 className="font-bold text-slate-800">Crop Image</h3>
           <button onClick={onCancel} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
@@ -85,7 +86,7 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
           </button>
         </div>
         
-        <div className="relative w-full h-[400px] bg-slate-900">
+        <div className="relative w-full h-[min(400px,45dvh)] min-h-[220px] bg-slate-900">
           <Cropper
             image={imageSrc}
             crop={crop}
@@ -129,6 +130,7 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
