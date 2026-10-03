@@ -235,7 +235,7 @@ export const LiveOpportunitiesBoard: React.FC = () => {
                       onClick={() => handleApply(camp)}
                       className="px-4 py-2 bg-[#061226] hover:bg-black text-white rounded-full font-bold text-xs transition flex items-center gap-1.5 shadow-md shadow-slate-900/10 cursor-pointer"
                     >
-                      <span>Apply Now</span>
+                      <span>Pitch Campaign</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   )}
