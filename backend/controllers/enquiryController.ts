@@ -131,6 +131,45 @@ export async function createEnquiry(req: AuthenticatedRequest, res: Response) {
       ]
     );
 
+    if (req.user && req.user.role === 'BRAND') {
+      try {
+        const msgBody = data.message || `New enquiry from ${data.brandName} regarding ${data.campaignType || 'a collaboration'}`;
+        
+        const existingConv: any = await dbQuery(
+          `SELECT id FROM conversations WHERE brand_user_id = ? AND creator_id = ? AND inquiry_id = ? LIMIT 1`,
+          [req.user.id, data.creatorId, trackingId]
+        );
+        
+        let conversationId = Array.isArray(existingConv) && existingConv.length > 0 ? existingConv[0].id : null;
+        
+        if (!conversationId) {
+          conversationId = `conv_${Date.now()}`;
+          const cRow2: any = await dbQuery('SELECT user_id FROM creators WHERE id = ? LIMIT 1', [data.creatorId]);
+          const cUserId = (Array.isArray(cRow2) && cRow2.length > 0) ? cRow2[0].user_id : null;
+          
+          await dbQuery(
+            `INSERT INTO conversations (id, brand_user_id, creator_id, creator_user_id, campaign_id, inquiry_id, last_message, last_message_at)
+             VALUES (?, ?, ?, ?, NULL, ?, ?, NOW())`,
+            [conversationId, req.user.id, data.creatorId, cUserId, trackingId, msgBody]
+          );
+        } else {
+          await dbQuery(
+            `UPDATE conversations SET last_message = ?, last_message_at = NOW() WHERE id = ?`,
+            [msgBody, conversationId]
+          );
+        }
+
+        const messageId = `msg_${Date.now()}_${Math.floor(Math.random()*1000)}`;
+        await dbQuery(
+          `INSERT INTO messages (id, conversation_id, sender_id, sender_role, body, is_read)
+           VALUES (?, ?, ?, 'BRAND', ?, 0)`,
+          [messageId, conversationId, req.user.id, msgBody]
+        );
+      } catch (e) {
+        console.warn('Auto-chat for enquiry failed', e);
+      }
+    }
+
     const newEnquiry = mapEnquiry({
       id: trackingId,
       creator_id: data.creatorId,

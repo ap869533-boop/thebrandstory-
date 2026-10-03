@@ -90,7 +90,7 @@ export const BrandCampaignsView: React.FC = () => {
                            View Profile
                          </button>
                          <button 
-                           onClick={(e) => { e.stopPropagation(); navigateTo('chat', { username: applicant.creatorName?.toLowerCase().replace(/\s+/g, '-'), creatorId: applicant.creatorId, campaignId: selectedCampaign.id }); }}
+                           onClick={(e) => { e.stopPropagation(); navigateTo('pitches', { username: applicant.creatorName?.toLowerCase().replace(/\s+/g, '-'), creatorId: applicant.creatorId, campaignId: selectedCampaign.id }); }}
                            className="text-xs font-bold bg-[#D4A338] hover:bg-[#be8f2b] text-slate-950 px-4 py-2 rounded-full transition cursor-pointer"
                          >
                            Message
