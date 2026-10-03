@@ -253,6 +253,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     else if (view === 'chat' && params.username) path = `/${encodeURIComponent(params.username)}/chat`;
     else if (view === 'chat') path = '/chat';
     else if (view === 'explore') path = '/explore';
+    else if (view === 'all-brands') path = '/brands';
     else if (view === 'creator-detail' && params.username) path = `/creator/${params.username}`;
     else if (view === 'creator-detail' && params.id) path = `/creator/${params.id}`; // fallback
     else if (view === 'brand-detail' && (params.id || params.brandName)) path = `/brand/${encodeURIComponent(params.id || params.brandName)}`;

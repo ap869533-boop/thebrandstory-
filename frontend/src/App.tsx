@@ -12,6 +12,7 @@ import { Navbar } from './components/common/Navbar';
 
 // Route views are code-split so visitors load only the page they open.
 const HomeView = lazy(() => import('./views/HomeView').then(({ HomeView }) => ({ default: HomeView })));
+const AllBrandsView = lazy(() => import('./views/AllBrandsView').then(({ AllBrandsView }) => ({ default: AllBrandsView })));
 const ExploreView = lazy(() => import('./views/ExploreView').then(({ ExploreView }) => ({ default: ExploreView })));
 const CreatorDetailView = lazy(() => import('./views/CreatorDetailView').then(({ CreatorDetailView }) => ({ default: CreatorDetailView })));
 const CityPageView = lazy(() => import('./views/CityPageView').then(({ CityPageView }) => ({ default: CityPageView })));
@@ -40,6 +41,7 @@ const MainAppContent: React.FC = () => {
         <Suspense fallback={<div className="min-h-[40vh]" aria-busy="true" />}>
           <Routes>
             <Route path="/" element={<HomeView />} />
+            <Route path="/brands" element={<AllBrandsView />} />
             <Route path="/login" element={<LoginView />} />
             <Route path="/chat" element={<ChatView />} />
             <Route path="/:username/chat" element={<ChatView />} />
