@@ -52,13 +52,13 @@ export const CreatorDetailView: React.FC = () => {
     viewParams,
     authUser,
     navigateTo,
-    openEnquiryModal,
     openAuthModal,
     isCreatorSaved,
     toggleSaveCreator,
     addCreatorReview,
     updateCreatorProfile,
     partnerBrands,
+    submitBrandInquiry,
   } = usePlatform();
 
   const requestedUsername = routeUsername || viewParams.username;
@@ -92,6 +92,10 @@ export const CreatorDetailView: React.FC = () => {
   const [ratesError, setRatesError] = useState('');
   const [cropModalData, setCropModalData] = useState<{ src: string, type: string } | null>(null);
   const [uploadingMedia, setUploadingMedia] = useState<string | null>(null);
+  const [isInquiryModalOpen, setIsInquiryModalOpen] = useState(false);
+  const [inquiryMessage, setInquiryMessage] = useState('');
+  const [isSubmittingInquiry, setIsSubmittingInquiry] = useState(false);
+  const [inquirySent, setInquirySent] = useState(false);
 
   // Direct profile URLs can be visited without authentication.
   // We removed the redirect to allow public profile sharing.
@@ -324,6 +328,55 @@ export const CreatorDetailView: React.FC = () => {
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
+  const handleInquireClick = () => {
+    if (!authUser) {
+      openAuthModal('login', 'BRAND', 'Please log in to message this creator and send an inquiry.');
+      return;
+    }
+    if (authUser.role !== 'BRAND') {
+      openAuthModal('login', 'BRAND', 'Please sign in as a brand to message this creator.');
+      return;
+    }
+
+    setInquiryMessage(`Hi ${creator.name}, I’d love to discuss a collaboration opportunity for my brand. Please let me know your availability and deliverable options.`);
+    setInquirySent(false);
+    setIsInquiryModalOpen(true);
+  };
+
+  const submitInquiry = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!authUser || authUser.role !== 'BRAND') {
+      openAuthModal('login', 'BRAND', 'Please sign in as a brand to message this creator.');
+      return;
+    }
+    if (!inquiryMessage.trim()) return;
+
+    setIsSubmittingInquiry(true);
+    try {
+      const ok = await submitBrandInquiry({
+        creatorId: creator.id,
+        creatorName: creator.name,
+        brandId: authUser.id || 'brand_1',
+        brandName: authUser.companyName || authUser.name || 'Brand Partner',
+        message: inquiryMessage.trim(),
+      });
+
+      if (ok) {
+        setInquirySent(true);
+        setTimeout(() => {
+          setIsInquiryModalOpen(false);
+          setInquirySent(false);
+          setInquiryMessage('');
+          navigateTo('chat', { username: creator.username, creatorId: creator.id });
+        }, 1200);
+      }
+    } catch (error) {
+      console.error('Failed to submit creator inquiry', error);
+    } finally {
+      setIsSubmittingInquiry(false);
+    }
+  };
+
   const handleRatingSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!ratingBrand.trim()) return;
@@ -489,17 +542,11 @@ export const CreatorDetailView: React.FC = () => {
                 ) : (
                   <button
                     type="button"
-                    onClick={() => {
-                      if (!authUser) {
-                        openAuthModal('login', 'BRAND', 'Please log in to send a direct booking enquiry.');
-                        return;
-                      }
-                      openEnquiryModal(creator);
-                    }}
+                    onClick={handleInquireClick}
                     className="inline-flex items-center gap-2 rounded-xl bg-[#D4A338] hover:bg-[#c2912a] px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md shadow-[#D4A338]/20 transition cursor-pointer active:scale-95"
                   >
                     <MessageSquare className="w-4 h-4 text-white" />
-                    Direct Booking Enquiry
+                    Direct Inquire
                   </button>
                 )}
 
@@ -567,17 +614,11 @@ export const CreatorDetailView: React.FC = () => {
               )
             ) : (
               <button
-                onClick={() => {
-                  if (!authUser) {
-                    openAuthModal('login', 'BRAND', 'Please log in to request a quote or book this creator.');
-                    return;
-                  }
-                  openEnquiryModal(creator);
-                }}
+                onClick={handleInquireClick}
                 className="px-4 py-2 rounded-xl bg-black hover:bg-zinc-900 text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
               >
                 <MessageSquare className="w-3.5 h-3.5" />
-                <span>Request Quote / Book</span>
+                <span>Message Creator</span>
               </button>
             )}
           </div>
@@ -1017,16 +1058,83 @@ export const CreatorDetailView: React.FC = () => {
             <button
               onClick={() => {
                 setSelectedPost(null);
-                if (!authUser) {
-                  openAuthModal('login', 'BRAND', 'Please log in to book this creator for deliverables.');
-                  return;
-                }
-                openEnquiryModal(creator);
+                handleInquireClick();
               }}
               className="w-full py-2.5 bg-slate-900 hover:bg-black text-white font-bold text-xs rounded-xl shadow-md transition cursor-pointer"
             >
-              Book Creator for Similar Deliverable
+              Message Creator About Similar Deliverable
             </button>
+          </div>
+        </div>
+      )}
+
+      {isInquiryModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs"
+          onClick={() => setIsInquiryModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-lg rounded-3xl bg-white p-5 text-slate-900 shadow-2xl border border-slate-100"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <img src={creator.avatar} alt={creator.name} className="w-11 h-11 rounded-full object-cover border border-slate-200" />
+                <div>
+                  <h3 className="font-black text-sm sm:text-base">Message {creator.name}</h3>
+                  <p className="text-[11px] text-slate-500">Send a direct inquiry that appears in influencer chat and inquiries.</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsInquiryModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {inquirySent ? (
+              <div className="py-8 text-center space-y-3">
+                <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
+                  <CheckCircle2 className="w-8 h-8" />
+                </div>
+                <div>
+                  <h4 className="text-lg font-black text-slate-900">Inquiry sent</h4>
+                  <p className="text-xs text-slate-500 mt-1">Your message is now live in the creator’s chat and inquiry list.</p>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={submitInquiry} className="pt-4 space-y-4">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500 mb-1">Your message</label>
+                  <textarea
+                    value={inquiryMessage}
+                    onChange={(e) => setInquiryMessage(e.target.value)}
+                    rows={5}
+                    required
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-800 focus:outline-none focus:border-[#D4A338]"
+                    placeholder="Tell the creator about your campaign, deliverables, budget, and timeline..."
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setIsInquiryModalOpen(false)}
+                    className="px-4 py-2 rounded-full border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmittingInquiry}
+                    className="px-5 py-2.5 rounded-full bg-[#D4A338] hover:bg-[#c5912c] text-slate-950 font-black text-xs transition disabled:opacity-70"
+                  >
+                    {isSubmittingInquiry ? 'Sending...' : 'Send Message'}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

@@ -364,7 +364,7 @@ export const ConversationsPanel: React.FC<{
            headers: authHeaders(),
            body: JSON.stringify({
               image: base64,
-              creatorId: authUser.id,
+              creatorId: authUser?.id,
               type: 'chat_attachment'
            })
         });

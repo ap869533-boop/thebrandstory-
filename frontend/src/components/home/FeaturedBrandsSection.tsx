@@ -48,13 +48,6 @@ export const FeaturedBrandsSection: React.FC = () => {
   return (
     <section className="py-12 sm:py-20 bg-[#071328] border-b border-slate-800/80 text-white relative overflow-hidden font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-        
-        {/* ⭐ VERIFIED BRAND ECOSYSTEM Badge (Photo 3) */}
-        <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#0d224b]/90 text-[#D4A338] text-xs font-black tracking-wider uppercase border border-[#D4A338]/50 shadow-sm mb-3">
-          <Building2 className="w-3.5 h-3.5 text-[#D4A338]" />
-          <span>BRAND ECOSYSTEM</span>
-        </div>
-
         {/* Heading */}
         <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight mb-2">
           Brands & Campaign Hiring
