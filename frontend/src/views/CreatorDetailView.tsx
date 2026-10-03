@@ -59,7 +59,7 @@ export const CreatorDetailView: React.FC = () => {
     addCreatorReview,
     updateCreatorProfile,
     partnerBrands,
-    submitBrandInquiry,
+    submitEnquiry,
   } = usePlatform();
 
   const requestedUsername = routeUsername || viewParams.username;
@@ -354,23 +354,34 @@ export const CreatorDetailView: React.FC = () => {
 
     setIsSubmittingInquiry(true);
     try {
-      const ok = await submitBrandInquiry({
+      const enquiryId = submitEnquiry({
         creatorId: creator.id,
         creatorName: creator.name,
-        brandId: authUser.id || 'brand_1',
+        creatorUsername: creator.username || creator.name.toLowerCase().replace(/[^a-z0-9]/g, '_'),
+        creatorAvatar: creator.avatar || '',
         brandName: authUser.companyName || authUser.name || 'Brand Partner',
+        contactPerson: authUser.name || authUser.companyName || 'Brand Partner',
+        email: authUser.email || '',
+        phone: '',
+        campaignType: 'Direct Inquiry',
+        city: creator.city || 'Any',
+        budget: 'Open',
+        influencersRequired: 1,
+        preferredDate: 'Flexible',
         message: inquiryMessage.trim(),
       });
 
-      if (ok) {
+      if (enquiryId) {
         setInquirySent(true);
         setTimeout(() => {
           setIsInquiryModalOpen(false);
           setInquirySent(false);
           setInquiryMessage('');
-          navigateTo('chat', { username: creator.username, creatorId: creator.id });
+          const brandSlug = authUser.companyName ? authUser.companyName.toLowerCase().replace(/[^a-z0-9]/g, '-') : (authUser.name?.toLowerCase().replace(/[^a-z0-9]/g, '-') || 'brand');
+          navigateTo('pitches', { username: brandSlug, creatorId: creator.id });
         }, 1200);
       }
+
     } catch (error) {
       console.error('Failed to submit creator inquiry', error);
     } finally {
