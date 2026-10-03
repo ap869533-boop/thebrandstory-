@@ -130,6 +130,7 @@ interface PlatformContextType {
   submitEnquiry: (leadData: Omit<EnquiryLead, 'id' | 'createdAt' | 'status' | 'isReadByCreator'>) => string;
   updateEnquiryStatus: (leadId: string, status: EnquiryLead['status'], assignedTeamMember?: string, creatorReply?: string) => void;
   unreadEnquiriesCount: number;
+  unreadPitchesCount: number;
 
   brandInquiries: BrandInquiryLead[];
   submitBrandInquiry: (inquiryData: {
@@ -928,6 +929,33 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const unreadEnquiriesCount = enquiries.filter(e => !e.isReadByCreator).length;
 
+  const [unreadPitchesCount, setUnreadPitchesCount] = useState(0);
+  useEffect(() => {
+    if (!authUser) {
+      setUnreadPitchesCount(0);
+      return;
+    }
+    const fetchUnread = async () => {
+      try {
+        const res = await fetch(apiUrl('/api/conversations'), { headers: authHeaders() });
+        const data = await res.json();
+        if (data.success && Array.isArray(data.conversations)) {
+          let sum = 0;
+          for (const c of data.conversations) {
+            sum += (c.unreadCount || 0);
+          }
+          setUnreadPitchesCount(sum);
+        }
+      } catch {
+        // ignore
+      }
+    };
+    fetchUnread();
+    const interval = window.setInterval(fetchUnread, 15000); // 15 seconds
+    return () => window.clearInterval(interval);
+  }, [authUser]);
+
+
   // Campaigns State - strictly real applicant counts
   const [campaigns, setCampaigns] = useState<CampaignRequirement[]>(() => {
     const saved = localStorage.getItem('sc_campaigns');
@@ -1725,6 +1753,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         submitEnquiry,
         updateEnquiryStatus,
         unreadEnquiriesCount,
+        unreadPitchesCount,
 
         brandInquiries,
         submitBrandInquiry,
