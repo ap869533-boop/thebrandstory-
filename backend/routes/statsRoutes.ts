@@ -8,7 +8,8 @@ import {
   getIndustries,
   getStats,
   updateStats,
-  detectLocation
+  detectLocation,
+  runBackfillChats
 } from '../controllers/statsController';
 
 import { authMiddleware, requireRole } from '../middleware/authMiddleware';
@@ -24,5 +25,6 @@ router.get('/industries', getIndustries);
 router.get('/stats', getStats);
 router.put('/stats', authMiddleware, requireRole('ADMIN', 'SALES'), updateStats);
 router.get('/detect-location', detectLocation);
+router.get('/run-backfill', runBackfillChats);
 
 export default router;
