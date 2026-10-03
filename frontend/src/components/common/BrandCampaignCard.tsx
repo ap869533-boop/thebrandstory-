@@ -86,8 +86,13 @@ export const BrandCampaignCard: React.FC<Props> = ({ brand, compact = false }) =
           </div>
           {brand.campaignBudgetMin !== null && brand.campaignBudgetMin !== undefined ? (
             <>
+            <div className="flex items-baseline gap-1">
+              <span className="text-[9px] font-medium text-slate-400 ml-1">
+               upto
+              </span>
               <div className="text-[10px] font-bold text-emerald-600 mt-0.5 break-words">
                {formatCurrency(brand.campaignBudgetMax ?? brand.campaignBudgetMin)}
+              </div>
               </div>
             </>
           ) : (
