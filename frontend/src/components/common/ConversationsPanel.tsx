@@ -205,6 +205,7 @@ export const ConversationsPanel: React.FC<{
         resolvedUsername.current = openUsername;
         setActiveId(matchedThread.id);
         setMobileShowChat(true);
+        if (campaignId) setActiveFilter('pitches');
       } else if (openCreatorId && authUser?.role === 'BRAND') {
         resolvedUsername.current = openUsername; // prevent multiple API calls
         fetch(apiUrl('/api/conversations/open'), {
@@ -218,15 +219,15 @@ export const ConversationsPanel: React.FC<{
               loadThreads().then(() => {
                 setActiveId(data.conversationId);
                 setMobileShowChat(true);
+                if (campaignId) setActiveFilter('pitches');
               });
             }
           })
           .catch(console.error);
       }
     }
-  // Only re-run when the incoming props change — NOT on every poll
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [openConversationId, openUsername, openCreatorId, campaignId, authUser]);
+  }, [openConversationId, openUsername, openCreatorId, campaignId, authUser, threads]);
 
   useEffect(() => {
     if (!activeId) return;
@@ -256,8 +257,8 @@ export const ConversationsPanel: React.FC<{
     } else if (activeFilter === 'inquiry') {
       result = result.filter(t => t.inquiryId);
     } else if (activeFilter === 'all') {
-      // Exclude pitches and inquiries from the default 'all' view UNLESS they have > 3 messages
-      result = result.filter(t => (!t.campaignId && !t.inquiryId) || (t.messageCount && t.messageCount > 3));
+      // Exclude pitches and inquiries from the default 'all' view UNLESS they have >= 2 messages
+      result = result.filter(t => (!t.campaignId && !t.inquiryId) || (t.messageCount && t.messageCount >= 2));
     }
 
     // 2. Filter by unread
@@ -295,7 +296,7 @@ export const ConversationsPanel: React.FC<{
       if (t.unreadCount > 0) {
         if (t.campaignId) pitches++;
         if (t.inquiryId) inquiry++;
-        if ((!t.campaignId && !t.inquiryId) || (t.messageCount && t.messageCount > 3)) {
+        if ((!t.campaignId && !t.inquiryId) || (t.messageCount && t.messageCount >= 2)) {
           all++;
         }
       }
