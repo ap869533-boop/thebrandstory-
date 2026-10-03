@@ -438,5 +438,9 @@ export interface BrandProfile {
   rejectionReason?: string;
   isFeatured: boolean;
   totalHiringCount?: number;
+  totalCampaignCount?: number;
+  campaignBudgetMin?: number | null;
+  campaignBudgetMax?: number | null;
+  lastHiringDate?: string | null;
   createdAt: string;
 }
