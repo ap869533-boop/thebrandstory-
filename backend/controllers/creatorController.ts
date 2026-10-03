@@ -661,12 +661,39 @@ export async function updateCreator(req: AuthenticatedRequest, res: Response) {
     }
   }
 
+  if (body.pricing !== undefined && (!body.pricing || typeof body.pricing !== 'object' || Array.isArray(body.pricing))) {
+    return res.status(400).json({ success: false, error: 'Pricing must be an object of valid rates.' });
+  }
+  const rateFields = ['startingPrice', 'reelPrice', 'storyPrice', 'postPrice', 'ugcPrice', 'eventPrice'] as const;
+  for (const field of rateFields) {
+    const value = field === 'startingPrice'
+      ? body.startingPrice ?? body.pricing?.startingPrice
+      : body.pricing?.[field];
+    if (value === undefined) continue;
+    const amount = Number(value);
+    if (value === null || !Number.isSafeInteger(amount) || amount < 0 || amount > 4294967295) {
+      return res.status(400).json({
+        success: false,
+        error: 'Rates must be whole numbers from 0 to 4,294,967,295.',
+      });
+    }
+    if (field === 'startingPrice') {
+      body.startingPrice = amount;
+      if (body.pricing) body.pricing.startingPrice = amount;
+    } else {
+      body.pricing[field] = amount;
+    }
+  }
+
+  const startingPrice = body.startingPrice ?? body.pricing?.startingPrice ?? creatorsStore[index].startingPrice;
   const updatedCreator = {
     ...creatorsStore[index],
     ...body,
+    startingPrice,
     pricing: {
       ...creatorsStore[index].pricing,
       ...(body.pricing || {}),
+      startingPrice,
     },
   };
 
@@ -686,7 +713,7 @@ export async function updateCreator(req: AuthenticatedRequest, res: Response) {
     ['latitude', 'latitude'], ['longitude', 'longitude'], ['phone', 'phone'], ['email', 'email'],
     ['facebookUrl', 'facebook_url'], ['youtubeUrl', 'youtube_url'],
   ] as const) {
-    addField(key, column);
+    addField(key, column, key === 'startingPrice' ? startingPrice : body[key]);
   }
 
   for (const [key, column] of [
@@ -702,9 +729,6 @@ export async function updateCreator(req: AuthenticatedRequest, res: Response) {
     ['ugcPrice', 'ugc_price'], ['eventPrice', 'event_price'],
   ] as const) {
     if (body.pricing?.[key] !== undefined) dbFields.push([column, body.pricing[key]]);
-  }
-  if (body.pricing?.startingPrice !== undefined && body.startingPrice === undefined) {
-    dbFields.push(['starting_price', body.pricing.startingPrice]);
   }
   if (body.pricing?.isNegotiable !== undefined) {
     dbFields.push(['is_negotiable', body.pricing.isNegotiable ? 1 : 0]);
