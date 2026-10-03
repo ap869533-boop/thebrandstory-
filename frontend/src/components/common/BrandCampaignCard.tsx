@@ -72,25 +72,27 @@ export const BrandCampaignCard: React.FC<Props> = ({ brand, compact = false }) =
           <div className="flex items-center gap-1 text-[8px] font-black text-slate-400 uppercase tracking-wider mb-1">
             <Users className="w-2.5 h-2.5" /> HIRING
           </div>
-          <div className="font-black text-slate-900 text-sm leading-tight break-words">
-            {Number(brand.totalHiringCount || 0).toLocaleString('en-IN')}
-          </div>
-          <div className="text-[10px] font-bold text-slate-500 mt-0.5">
-            {brand.totalCampaignCount || 0} campaigns
-          </div>
+         <div className="font-black text-slate-900 text-sm leading-tight break-words inline-block">
+             {Number(brand.totalHiringCount || 0).toLocaleString('en-IN')}
+              <span className="text-[10px] font-semibold text-slate-500 ml-1">
+           + Creators
+        </span>
+        </div>
         </div>
 
         <div className="p-2.5 flex flex-col justify-center">
           <div className="flex items-center gap-1 text-[8px] font-black text-slate-400 uppercase tracking-wider mb-1">
-            <Gift className="w-2.5 h-2.5" /> BUDGET RANGE
+            <Gift className="w-2.5 h-2.5" /> BUDGET
           </div>
           {brand.campaignBudgetMin !== null && brand.campaignBudgetMin !== undefined ? (
             <>
-              <div className="font-black text-emerald-600 text-xs leading-tight break-words">
-                {formatCurrency(brand.campaignBudgetMin)}
-              </div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-[9px] font-medium text-slate-400 ml-1">
+               upto
+              </span>
               <div className="text-[10px] font-bold text-emerald-600 mt-0.5 break-words">
-                to {formatCurrency(brand.campaignBudgetMax ?? brand.campaignBudgetMin)}
+               {formatCurrency(brand.campaignBudgetMax ?? brand.campaignBudgetMin)}
+              </div>
               </div>
             </>
           ) : (
