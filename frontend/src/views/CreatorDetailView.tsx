@@ -33,7 +33,8 @@ import {
   Facebook,
   Youtube,
   Trash2,
-  UploadCloud
+  UploadCloud,
+  Instagram
 } from 'lucide-react';
 import { usePlatform } from '../context/PlatformContext';
 
@@ -551,38 +552,37 @@ export const CreatorDetailView: React.FC = () => {
                 )}
 
                 <a
-                  href={instagramUrl}
-                  target="_blank"
+                  href={instagramUrl || '#'}
+                  onClick={(e) => { if (!instagramUrl) e.preventDefault(); }}
+                  target={instagramUrl ? "_blank" : undefined}
                   rel="noreferrer"
                   className="inline-flex items-center gap-2 rounded-xl bg-[#111827] hover:bg-black px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md shadow-slate-900/15 transition cursor-pointer active:scale-95"
                 >
-                  <ExternalLink className="w-4 h-4 text-slate-300" />
+                  <Instagram className="w-4 h-4 text-slate-300" />
                   View Instagram Profile
                 </a>
 
-                {creator.facebookUrl && (
-                  <a
-                    href={creator.facebookUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-[#111827] hover:bg-[#1877F2] text-white shadow-md shadow-slate-900/15 transition cursor-pointer active:scale-95"
-                    title="View Facebook Profile"
-                  >
-                    <Facebook className="w-5 h-5" />
-                  </a>
-                )}
+                <a
+                  href={creator.facebookUrl || '#'}
+                  onClick={(e) => { if (!creator.facebookUrl) e.preventDefault(); }}
+                  target={creator.facebookUrl ? "_blank" : undefined}
+                  rel="noreferrer"
+                  className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-[#111827] hover:bg-[#1877F2] text-white shadow-md shadow-slate-900/15 transition cursor-pointer active:scale-95"
+                  title="View Facebook Profile"
+                >
+                  <Facebook className="w-5 h-5" />
+                </a>
 
-                {creator.youtubeUrl && (
-                  <a
-                    href={creator.youtubeUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-[#111827] hover:bg-[#FF0000] text-white shadow-md shadow-slate-900/15 transition cursor-pointer active:scale-95"
-                    title="View YouTube Channel"
-                  >
-                    <Youtube className="w-5 h-5" />
-                  </a>
-                )}
+                <a
+                  href={creator.youtubeUrl || '#'}
+                  onClick={(e) => { if (!creator.youtubeUrl) e.preventDefault(); }}
+                  target={creator.youtubeUrl ? "_blank" : undefined}
+                  rel="noreferrer"
+                  className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-[#111827] hover:bg-[#FF0000] text-white shadow-md shadow-slate-900/15 transition cursor-pointer active:scale-95"
+                  title="View YouTube Channel"
+                >
+                  <Youtube className="w-5 h-5" />
+                </a>
               </div>
             </div>
           </div>

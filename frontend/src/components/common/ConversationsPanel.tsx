@@ -161,7 +161,12 @@ export const ConversationsPanel: React.FC<{
       const res = await fetch(apiUrl(`/api/conversations/${id}/messages?t=${Date.now()}`), { headers: authHeaders() });
       const data = await res.json();
       if (data.success && Array.isArray(data.messages)) {
-        setMessages(data.messages);
+        setMessages((prev) => {
+          if (prev.length > 0 && data.messages.length < prev.length) {
+            return prev; // Ignore stale fetch that misses optimistically inserted messages
+          }
+          return data.messages;
+        });
       }
     } catch {
       // ignore
@@ -468,7 +473,7 @@ export const ConversationsPanel: React.FC<{
   return (
     <div
       className={`relative w-full rounded-2xl md:rounded-3xl border border-white/10 shadow-2xl overflow-hidden bg-[#0c1322] grid grid-cols-1 md:grid-cols-12 ${
-        fullPage ? 'h-[calc(100vh-12rem)] min-h-[580px]' : 'min-h-[560px] h-[640px]'
+        fullPage ? 'h-[calc(100dvh-8rem)] md:h-[calc(100vh-12rem)] md:min-h-[580px]' : 'h-[calc(100dvh-4rem)] md:min-h-[560px] md:h-[640px]'
       }`}
     >
       {/* ========================================================
@@ -486,7 +491,7 @@ export const ConversationsPanel: React.FC<{
               <MessageSquare className="w-4 h-4 text-[#D4A338]" />
             </div>
             <div>
-              <h2 className="font-black text-sm text-white tracking-wide">Chats</h2>
+              <h2 className="font-black text-sm text-white tracking-wide">Pitches</h2>
               <p className="text-[10px] text-slate-400 font-medium">
                 {threads.length} {threads.length === 1 ? 'conversation' : 'conversations'}
               </p>

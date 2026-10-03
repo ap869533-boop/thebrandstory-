@@ -306,3 +306,109 @@ export async function detectLocation(req: Request, res: Response) {
     matchedCity: null,
   });
 }
+
+export async function runBackfillChats(req: Request, res: Response) {
+  try {
+    const pitches: any = await dbQuery('SELECT * FROM campaign_applicants');
+    let pitchCount = 0;
+    for (const pitch of pitches) {
+      try {
+        const campRows: any = await dbQuery('SELECT user_id FROM campaign_requirements WHERE id = ?', [pitch.campaign_id]);
+        const brandUserId = campRows.length > 0 ? campRows[0].user_id : null;
+        if (!brandUserId) continue;
+
+        const cRows: any = await dbQuery('SELECT user_id FROM creators WHERE id = ?', [pitch.creator_id]);
+        const creatorUserId = cRows.length > 0 ? cRows[0].user_id : null;
+        
+        const existingConv: any = await dbQuery(
+          'SELECT id FROM conversations WHERE brand_user_id = ? AND creator_id = ? AND campaign_id = ? LIMIT 1',
+          [brandUserId, pitch.creator_id, pitch.campaign_id]
+        );
+
+        let conversationId = existingConv.length > 0 ? existingConv[0].id : null;
+        if (!conversationId) {
+          conversationId = `conv_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+          await dbQuery(
+            `INSERT INTO conversations (id, brand_user_id, creator_id, creator_user_id, campaign_id, inquiry_id, last_message, last_message_at, created_at)
+             VALUES (?, ?, ?, ?, ?, NULL, ?, COALESCE(?, NOW()), COALESCE(?, NOW()))`,
+            [conversationId, brandUserId, pitch.creator_id, creatorUserId, pitch.campaign_id, pitch.pitch, pitch.applied_at, pitch.applied_at]
+          );
+        }
+        
+        const existingMsg: any = await dbQuery(
+          'SELECT id FROM messages WHERE conversation_id = ? AND body = ? AND sender_role = "CREATOR" LIMIT 1',
+          [conversationId, pitch.pitch]
+        );
+        
+        if (existingMsg.length === 0) {
+          const msgId = `msg_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+          await dbQuery(
+            `INSERT INTO messages (id, conversation_id, sender_id, sender_role, body, is_read, created_at)
+             VALUES (?, ?, ?, 'CREATOR', ?, 0, COALESCE(?, NOW()))`,
+            [msgId, conversationId, creatorUserId || pitch.creator_id, pitch.pitch, pitch.applied_at]
+          );
+          pitchCount++;
+        }
+      } catch (err) {
+        console.error('Error processing pitch:', pitch.id, err);
+      }
+    }
+
+    const enquiries: any = await dbQuery('SELECT * FROM enquiry_leads');
+    let enqCount = 0;
+    for (const enq of enquiries) {
+      try {
+        const uRows: any = await dbQuery('SELECT id FROM users WHERE email = ? AND role = "BRAND" LIMIT 1', [enq.email]);
+        let brandUserId = uRows.length > 0 ? uRows[0].id : null;
+        
+        if (!brandUserId) {
+           const bpRows: any = await dbQuery('SELECT user_id FROM brand_profiles WHERE brand_name = ? LIMIT 1', [enq.brand_name]);
+           if (bpRows.length > 0) brandUserId = bpRows[0].user_id;
+        }
+        
+        if (!brandUserId) continue;
+
+        const cRows: any = await dbQuery('SELECT user_id FROM creators WHERE id = ?', [enq.creator_id]);
+        const creatorUserId = cRows.length > 0 ? cRows[0].user_id : null;
+        
+        const existingConv: any = await dbQuery(
+          'SELECT id FROM conversations WHERE brand_user_id = ? AND creator_id = ? AND inquiry_id = ? LIMIT 1',
+          [brandUserId, enq.creator_id, enq.id]
+        );
+
+        const msgBody = enq.message || `New enquiry from ${enq.brand_name} regarding ${enq.campaign_type || 'a collaboration'}`;
+        
+        let conversationId = existingConv.length > 0 ? existingConv[0].id : null;
+        if (!conversationId) {
+          conversationId = `conv_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+          await dbQuery(
+            `INSERT INTO conversations (id, brand_user_id, creator_id, creator_user_id, campaign_id, inquiry_id, last_message, last_message_at, created_at)
+             VALUES (?, ?, ?, ?, NULL, ?, ?, COALESCE(?, NOW()), COALESCE(?, NOW()))`,
+            [conversationId, brandUserId, enq.creator_id, creatorUserId, enq.id, msgBody, enq.created_at, enq.created_at]
+          );
+        }
+        
+        const existingMsg: any = await dbQuery(
+          'SELECT id FROM messages WHERE conversation_id = ? AND body = ? AND sender_role = "BRAND" LIMIT 1',
+          [conversationId, msgBody]
+        );
+        
+        if (existingMsg.length === 0) {
+          const msgId = `msg_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+          await dbQuery(
+            `INSERT INTO messages (id, conversation_id, sender_id, sender_role, body, is_read, created_at)
+             VALUES (?, ?, ?, 'BRAND', ?, 0, COALESCE(?, NOW()))`,
+            [msgId, conversationId, brandUserId, msgBody, enq.created_at]
+          );
+          enqCount++;
+        }
+      } catch (err) {
+        console.error('Error processing enquiry:', enq.id, err);
+      }
+    }
+
+    res.json({ success: true, message: `Backfilled ${pitchCount} pitches and ${enqCount} enquiries.` });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
