@@ -11,10 +11,6 @@ export const HowItWorksSection: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Section Title */}
         <div className="text-center max-w-3xl mx-auto mb-12 space-y-3">
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#D4A338]/15 border border-[#D4A338]/30 text-[#D4A338] text-xs font-bold uppercase tracking-wider">
-            <Zap className="w-3.5 h-3.5 text-[#D4A338]" />
-            <span>Simple, Transparent & Scalable</span>
-          </div>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
             How thebrandsstory. Works
           </h2>

@@ -95,7 +95,7 @@ export const RegionalShowcases: React.FC = () => {
               <button type="button" onClick={() => scrollCards(cityScrollRef, 'right')} aria-label="Next Delhi NCR influencers" className="w-9 h-9 rounded-full bg-[#0d224b] border border-slate-700/80 hover:border-slate-500 flex items-center justify-center text-slate-300 hover:text-white transition"><ChevronRight className="w-4 h-4" /></button>
             </div>
             <button onClick={exploreCity} className="text-xs sm:text-sm font-black text-[#D4A338] hover:text-amber-300 flex items-center gap-1 shrink-0 group cursor-pointer">
-              <span>Explore All Delhi NCR</span><ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition" />
+              <span>View All</span><ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition" />
             </button>
           </div>
         </div>
@@ -163,7 +163,7 @@ export const RegionalShowcases: React.FC = () => {
             onClick={exploreRising}
             className="text-xs sm:text-sm font-black text-[#D4A338] hover:text-amber-300 flex items-center gap-1 shrink-0 group cursor-pointer self-start sm:self-auto"
           >
-            <span>Discover Rising Talents</span>
+            <span>View All</span>
             <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition" />
           </button>
         </div>

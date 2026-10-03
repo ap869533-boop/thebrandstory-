@@ -809,7 +809,7 @@ export const PostRequirementView: React.FC = () => {
                 className="px-6 py-3 bg-black hover:bg-zinc-900 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-500/20 transition flex items-center gap-2 cursor-pointer"
               >
                 <Send className="w-3.5 h-3.5" />
-                {isSubmitting ? 'Submitting Campaign...' : 'Poblish Campaign'}
+                {isSubmitting ? 'Submitting Campaign...' : 'Publish Campaign'}
               </button>
             </div>
           </form>
