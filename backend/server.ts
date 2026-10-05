@@ -12,6 +12,8 @@ if (!process.env.DB_NAME) {
 
 import { getDbPool } from './config/db';
 import { runAutoMigrations } from './utils/autoMigrate';
+import http from 'http';
+import { initSocket } from './socket';
 
 // Modular Route Handlers
 import authRoutes from './routes/authRoutes';
@@ -164,7 +166,10 @@ async function startServer() {
     console.warn('⚠️ MySQL connection notice:', err.message);
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  const httpServer = http.createServer(app);
+  initSocket(httpServer, allowedOrigins);
+
+  httpServer.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 thebrandsstory. Backend API Server running on http://localhost:${PORT}`);
   });
 

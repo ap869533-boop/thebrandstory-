@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { dbQuery } from '../config/db';
 import { AuthenticatedRequest } from '../middleware/authMiddleware';
+import { getIo } from '../socket';
 
 const ONLINE_THRESHOLD_MS = 90_000;
 
@@ -242,6 +243,18 @@ export async function sendMessage(req: AuthenticatedRequest, res: Response) {
       attachmentName,
     };
 
+    try {
+      const io = getIo();
+      if (req.user.role === 'BRAND') {
+        if (conv.creator_user_id) io.to(`user_${conv.creator_user_id}`).emit('new_message', message);
+        if (conv.creator_id) io.to(`user_${conv.creator_id}`).emit('new_message', message);
+      } else {
+        if (conv.brand_user_id) io.to(`user_${conv.brand_user_id}`).emit('new_message', message);
+      }
+    } catch (err) {
+      console.error('Socket emit failed:', err);
+    }
+
     res.status(201).json({ success: true, message });
   } catch (error) {
     console.error('sendMessage error:', error);
@@ -264,6 +277,24 @@ export async function setTypingStatus(req: AuthenticatedRequest, res: Response) 
       convTyping.delete(req.user.id);
     }
     
+    // Emit via socket
+    try {
+      const convRows: any = await dbQuery('SELECT brand_user_id, creator_id, creator_user_id FROM conversations WHERE id = ? LIMIT 1', [id]);
+      if (Array.isArray(convRows) && convRows.length > 0) {
+        const conv = convRows[0];
+        const io = getIo();
+        const payload = { conversationId: id, senderId: req.user.id, isTyping };
+        if (req.user.role === 'BRAND') {
+          if (conv.creator_user_id) io.to(`user_${conv.creator_user_id}`).emit('peer_typing', payload);
+          if (conv.creator_id) io.to(`user_${conv.creator_id}`).emit('peer_typing', payload);
+        } else {
+          if (conv.brand_user_id) io.to(`user_${conv.brand_user_id}`).emit('peer_typing', payload);
+        }
+      }
+    } catch (e) {
+      console.error('peer_typing socket emit error:', e);
+    }
+
     res.json({ success: true });
   } catch (error) {
     console.error('setTypingStatus error:', error);
