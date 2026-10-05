@@ -204,6 +204,16 @@ a.bg-blue-500 svg {
   color: #94a3b8;
 }
 
+@media (max-width: 767px) {
+  .dark-theme :is(
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+    textarea,
+    select
+  ) {
+    font-size: 16px !important;
+  }
+}
+
 /* Partner logos keep their original white presentation surface for brand fidelity. */
 .dark-theme .brand-slider-card,
 .dark-theme .brand-slider-fallback {
@@ -269,5 +279,4 @@ a.bg-blue-500 svg {
     background-color: transparent !important;
   }
 }
-
 
