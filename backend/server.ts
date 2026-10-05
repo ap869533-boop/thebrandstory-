@@ -148,8 +148,20 @@ const possibleDistPaths = [
 const distPath = possibleDistPaths.find((p) => fs.existsSync(p));
 if (distPath && process.env.NODE_ENV === 'production') {
   console.log(`📦 Serving static frontend files from: ${distPath}`);
-  app.use(express.static(distPath));
+  app.use(express.static(distPath, {
+    setHeaders: (res, filePath) => {
+      if (path.basename(filePath) === 'index.html') {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+      } else if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      }
+    },
+  }));
   app.get('*', (req, res) => {
+    if (path.extname(req.path)) {
+      return res.status(404).type('text/plain').send('Not found');
+    }
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.sendFile(path.join(distPath, 'index.html'));
   });
 }
