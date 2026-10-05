@@ -234,7 +234,7 @@ export const Navbar: React.FC = () => {
 
                   <button type="button" onClick={() => goTo(isBrand ? 'explore' : 'opportunities')} className="mt-5 flex h-14 w-full items-center justify-center gap-2 rounded-full bg-[#D4A338] font-black text-slate-950 hover:bg-[#be8f2b] cursor-pointer"><Search className="h-5 w-5" />{isBrand ? 'Find Influencers' : 'Find Brands'}</button>
                   <nav className="mt-5 space-y-1 text-sm font-bold">
-                    <button type="button" onClick={() => { closeMenu(); openSavedDrawer(); }} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer"><Heart className="h-5 w-5" />Wish list</button>
+                    <button type="button" onClick={() => { closeMenu(); openSavedDrawer(); }} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer"><Heart className="h-5 w-5" />Wishlist</button>
                     {isBrand && <button type="button" onClick={() => goTo('brand-campaigns', { slug: accountSlug })} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer"><Megaphone className="h-5 w-5" />My Campaigns</button>}
                     <button type="button" onClick={() => goTo('pitches', { username: accountSlug })} className="flex w-full items-center justify-between gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer">
                       <div className="flex items-center gap-4">

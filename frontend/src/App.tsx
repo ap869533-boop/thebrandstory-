@@ -10,25 +10,47 @@ import { CreatorOnboardingModal } from './components/common/CreatorOnboardingMod
 import { AuthModal } from './components/common/AuthModal';
 import { Navbar } from './components/common/Navbar';
 
-// Route views are code-split so visitors load only the page they open.
-const HomeView = lazy(() => import('./views/HomeView').then(({ HomeView }) => ({ default: HomeView })));
-const AllBrandsView = lazy(() => import('./views/AllBrandsView').then(({ AllBrandsView }) => ({ default: AllBrandsView })));
-const ExploreView = lazy(() => import('./views/ExploreView').then(({ ExploreView }) => ({ default: ExploreView })));
-const CreatorDetailView = lazy(() => import('./views/CreatorDetailView').then(({ CreatorDetailView }) => ({ default: CreatorDetailView })));
-const CityPageView = lazy(() => import('./views/CityPageView').then(({ CityPageView }) => ({ default: CityPageView })));
-const CategoryPageView = lazy(() => import('./views/CategoryPageView').then(({ CategoryPageView }) => ({ default: CategoryPageView })));
-const PostRequirementView = lazy(() => import('./views/PostRequirementView').then(({ PostRequirementView }) => ({ default: PostRequirementView })));
-const OpportunitiesView = lazy(() => import('./views/OpportunitiesView').then(({ OpportunitiesView }) => ({ default: OpportunitiesView })));
-const BrandCampaignsView = lazy(() => import('./views/BrandCampaignsView').then(({ BrandCampaignsView }) => ({ default: BrandCampaignsView })));
+const lazyWithChunkRecovery = <T extends React.ComponentType<any>>(
+  load: () => Promise<{ default: T }>
+) =>
+  lazy(() => {
+    const retryKey = `chunk-load-retry:${window.location.pathname}`;
+    return load()
+      .then((module) => {
+        sessionStorage.removeItem(retryKey);
+        return module;
+      })
+      .catch((error: unknown) => {
+        const isChunkLoadError =
+          error instanceof TypeError &&
+          /dynamically imported module|module script/i.test(error.message);
+        if (isChunkLoadError && !sessionStorage.getItem(retryKey)) {
+          sessionStorage.setItem(retryKey, '1');
+          window.location.reload();
+        }
+        throw error;
+      });
+  });
 
-const WalletView = lazy(() => import('./views/WalletView').then(({ WalletView }) => ({ default: WalletView })));
-const AdminDashboardView = lazy(() => import('./views/AdminDashboardView').then(({ AdminDashboardView }) => ({ default: AdminDashboardView })));
-const BlogView = lazy(() => import('./views/BlogView').then(({ BlogView }) => ({ default: BlogView })));
-const BlogPostView = lazy(() => import('./views/BlogPostView').then(({ BlogPostView }) => ({ default: BlogPostView })));
-const BrandDetailView = lazy(() => import('./views/BrandDetailView').then(({ BrandDetailView }) => ({ default: BrandDetailView })));
-const LoginView = lazy(() => import('./views/LoginView').then(({ LoginView }) => ({ default: LoginView })));
-const ChatView = lazy(() => import('./views/ChatView').then(({ ChatView }) => ({ default: ChatView })));
-const HelpSupportView = lazy(() => import('./views/HelpSupportView').then(({ HelpSupportView }) => ({ default: HelpSupportView })));
+// Route views are code-split so visitors load only the page they open.
+const HomeView = lazyWithChunkRecovery(() => import('./views/HomeView').then(({ HomeView }) => ({ default: HomeView })));
+const AllBrandsView = lazyWithChunkRecovery(() => import('./views/AllBrandsView').then(({ AllBrandsView }) => ({ default: AllBrandsView })));
+const ExploreView = lazyWithChunkRecovery(() => import('./views/ExploreView').then(({ ExploreView }) => ({ default: ExploreView })));
+const CreatorDetailView = lazyWithChunkRecovery(() => import('./views/CreatorDetailView').then(({ CreatorDetailView }) => ({ default: CreatorDetailView })));
+const CityPageView = lazyWithChunkRecovery(() => import('./views/CityPageView').then(({ CityPageView }) => ({ default: CityPageView })));
+const CategoryPageView = lazyWithChunkRecovery(() => import('./views/CategoryPageView').then(({ CategoryPageView }) => ({ default: CategoryPageView })));
+const PostRequirementView = lazyWithChunkRecovery(() => import('./views/PostRequirementView').then(({ PostRequirementView }) => ({ default: PostRequirementView })));
+const OpportunitiesView = lazyWithChunkRecovery(() => import('./views/OpportunitiesView').then(({ OpportunitiesView }) => ({ default: OpportunitiesView })));
+const BrandCampaignsView = lazyWithChunkRecovery(() => import('./views/BrandCampaignsView').then(({ BrandCampaignsView }) => ({ default: BrandCampaignsView })));
+
+const WalletView = lazyWithChunkRecovery(() => import('./views/WalletView').then(({ WalletView }) => ({ default: WalletView })));
+const AdminDashboardView = lazyWithChunkRecovery(() => import('./views/AdminDashboardView').then(({ AdminDashboardView }) => ({ default: AdminDashboardView })));
+const BlogView = lazyWithChunkRecovery(() => import('./views/BlogView').then(({ BlogView }) => ({ default: BlogView })));
+const BlogPostView = lazyWithChunkRecovery(() => import('./views/BlogPostView').then(({ BlogPostView }) => ({ default: BlogPostView })));
+const BrandDetailView = lazyWithChunkRecovery(() => import('./views/BrandDetailView').then(({ BrandDetailView }) => ({ default: BrandDetailView })));
+const LoginView = lazyWithChunkRecovery(() => import('./views/LoginView').then(({ LoginView }) => ({ default: LoginView })));
+const ChatView = lazyWithChunkRecovery(() => import('./views/ChatView').then(({ ChatView }) => ({ default: ChatView })));
+const HelpSupportView = lazyWithChunkRecovery(() => import('./views/HelpSupportView').then(({ HelpSupportView }) => ({ default: HelpSupportView })));
 
 const MainAppContent: React.FC = () => {
   return (

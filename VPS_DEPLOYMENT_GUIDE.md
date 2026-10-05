@@ -133,6 +133,19 @@ server {
     root /var/www/thebrandsstory/frontend/dist;
     index index.html;
 
+    # Do not cache the app shell; each deployment may use new hashed bundles.
+    location = /index.html {
+        expires off;
+        add_header Cache-Control "no-store, no-cache, must-revalidate" always;
+    }
+
+    # Keep hashed bundles cached, but never serve index.html for a missing bundle.
+    location ^~ /assets/ {
+        try_files $uri =404;
+        expires off;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+    }
+
     # Backend Express API Reverse Proxy
     location /api/ {
         proxy_pass http://127.0.0.1:8000;
