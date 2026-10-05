@@ -47,46 +47,42 @@ export const FeaturedBrandsSection: React.FC = () => {
 
   return (
     <section className="py-12 sm:py-20 bg-[#071328] border-b border-slate-800/80 text-white relative overflow-hidden font-sans">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-        {/* Heading */}
-        <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight mb-2">
-          Brands & Campaign Hiring
-        </h2>
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 relative z-10">
+        <div className="mb-3 flex flex-nowrap items-center justify-between gap-1 sm:gap-4">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight">
+            Brands & Campaign Hiring
+          </h2>
 
-        {/* Subtitle */}
-        <p className="text-xs sm:text-sm md:text-base text-slate-300 font-medium max-w-2xl mx-auto mb-6">
+          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+            <button
+              type="button"
+              onClick={() => scrollBrands('left')}
+              aria-label="Previous brands"
+              className="flex h-5 w-5 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-[#0d224b] border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white transition cursor-pointer"
+            >
+              <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollBrands('right')}
+              aria-label="Next brands"
+              className="flex h-5 w-5 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-[#0d224b] border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white transition cursor-pointer"
+            >
+              <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => navigateTo('all-brands')}
+              className="whitespace-nowrap rounded-full border border-[#D4A338]/70 bg-[#0d224b] px-1 py-1 sm:px-4 sm:py-2 text-[9px] sm:text-xs font-bold text-[#D4A338] transition hover:bg-[#D4A338] hover:text-slate-950"
+            >
+              View All Brands
+            </button>
+          </div>
+        </div>
+
+        <p className="max-w-2xl text-left text-xs sm:text-xs md:text-sm text-slate-400 font-medium mb-6">
           Brand information and campaign totals from registered brand profiles and approved campaigns.
         </p>
-
-        <div className="mb-6 flex justify-end">
-          <button
-            type="button"
-            onClick={() => navigateTo('all-brands')}
-            className="rounded-full border border-[#D4A338]/70 bg-[#0d224b] px-5 py-2.5 text-sm font-bold text-[#D4A338] transition hover:bg-[#D4A338] hover:text-slate-950"
-          >
-            View All Brands
-          </button>
-        </div>
-
-        {/* Carousel Arrow Buttons */}
-        <div className="flex justify-center gap-2 mb-6">
-          <button
-            type="button"
-            onClick={() => scrollBrands('left')}
-            aria-label="Previous brands"
-            className="w-10 h-10 rounded-full bg-[#0d224b] border border-slate-700 hover:border-slate-500 flex items-center justify-center text-slate-300 hover:text-white transition cursor-pointer"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => scrollBrands('right')}
-            aria-label="Next brands"
-            className="w-10 h-10 rounded-full bg-[#0d224b] border border-slate-700 hover:border-slate-500 flex items-center justify-center text-slate-300 hover:text-white transition cursor-pointer"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
 
         {/* Brand Cards Carousel (Matching Photo 3) */}
         <div
