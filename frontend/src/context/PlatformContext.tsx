@@ -19,6 +19,7 @@ import {
   IndustryCardInfo
 } from '../types';
 import { cleanInstagramHandle } from '../utils/sanitize';
+import { connectSocket, getSocket } from '../config/socket';
 
 const normalizeCreatorMedia = (creator: Creator): Creator => ({
   ...creator,
@@ -942,7 +943,9 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (data.success && Array.isArray(data.conversations)) {
           let sum = 0;
           for (const c of data.conversations) {
-            sum += (c.unreadCount || 0);
+            if (c.unreadCount && c.unreadCount > 0) {
+              sum += 1;
+            }
           }
           setUnreadPitchesCount(sum);
         }
@@ -952,7 +955,22 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
     fetchUnread();
     const interval = window.setInterval(fetchUnread, 15000); // 15 seconds
-    return () => window.clearInterval(interval);
+
+    const handleNewMessage = () => fetchUnread();
+
+    const token = localStorage.getItem('sc_auth_token');
+    if (token) {
+      const socket = connectSocket(token);
+      socket.on('new_message', handleNewMessage);
+    }
+
+    return () => {
+      window.clearInterval(interval);
+      const socket = getSocket();
+      if (socket) {
+        socket.off('new_message', handleNewMessage);
+      }
+    };
   }, [authUser]);
 
 

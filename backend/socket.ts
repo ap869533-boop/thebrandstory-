@@ -9,6 +9,7 @@ let io: Server;
 
 export function initSocket(server: http.Server, allowedOrigins: string[]) {
   io = new Server(server, {
+    path: '/api/socket.io/',
     cors: {
       origin: allowedOrigins,
       methods: ['GET', 'POST'],
