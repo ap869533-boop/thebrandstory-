@@ -6,6 +6,7 @@ let socket: Socket | null = null;
 export const connectSocket = (token: string): Socket => {
   if (!socket) {
     socket = io(apiUrl(''), {
+      path: '/api/socket.io/',
       auth: {
         token,
       },
