@@ -48,7 +48,7 @@ export const Footer: React.FC = () => {
               </li>
               <li>
                 <button onClick={() => navigateTo('post-requirement')} className="hover:text-white transition">
-                  Post Campaign Brief
+                  Post campaign Brief
                 </button>
               </li>
               <li>
