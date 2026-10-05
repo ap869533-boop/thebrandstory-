@@ -73,10 +73,6 @@ export const TestimonialsAndFAQ: React.FC = () => {
         <div>
           <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-3">
             <div>
-              <div className="flex items-center gap-1.5 text-[#D4A338] text-xs font-extrabold uppercase tracking-wider mb-1.5">
-                <Quote className="w-3.5 h-3.5" />
-                <span>USER EXPERIENCES</span>
-              </div>
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight">
                 Trusted by Top Brands & Creators
               </h2>
