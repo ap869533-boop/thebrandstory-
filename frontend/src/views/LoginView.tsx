@@ -1190,6 +1190,7 @@ export const LoginView: React.FC = () => {
         <ImageCropperModal
           imageSrc={cropSrc}
           aspect={cropTarget === 'avatar' || cropTarget === 'brand_logo' ? 1 : 9 / 16}
+          shape={cropTarget === 'avatar' ? 'round' : 'rect'}
           onCropDone={async (croppedFile) => {
             const base64Url = await fileToBase64(croppedFile as File);
             if (cropTarget === 'brand_logo') setBrandLogoUrl(base64Url);

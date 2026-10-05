@@ -89,6 +89,7 @@ export const CreatorDetailView: React.FC = () => {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [profileDraft, setProfileDraft] = useState<Record<string, string>>({});
   const [isEditingRates, setIsEditingRates] = useState(false);
+  const [isSavingRates, setIsSavingRates] = useState(false);
   const [ratesDraft, setRatesDraft] = useState<Record<string, string>>({});
   const [ratesError, setRatesError] = useState('');
   const [cropModalData, setCropModalData] = useState<{ src: string, type: string } | null>(null);
@@ -271,6 +272,7 @@ export const CreatorDetailView: React.FC = () => {
   const startEditingRates = () => {
     setRatesError('');
     setRatesDraft({
+      startingPrice: String(creator.startingPrice ?? creator.pricing?.startingPrice ?? 0),
       reelPrice: String(creator.pricing?.reelPrice || 0),
       storyPrice: String(creator.pricing?.storyPrice || 0),
       postPrice: String(creator.pricing?.postPrice || 0),
@@ -281,28 +283,47 @@ export const CreatorDetailView: React.FC = () => {
   };
 
   const saveRates = async () => {
-    const prices = Object.values(ratesDraft);
-    if (prices.some((price) => !/^\d+$/.test(price))) {
-      setRatesError('Enter a whole-number rate of 0 or more for each deliverable.');
+    const parsedRates = {
+      startingPrice: Number(ratesDraft.startingPrice),
+      reelPrice: Number(ratesDraft.reelPrice),
+      storyPrice: Number(ratesDraft.storyPrice),
+      postPrice: Number(ratesDraft.postPrice),
+      ugcPrice: Number(ratesDraft.ugcPrice),
+      eventPrice: Number(ratesDraft.eventPrice),
+    };
+    if (Object.values(ratesDraft).some((price) => !/^\d+$/.test(price)) ||
+        Object.values(parsedRates).some((price) => !Number.isSafeInteger(price) || price > 4294967295)) {
+      setRatesError('Enter a whole-number rate from 0 to ₹4,294,967,295 for each deliverable.');
       return;
     }
 
-    const saved = await updateCreatorProfile(creator.id, {
-      pricing: {
-        ...(creator.pricing || {}),
-        reelPrice: Number(ratesDraft.reelPrice || 0),
-        storyPrice: Number(ratesDraft.storyPrice || 0),
-        postPrice: Number(ratesDraft.postPrice || 0),
-        ugcPrice: Number(ratesDraft.ugcPrice || 0),
-        eventPrice: Number(ratesDraft.eventPrice || 0),
-      } as any
-    });
-    if (!saved) {
-      setRatesError('Rates were not saved. Please correct the error and try again.');
-      return;
+    setIsSavingRates(true);
+    try {
+      const startingPrice = parsedRates.startingPrice;
+      const saved = await updateCreatorProfile(creator.id, {
+        startingPrice,
+        pricing: {
+          ...(creator.pricing || {}),
+          startingPrice,
+          reelPrice: parsedRates.reelPrice,
+          storyPrice: parsedRates.storyPrice,
+          postPrice: parsedRates.postPrice,
+          ugcPrice: parsedRates.ugcPrice,
+          eventPrice: parsedRates.eventPrice,
+          isNegotiable: creator.pricing?.isNegotiable ?? false,
+          isBarterAvailable: creator.pricing?.isBarterAvailable ?? false,
+          pricingDisplayType: creator.pricing?.pricingDisplayType ?? 'starting',
+        }
+      });
+      if (!saved) {
+        setRatesError('Rates were not saved. Please check your connection and try again.');
+        return;
+      }
+      setRatesError('');
+      setIsEditingRates(false);
+    } finally {
+      setIsSavingRates(false);
     }
-    setRatesError('');
-    setIsEditingRates(false);
   };
 
   const profileField = (key: string, value: string) => isEditingProfile
@@ -364,7 +385,7 @@ export const CreatorDetailView: React.FC = () => {
         email: authUser.email || '',
         phone: '',
         campaignType: 'Direct Inquiry',
-        city: creator.city || 'Any',
+        city: creator.currentCity || 'Any',
         budget: 'Open',
         influencersRequired: 1,
         preferredDate: 'Flexible',
@@ -614,8 +635,8 @@ export const CreatorDetailView: React.FC = () => {
             {isOwner ? (
               isEditingRates ? (
                 <div className="flex gap-2">
-                  <button onClick={() => setIsEditingRates(false)} className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs shadow-xs transition shrink-0">Cancel</button>
-                  <button onClick={saveRates} className="px-4 py-2 rounded-xl bg-[#D4A338] hover:bg-[#c2912a] text-white font-bold text-xs shadow-xs transition shrink-0">Save Rates</button>
+                  <button onClick={() => setIsEditingRates(false)} disabled={isSavingRates} className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs shadow-xs transition shrink-0 disabled:opacity-50">Cancel</button>
+                  <button onClick={saveRates} disabled={isSavingRates} className="px-4 py-2 rounded-xl bg-[#D4A338] hover:bg-[#c2912a] text-white font-bold text-xs shadow-xs transition shrink-0 disabled:opacity-50">{isSavingRates ? 'Saving...' : 'Save Rates'}</button>
                 </div>
               ) : (
                 <button onClick={startEditingRates} className="px-4 py-2 rounded-xl bg-black hover:bg-zinc-900 text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer shrink-0">
@@ -623,104 +644,111 @@ export const CreatorDetailView: React.FC = () => {
                   <span>Edit Rates</span>
                 </button>
               )
-            ) : (
-              <button
-                onClick={handleInquireClick}
-                className="px-4 py-2 rounded-xl bg-black hover:bg-zinc-900 text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
-              >
-                <MessageSquare className="w-3.5 h-3.5" />
-                <span>Message Creator</span>
-              </button>
-            )}
+            ) : null}
           </div>
 
           {ratesError && <p role="alert" className="text-sm font-semibold text-rose-600">{ratesError}</p>}
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70 text-center space-y-1">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">per reel</span>
+          <div className="overflow-x-auto pb-2" role="region" aria-label="Commercial deliverable rates" tabIndex={0}>
+          <div className="grid min-w-[1120px] grid-cols-7 gap-3">
+            <div className="min-w-0 p-3 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
+              <span className="text-[11px] font-bold text-[#D4A338] uppercase tracking-wider block">Starting Price</span>
               <span className="text-base font-black text-slate-900 block flex items-center justify-center h-8">
                 {isEditingRates ? (
                   <div className="flex items-center justify-center gap-1">
                     <span>₹</span>
-                    <input type="number" className="w-16 px-1 py-1 text-center border border-slate-300 rounded text-sm outline-none" value={ratesDraft.reelPrice} onChange={(e) => setRatesDraft(d => ({...d, reelPrice: e.target.value}))} />
+                    <input type="text" inputMode="numeric" pattern="[0-9]*" aria-label="Minimum collaboration rate" className="w-20 px-1 py-1 text-center border border-slate-300 rounded text-sm outline-none focus:border-[#D4A338] focus:ring-1 focus:ring-[#D4A338]" value={ratesDraft.startingPrice} onChange={(e) => setRatesDraft(d => ({...d, startingPrice: e.target.value.replace(/\D/g, '')}))} />
+                  </div>
+                ) : (
+                  `₹${(creator.startingPrice ?? creator.pricing?.startingPrice ?? 0).toLocaleString('en-IN')}`
+                )}
+              </span>
+            
+            </div>
+            <div className="min-w-0 p-3 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
+              <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block">per reel</span>
+              <span className="text-base font-black text-slate-900 block flex items-center justify-center h-8">
+                {isEditingRates ? (
+                  <div className="flex items-center justify-center gap-1">
+                    <span>₹</span>
+                    <input type="text" inputMode="numeric" pattern="[0-9]*" aria-label="Rate per reel" className="w-20 px-1 py-1 text-center border border-slate-300 rounded text-sm outline-none focus:border-[#D4A338] focus:ring-1 focus:ring-[#D4A338]" value={ratesDraft.reelPrice} onChange={(e) => setRatesDraft(d => ({...d, reelPrice: e.target.value.replace(/\D/g, '')}))} />
                   </div>
                 ) : (
                   `₹${(creator.pricing?.reelPrice || 0).toLocaleString('en-IN')}`
                 )}
               </span>
-              <span className="text-[10px] text-emerald-600 font-semibold block">High Reach</span>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70 text-center space-y-1">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">per story</span>
+            <div className="min-w-0 p-3 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
+              <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block">per story</span>
               <span className="text-base font-black text-slate-900 block flex items-center justify-center h-8">
                 {isEditingRates ? (
                   <div className="flex items-center justify-center gap-1">
                     <span>₹</span>
-                    <input type="number" className="w-16 px-1 py-1 text-center border border-slate-300 rounded text-sm outline-none" value={ratesDraft.storyPrice} onChange={(e) => setRatesDraft(d => ({...d, storyPrice: e.target.value}))} />
+                    <input type="text" inputMode="numeric" pattern="[0-9]*" aria-label="Rate per story" className="w-20 px-1 py-1 text-center border border-slate-300 rounded text-sm outline-none focus:border-[#D4A338] focus:ring-1 focus:ring-[#D4A338]" value={ratesDraft.storyPrice} onChange={(e) => setRatesDraft(d => ({...d, storyPrice: e.target.value.replace(/\D/g, '')}))} />
                   </div>
                 ) : (
                   `₹${(creator.pricing?.storyPrice || 0).toLocaleString('en-IN')}`
                 )}
               </span>
-              <span className="text-[10px] text-[#D4A338] font-semibold block">Link Click</span>
+         
             </div>
 
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70 text-center space-y-1">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">per post</span>
+            <div className="min-w-0 p-3 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
+              <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block">per post</span>
               <span className="text-base font-black text-slate-900 block flex items-center justify-center h-8">
                 {isEditingRates ? (
                   <div className="flex items-center justify-center gap-1">
                     <span>₹</span>
-                    <input type="number" className="w-16 px-1 py-1 text-center border border-slate-300 rounded text-sm outline-none" value={ratesDraft.postPrice} onChange={(e) => setRatesDraft(d => ({...d, postPrice: e.target.value}))} />
+                    <input type="text" inputMode="numeric" pattern="[0-9]*" aria-label="Rate per post" className="w-20 px-1 py-1 text-center border border-slate-300 rounded text-sm outline-none focus:border-[#D4A338] focus:ring-1 focus:ring-[#D4A338]" value={ratesDraft.postPrice} onChange={(e) => setRatesDraft(d => ({...d, postPrice: e.target.value.replace(/\D/g, '')}))} />
                   </div>
                 ) : (
                   `₹${(creator.pricing?.postPrice || 0).toLocaleString('en-IN')}`
                 )}
               </span>
-              <span className="text-[10px] text-slate-500 font-semibold block">Carousel / Static</span>
+           
             </div>
 
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70 text-center space-y-1">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">per ugc video</span>
+            <div className="min-w-0 p-3 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
+              <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block">per ugc video</span>
               <span className="text-base font-black text-slate-900 block flex items-center justify-center h-8">
                 {isEditingRates ? (
                   <div className="flex items-center justify-center gap-1">
                     <span>₹</span>
-                    <input type="number" className="w-16 px-1 py-1 text-center border border-slate-300 rounded text-sm outline-none" value={ratesDraft.ugcPrice} onChange={(e) => setRatesDraft(d => ({...d, ugcPrice: e.target.value}))} />
+                    <input type="text" inputMode="numeric" pattern="[0-9]*" aria-label="Rate per UGC video" className="w-20 px-1 py-1 text-center border border-slate-300 rounded text-sm outline-none focus:border-[#D4A338] focus:ring-1 focus:ring-[#D4A338]" value={ratesDraft.ugcPrice} onChange={(e) => setRatesDraft(d => ({...d, ugcPrice: e.target.value.replace(/\D/g, '')}))} />
                   </div>
                 ) : (
                   `₹${(creator.pricing?.ugcPrice || 0).toLocaleString('en-IN')}`
                 )}
               </span>
-              <span className="text-[10px] text-purple-600 font-semibold block">Ad Creative</span>
+
             </div>
 
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70 text-center space-y-1">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">per event/visit</span>
+            <div className="min-w-0 p-3 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
+              <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block">per event/visit</span>
               <span className="text-base font-black text-slate-900 block flex items-center justify-center h-8">
                 {isEditingRates ? (
                   <div className="flex items-center justify-center gap-1">
                     <span>₹</span>
-                    <input type="number" className="w-16 px-1 py-1 text-center border border-slate-300 rounded text-sm outline-none" value={ratesDraft.eventPrice} onChange={(e) => setRatesDraft(d => ({...d, eventPrice: e.target.value}))} />
+                    <input type="text" inputMode="numeric" pattern="[0-9]*" aria-label="Rate per event or visit" className="w-20 px-1 py-1 text-center border border-slate-300 rounded text-sm outline-none focus:border-[#D4A338] focus:ring-1 focus:ring-[#D4A338]" value={ratesDraft.eventPrice} onChange={(e) => setRatesDraft(d => ({...d, eventPrice: e.target.value.replace(/\D/g, '')}))} />
                   </div>
                 ) : (
                   `₹${(creator.pricing?.eventPrice || 0).toLocaleString('en-IN')}`
                 )}
               </span>
-              <span className="text-[10px] text-amber-600 font-semibold block">Store Presence</span>
+
             </div>
 
-            <div className="p-3.5 rounded-xl bg-blue-50/50 border border-blue-100 text-center space-y-1">
-              <span className="text-[11px] font-bold text-[#D4A338] uppercase tracking-wider block">Barter</span>
-              <span className="text-base font-black text-blue-900 block">
+            <div className="min-w-0 p-3 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
+              <span className="text-[11px] font-bold text-amber-700 uppercase tracking-wider block">Barter</span>
+              <span className="text-base font-black text-slate-900 block">
                 {creator.pricing?.isBarterAvailable ? 'Available' : 'Paid Only'}
               </span>
-              <span className="text-[10px] text-blue-500 font-semibold block">
+              <span className="text-[10px] text-slate-600 font-semibold block">
                 {creator.pricing?.isNegotiable ? 'Negotiable' : 'Fixed'}
               </span>
             </div>
+          </div>
           </div>
         </div>
 

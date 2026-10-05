@@ -1300,7 +1300,9 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
 
       // Replace local state with server-confirmed object
-      setCreators(prev => prev.map(c => c.id === creatorId ? data.creator : c));
+      setCreators(prev => prev.some(c => c.id === creatorId)
+        ? prev.map(c => c.id === creatorId ? data.creator : c)
+        : [data.creator, ...prev]);
       setAuthUser(prev => {
         if (!prev) return prev;
         if (prev.creatorProfile && (prev.creatorProfile.id === creatorId || prev.id === creatorId)) {

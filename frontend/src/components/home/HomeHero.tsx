@@ -189,7 +189,7 @@ export const HomeHero: React.FC = () => {
 
         {/* Main Title */}
         <div className="space-y-2.5 md:space-y-12 max-w-xl mx-auto md:mx-0 md:col-start-1 md:row-start-1 md:self-end">
-          <h1 className="text-4xl sm:text-5xl md:text-[3.5rem] lg:text-[4rem] font-black tracking-tight text-white leading-tight">
+          <h1 className="whitespace-nowrap text-[clamp(1.1rem,6.5vw,2.2rem)] md:text-[clamp(1.15rem,3.2vw,3.1rem)] font-black tracking-tight text-white leading-tight">
             Your next collab is here
           </h1>
 
