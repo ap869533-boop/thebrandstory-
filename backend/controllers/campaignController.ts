@@ -4,6 +4,7 @@ import { CampaignRequirement } from '../types';
 import { creatorsStore } from './creatorController';
 import { AuthenticatedRequest } from '../middleware/authMiddleware';
 import { parseNonNegInt, validateWhatsAppNumber } from '../utils/validation';
+import { getIo } from '../socket';
 
 let campaignsStore: CampaignRequirement[] = [];
 
@@ -559,6 +560,23 @@ export async function updateCampaign(req: AuthenticatedRequest, res: Response) {
              VALUES (?, ?, ?, ?, ?, 0)`,
             [messageId, conversationId, req.user.id, 'CREATOR', application.pitch]
           );
+
+          try {
+            const io = getIo();
+            if (brandUserId) {
+              io.to(`user_${brandUserId}`).emit('new_message', {
+                id: messageId,
+                conversationId,
+                senderId: req.user.id,
+                senderRole: 'CREATOR',
+                body: application.pitch,
+                isRead: false,
+                createdAt: new Date().toISOString()
+              });
+            }
+          } catch (err) {
+            console.error('Socket emit failed:', err);
+          }
         }
       } catch (err) {
         console.warn('MySQL applicant insert notice:', err);

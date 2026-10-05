@@ -4,6 +4,7 @@ import { EnquiryLead } from '../types';
 import { creatorsStore } from './creatorController';
 import { AuthenticatedRequest } from '../middleware/authMiddleware';
 import { validateWhatsAppNumber } from '../utils/validation';
+import { getIo } from '../socket';
 
 function mapEnquiry(r: any): EnquiryLead {
   return {
@@ -165,6 +166,25 @@ export async function createEnquiry(req: AuthenticatedRequest, res: Response) {
            VALUES (?, ?, ?, 'BRAND', ?, 0)`,
           [messageId, conversationId, req.user.id, msgBody]
         );
+        
+        try {
+          const io = getIo();
+          const cRow2: any = await dbQuery('SELECT user_id FROM creators WHERE id = ? LIMIT 1', [data.creatorId]);
+          const receiverId = (Array.isArray(cRow2) && cRow2.length > 0) ? cRow2[0].user_id : data.creatorId;
+          if (receiverId) {
+            io.to(`user_${receiverId}`).emit('new_message', {
+              id: messageId,
+              conversationId,
+              senderId: req.user.id,
+              senderRole: 'BRAND',
+              body: msgBody,
+              isRead: false,
+              createdAt: new Date().toISOString()
+            });
+          }
+        } catch (err) {
+          console.error('Socket emit failed:', err);
+        }
       } catch (e) {
         console.warn('Auto-chat for enquiry failed', e);
       }

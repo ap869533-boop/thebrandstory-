@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { dbQuery } from '../config/db';
 import { AuthenticatedRequest } from '../middleware/authMiddleware';
+import { getIo } from '../socket';
 
 function mapInquiry(r: any) {
   return {
@@ -185,6 +186,21 @@ export async function createBrandInquiry(req: AuthenticatedRequest, res: Respons
        VALUES (?, ?, ?, ?, ?, 0, NOW())`,
       [messageId, conversationId, req.user.id, req.user.role, inquiryMessage]
     );
+
+    try {
+      const io = getIo();
+      io.to(`user_${brandId}`).emit('new_message', {
+        id: messageId,
+        conversationId,
+        senderId: req.user.id,
+        senderRole: req.user.role,
+        body: inquiryMessage,
+        isRead: false,
+        createdAt: new Date().toISOString()
+      });
+    } catch (err) {
+      console.error('Socket emit failed:', err);
+    }
 
     // Insert the inquiry record
     await dbQuery(

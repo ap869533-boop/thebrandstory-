@@ -14,6 +14,7 @@ import {
 import { apiUrl, authHeaders } from '../../config/api';
 import type { ChatMessage, ConversationThread } from '../../types';
 import { usePlatform } from '../../context/PlatformContext';
+import { connectSocket, disconnectSocket, getSocket } from '../../config/socket';
 import EmojiPicker, { EmojiClickData, Theme } from 'emoji-picker-react';
 
 // WhatsApp-style clearly visible WHITE doodle SVG background pattern (high contrast)
@@ -141,13 +142,22 @@ export const ConversationsPanel: React.FC<{
     target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'User')}&background=0f172a&color=D4A338&bold=true`;
   };
 
+  const activeIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    activeIdRef.current = activeId;
+  }, [activeId]);
+
   const loadThreads = useCallback(async () => {
     try {
       const res = await fetch(apiUrl(`/api/conversations?t=${Date.now()}`), { headers: authHeaders() });
       const data = await res.json();
       if (data.success && Array.isArray(data.conversations)) {
-        threadsRef.current = data.conversations;
-        setThreads(data.conversations);
+        const currentActive = activeIdRef.current;
+        const adjusted = data.conversations.map((t: ConversationThread) => 
+          t.id === currentActive ? { ...t, unreadCount: 0 } : t
+        );
+        threadsRef.current = adjusted;
+        setThreads(adjusted);
       }
     } catch {
       // ignore
@@ -162,7 +172,11 @@ export const ConversationsPanel: React.FC<{
       const data = await res.json();
       if (data.success && Array.isArray(data.messages)) {
         setMessages((prev) => {
-          if (prev.length > 0 && data.messages.length < prev.length) {
+          // Ensure we don't block messages if we switched to a different conversation
+          if (prev.length > 0 && data.messages.length > 0 && prev[0].conversationId !== data.messages[0].conversationId) {
+            return data.messages;
+          }
+          if (prev.length > 0 && data.messages.length < prev.length && prev[0].conversationId === id) {
             return prev; // Ignore stale fetch that misses optimistically inserted messages
           }
           return data.messages;
@@ -175,17 +189,40 @@ export const ConversationsPanel: React.FC<{
 
   useEffect(() => {
     if (!authUser) return;
+    
+    // Connect socket on auth
+    const token = localStorage.getItem('sc_auth_token');
+    if (token) {
+      connectSocket(token);
+    }
+    
     void loadThreads();
     const heartbeat = window.setInterval(() => {
       fetch(apiUrl('/api/presence/heartbeat'), { method: 'POST', headers: authHeaders() }).catch(() => undefined);
     }, 45000);
     fetch(apiUrl('/api/presence/heartbeat'), { method: 'POST', headers: authHeaders() }).catch(() => undefined);
-    const poll = window.setInterval(() => {
-      void loadThreads();
-    }, 2500);
+    
+    const socket = getSocket();
+    const handleNewMessage = () => void loadThreads();
+    const handlePeerTyping = (data: { conversationId: string; senderId: string; isTyping: boolean }) => {
+      setThreads((prev) =>
+        prev.map((t) =>
+          t.id === data.conversationId ? { ...t, peerTyping: data.isTyping } : t
+        )
+      );
+    };
+
+    if (socket) {
+      socket.on('new_message', handleNewMessage);
+      socket.on('peer_typing', handlePeerTyping);
+    }
+
     return () => {
       window.clearInterval(heartbeat);
-      window.clearInterval(poll);
+      if (socket) {
+        socket.off('new_message', handleNewMessage);
+        socket.off('peer_typing', handlePeerTyping);
+      }
     };
   }, [authUser, loadThreads]);
 
@@ -236,11 +273,37 @@ export const ConversationsPanel: React.FC<{
 
   useEffect(() => {
     if (!activeId) return;
+    setMessages([]);
+    setDraft('');
+    setThreads((prev) => prev.map((t) => t.id === activeId ? { ...t, unreadCount: 0 } : t));
     void loadMessages(activeId);
-    const poll = window.setInterval(() => {
-      void loadMessages(activeId);
-    }, 2000);
-    return () => window.clearInterval(poll);
+    
+    const socket = getSocket();
+    const handleActiveMessage = (message: ChatMessage) => {
+      if (message.conversationId === activeId) {
+        setMessages((prev) => {
+          if (prev.find((m) => m.id === message.id)) return prev;
+          return [...prev, message];
+        });
+        // Also mark as read locally
+        fetch(apiUrl(`/api/conversations/${activeId}/messages?t=${Date.now()}`), { headers: authHeaders() }).catch(() => {});
+        
+        // Since we're reading it instantly, reset the unread count in threads
+        setThreads((prev) => 
+          prev.map((t) => t.id === activeId ? { ...t, unreadCount: 0 } : t)
+        );
+      }
+    };
+
+    if (socket) {
+      socket.on('new_message', handleActiveMessage);
+    }
+
+    return () => {
+      if (socket) {
+        socket.off('new_message', handleActiveMessage);
+      }
+    };
   }, [activeId, loadMessages]);
 
   useEffect(() => {
@@ -309,25 +372,32 @@ export const ConversationsPanel: React.FC<{
     return { all, pitches, inquiry };
   }, [threads]);
 
+  const lastTypingTimeRef = useRef<number>(0);
+
   // Handle typing indicator
   useEffect(() => {
     if (!activeId) return;
     const isTyping = draft.trim().length > 0;
     
     if (isTyping) {
-      fetch(apiUrl(`/api/conversations/${activeId}/typing`), {
-        method: 'POST',
-        headers: authHeaders(),
-        body: JSON.stringify({ isTyping: true }),
-      }).catch(() => {});
+      const now = Date.now();
+      if (now - lastTypingTimeRef.current > 1500) {
+        fetch(apiUrl(`/api/conversations/${activeId}/typing`), {
+          method: 'POST',
+          headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+          body: JSON.stringify({ isTyping: true }),
+        }).catch(() => {});
+        lastTypingTimeRef.current = now;
+      }
     }
 
     const timer = setTimeout(() => {
       fetch(apiUrl(`/api/conversations/${activeId}/typing`), {
         method: 'POST',
-        headers: authHeaders(),
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ isTyping: false }),
       }).catch(() => {});
+      lastTypingTimeRef.current = 0;
     }, 2000);
 
     return () => clearTimeout(timer);
