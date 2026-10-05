@@ -37,7 +37,7 @@ import { dbQuery } from './config/db';
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 5000;
 
-const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
+const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000,http://localhost:5173,https://thebrandsstory.com,https://www.thebrandsstory.com')
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean);
