@@ -1,5 +1,5 @@
 import React, { lazy, Suspense } from 'react';
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { PlatformProvider } from './context/PlatformContext';
 import { Footer } from './components/common/Footer';
@@ -81,11 +81,11 @@ const MainAppContent: React.FC = () => {
 export default function App() {
   return (
     <HelmetProvider>
-      <HashRouter>
+      <BrowserRouter>
         <PlatformProvider>
           <MainAppContent />
         </PlatformProvider>
-      </HashRouter>
+      </BrowserRouter>
     </HelmetProvider>
   );
 }
