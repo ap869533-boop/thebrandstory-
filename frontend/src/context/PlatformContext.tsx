@@ -942,7 +942,9 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (data.success && Array.isArray(data.conversations)) {
           let sum = 0;
           for (const c of data.conversations) {
-            sum += (c.unreadCount || 0);
+            if (c.unreadCount && c.unreadCount > 0) {
+              sum += 1;
+            }
           }
           setUnreadPitchesCount(sum);
         }
