@@ -80,6 +80,72 @@ a.bg-blue-500 svg {
   box-shadow: 0 20px 30px -10px rgba(15, 23, 42, 0.12), 0 0 15px -3px rgba(37, 99, 235, 0.15);
 }
 
+@property --creator-border-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.creator-card--silver,
+.creator-card--gold,
+.creator-card--diamond {
+  border-color: transparent;
+}
+
+.creator-card--silver::before,
+.creator-card--gold::before,
+.creator-card--diamond::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  padding: 4px;
+  border-radius: inherit;
+  pointer-events: none;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: creatorMetalBorder 6s linear infinite;
+}
+
+.creator-card--silver::before {
+  background: conic-gradient(from var(--creator-border-angle), #7d8793, #f8fafc 18%, #b7c0ca 34%, #e8edf2 52%, #8995a2 70%, #fff 86%, #7d8793);
+}
+
+.creator-card--gold::before {
+  padding: 5px;
+  background: conic-gradient(from var(--creator-border-angle), #9a7132, #fff2c4 16%, #d6b46a 32%, #fff9e9 50%, #b68b43 68%, #f5dfa3 84%, #9a7132);
+  animation-duration: 4.5s;
+}
+
+.creator-card--diamond {
+  animation: diamondCardGlow 2.6s ease-in-out infinite;
+}
+
+.creator-card--diamond::before {
+  padding: 6px;
+  background: conic-gradient(from var(--creator-border-angle), #68d9e8, #fff 10%, #80baff 22%, #e9f7ff 34%, #b9a6ff 48%, #fff 60%, #7de7d2 74%, #fff 86%, #68d9e8);
+  animation: creatorMetalBorder 2.8s linear infinite;
+}
+
+@keyframes creatorMetalBorder {
+  to { --creator-border-angle: 360deg; }
+}
+
+@keyframes diamondCardGlow {
+  0%, 100% { box-shadow: 0 0 11px 2px rgba(104, 217, 232, 0.42), 0 0 25px 5px rgba(128, 186, 255, 0.24); }
+  50% { box-shadow: 0 0 20px 5px rgba(255, 255, 255, 0.78), 0 0 40px 10px rgba(104, 217, 232, 0.52), 0 0 64px 16px rgba(185, 166, 255, 0.23); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .creator-card--silver::before,
+  .creator-card--gold::before,
+  .creator-card--diamond::before,
+  .creator-card--diamond {
+    animation: none;
+  }
+}
+
 /* Smooth Infinite Sliding Marquee */
 @keyframes marquee {
   0% { transform: translateX(0%); }
@@ -279,4 +345,3 @@ a.bg-blue-500 svg {
     background-color: transparent !important;
   }
 }
-

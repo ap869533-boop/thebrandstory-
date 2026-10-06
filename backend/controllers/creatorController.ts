@@ -10,6 +10,9 @@ import { validateOptionalUrl } from '../utils/validation';
 // In-Memory store initialized with seed data as resilient fallback
 export let creatorsStore: Creator[] = [...INITIAL_CREATORS];
 
+const isAutoRising = (followers: number, avgViews: number) =>
+  followers > 0 && followers <= 20_000 && avgViews >= followers * 2;
+
 function normalizeMediaUrl(value?: string) {
   if (!value) return '';
   try {
@@ -53,7 +56,7 @@ export function mapDbRowToCreator(row: any): Creator {
     isVerified: Boolean(row.is_verified),
     verificationRequested: Boolean(row.verification_requested),
     isTop20: Boolean(row.is_top20),
-    isRising: Boolean(row.is_rising),
+    isRising: Boolean(row.is_rising) || isAutoRising(Number(row.followers) || 0, Number(row.avg_views) || 0),
     isFeatured: Boolean(row.is_featured),
     isTrending: Boolean(row.is_trending),
     status: row.status || 'active',
@@ -220,7 +223,7 @@ export async function getCreators(req: Request, res: Response) {
     }
 
     if (isRising === 'true') {
-      sqlConditions.push('is_rising = 1');
+      sqlConditions.push('(is_rising = 1 OR (followers > 0 AND followers <= 20000 AND avg_views >= followers * 2))');
     }
 
     // SQL Index-backed Sorting
@@ -273,7 +276,10 @@ export async function getCreators(req: Request, res: Response) {
     }
 
     // 2. Resilient In-Memory Fallback if MySQL is offline
-    let result: Creator[] = [...creatorsStore];
+    let result: Creator[] = creatorsStore.map((creator) => ({
+      ...creator,
+      isRising: creator.isRising || isAutoRising(creator.followers, creator.avgViews),
+    }));
 
     if (includePending) {
       if (status === 'pending') result = result.filter((creator) => creator.status === 'pending' || creator.verificationRequested);
@@ -342,7 +348,7 @@ export async function getCreators(req: Request, res: Response) {
     }
 
     if (isRising === 'true') {
-      result = result.filter((c) => c.isRising);
+      result = result.filter((c) => c.isRising || isAutoRising(c.followers, c.avgViews));
     }
 
     if (sortBy === 'followers') {
@@ -480,7 +486,7 @@ export async function createCreator(req: Request, res: Response) {
       verificationRequested: false,
       verificationStepsCompleted: [],
       isTop20: false,
-      isRising: false,
+      isRising: isAutoRising(Number(data.followers) || 0, Number(data.avgViews) || 0),
       isFeatured: false,
       isTrending: false,
       status: 'pending',
@@ -530,8 +536,8 @@ export async function createCreator(req: Request, res: Response) {
         id, name, username, avatar, cover_image, bio, current_city, primary_category, email, phone, facebook_url, youtube_url,
         followers, total_posts, avg_views, starting_price, reel_price, story_price, post_price,
         ugc_price, event_price, is_barter_available, collaboration_types, preferred_cities, sub_categories,
-        languages, is_verified, verification_requested, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
+        languages, is_verified, verification_requested, is_rising, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
       [
         newCreator.id,
         newCreator.name,
@@ -561,6 +567,7 @@ export async function createCreator(req: Request, res: Response) {
         JSON.stringify(newCreator.languages),
         0,
         1,
+        newCreator.isRising ? 1 : 0,
         'pending',
       ]
     );
@@ -686,10 +693,13 @@ export async function updateCreator(req: AuthenticatedRequest, res: Response) {
   }
 
   const startingPrice = body.startingPrice ?? body.pricing?.startingPrice ?? creatorsStore[index].startingPrice;
+  const followers = Number(body.followers ?? creatorsStore[index].followers) || 0;
+  const avgViews = Number(body.avgViews ?? creatorsStore[index].avgViews) || 0;
   const updatedCreator = {
     ...creatorsStore[index],
     ...body,
     startingPrice,
+    isRising: Boolean(body.isRising ?? creatorsStore[index].isRising) || isAutoRising(followers, avgViews),
     pricing: {
       ...creatorsStore[index].pricing,
       ...(body.pricing || {}),
@@ -709,12 +719,13 @@ export async function updateCreator(req: AuthenticatedRequest, res: Response) {
     ['followers', 'followers'], ['totalPosts', 'total_posts'], ['avgViews', 'avg_views'],
     ['avgLikes', 'avg_likes'], ['avgComments', 'avg_comments'], ['startingPrice', 'starting_price'],
     ['isVerified', 'is_verified'], ['isTop20', 'is_top20'], ['isFeatured', 'is_featured'],
-    ['isRising', 'is_rising'], ['verificationRequested', 'verification_requested'], ['status', 'status'],
+    ['verificationRequested', 'verification_requested'], ['status', 'status'],
     ['latitude', 'latitude'], ['longitude', 'longitude'], ['phone', 'phone'], ['email', 'email'],
     ['facebookUrl', 'facebook_url'], ['youtubeUrl', 'youtube_url'],
   ] as const) {
     addField(key, column, key === 'startingPrice' ? startingPrice : body[key]);
   }
+  dbFields.push(['is_rising', updatedCreator.isRising ? 1 : 0]);
 
   for (const [key, column] of [
     ['preferredCities', 'preferred_cities'], ['subCategories', 'sub_categories'], ['languages', 'languages'],
