@@ -133,8 +133,8 @@ a.bg-blue-500 svg {
 }
 
 @keyframes diamondCardGlow {
-  0%, 100% { box-shadow: 0 0 11px 2px rgba(104, 217, 232, 0.42), 0 0 25px 5px rgba(128, 186, 255, 0.24); }
-  50% { box-shadow: 0 0 20px 5px rgba(255, 255, 255, 0.78), 0 0 40px 10px rgba(104, 217, 232, 0.52), 0 0 64px 16px rgba(185, 166, 255, 0.23); }
+  0%, 100% { box-shadow: 0 0 8px 1px rgba(104, 217, 232, 0.24), 0 0 16px 2px rgba(128, 186, 255, 0.12); }
+  50% { box-shadow: 0 0 12px 2px rgba(104, 217, 232, 0.4), 0 0 24px 4px rgba(128, 186, 255, 0.2); }
 }
 
 @media (prefers-reduced-motion: reduce) {

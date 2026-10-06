@@ -9,6 +9,7 @@ import { SavedShortlistDrawer } from './components/common/SavedShortlistDrawer';
 import { CreatorOnboardingModal } from './components/common/CreatorOnboardingModal';
 import { AuthModal } from './components/common/AuthModal';
 import { Navbar } from './components/common/Navbar';
+import { HelpWidget } from './components/common/HelpWidget';
 
 const lazyWithChunkRecovery = <T extends React.ComponentType<any>>(
   load: () => Promise<{ default: T }>
@@ -51,6 +52,7 @@ const BrandDetailView = lazyWithChunkRecovery(() => import('./views/BrandDetailV
 const LoginView = lazyWithChunkRecovery(() => import('./views/LoginView').then(({ LoginView }) => ({ default: LoginView })));
 const ChatView = lazyWithChunkRecovery(() => import('./views/ChatView').then(({ ChatView }) => ({ default: ChatView })));
 const HelpSupportView = lazyWithChunkRecovery(() => import('./views/HelpSupportView').then(({ HelpSupportView }) => ({ default: HelpSupportView })));
+const TicketTrackingView = lazyWithChunkRecovery(() => import('./views/TicketTrackingView').then(({ TicketTrackingView }) => ({ default: TicketTrackingView })));
 
 const MainAppContent: React.FC = () => {
   return (
@@ -81,6 +83,7 @@ const MainAppContent: React.FC = () => {
             <Route path="/blog" element={<BlogView />} />
             <Route path="/blog/:blogSlug" element={<BlogPostView />} />
             <Route path="/help-support" element={<HelpSupportView />} />
+            <Route path="/ticket/:id/track/:token" element={<TicketTrackingView />} />
             {/* Catch all route - redirect to home */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
@@ -96,6 +99,7 @@ const MainAppContent: React.FC = () => {
       <SavedShortlistDrawer />
       <CreatorOnboardingModal />
       <AuthModal />
+      <HelpWidget />
     </div>
   );
 };
