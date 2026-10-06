@@ -97,6 +97,32 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({
     .toUpperCase() || 'CR';
   const categoryLabel = creator.primaryCategory || 'Creator';
   const cityLabel = creator.currentCity || 'India';
+  const followerTier = creator.followers >= 1_000_000
+    ? 'Superstar'
+    : creator.followers >= 500_000
+      ? 'Mega'
+      : creator.followers >= 100_000
+        ? 'Macro'
+        : creator.followers >= 50_000
+          ? 'Mid-Tier'
+          : creator.followers >= 10_000
+            ? 'Micro'
+            : 'Nano';
+  const followerTierColors = {
+    Superstar: 'bg-[#7550a8]/95 text-white border-[#c5a9f2]',
+    Mega: 'bg-[#a64f70]/95 text-white border-[#e7a8be]',
+    Macro: 'bg-[#3f6d9b]/95 text-white border-[#9bc4ed]',
+    'Mid-Tier': 'bg-[#9a7028]/95 text-white border-[#e9c879]',
+    Micro: 'bg-[#397456]/95 text-white border-[#8bc4a0]',
+    Nano: 'bg-[#59616d]/95 text-white border-[#aeb6c0]',
+  };
+  const followerBorderTier = creator.followers > 1_000_000
+    ? 'creator-card--diamond'
+    : creator.followers > 100_000
+      ? 'creator-card--gold'
+      : creator.followers > 50_000
+        ? 'creator-card--silver'
+        : '';
 
   return (
     <div
@@ -108,7 +134,7 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({
       onPointerLeave={(event) => {
         if (interactive && event.pointerType === 'mouse') stopPreview();
       }}
-      className={`group relative rounded-[1.75rem] overflow-hidden ${interactive ? 'cursor-pointer hover:shadow-2xl' : 'cursor-default'} shadow-sm transition-all duration-300 border border-slate-300/70 flex flex-col justify-between bg-slate-950 ${
+      className={`group relative rounded-[1.75rem] overflow-hidden ${followerBorderTier} ${interactive ? 'cursor-pointer hover:shadow-2xl' : 'cursor-default'} shadow-sm transition-all duration-300 border border-slate-300/70 flex flex-col justify-between bg-slate-950 ${
         variant === 'carousel'
           ? 'w-[210px] sm:w-[220px] md:w-[230px] h-[350px] sm:h-[390px] md:h-[420px] shrink-0'
           : 'w-full h-[350px] sm:h-[390px] md:h-[420px]'
@@ -144,9 +170,14 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({
 
       {/* Top Bar */}
       <div className="relative z-10 p-4 sm:p-5 flex items-start justify-between">
-        <span className="backdrop-blur-md bg-slate-950/55 text-white border border-white/25 text-xs sm:text-sm font-bold px-3 py-1.5 rounded-full shadow-sm truncate max-w-[150px]">
-          {categoryLabel}
-        </span>
+        <div className="flex min-w-0 items-center gap-1.5">
+          <span className="h-6 max-w-[100px] truncate whitespace-nowrap rounded-full border border-white/35 bg-slate-950/65 px-2.5 text-[9px] font-extrabold leading-6 text-white shadow-sm backdrop-blur-md">
+            {categoryLabel}
+          </span>
+          <span className={`inline-flex h-6 shrink-0 items-center whitespace-nowrap rounded-full border px-2.5 text-[9px] font-extrabold uppercase leading-none tracking-wide shadow-sm backdrop-blur-md ${followerTierColors[followerTier]}`}>
+            {followerTier}
+          </span>
+        </div>
 
         <div className="flex flex-col gap-2">
           {showSaveButton && <button
