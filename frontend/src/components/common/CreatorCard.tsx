@@ -97,6 +97,25 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({
     .toUpperCase() || 'CR';
   const categoryLabel = creator.primaryCategory || 'Creator';
   const cityLabel = creator.currentCity || 'India';
+  const followerTier = creator.followers >= 1_000_000
+    ? 'Legend'
+    : creator.followers >= 500_000
+      ? 'Elite'
+      : creator.followers >= 100_000
+        ? 'Prime'
+        : creator.followers >= 50_000
+          ? 'Star'
+          : creator.followers >= 10_000
+            ? 'Rise'
+            : 'Starter';
+  const followerTierColors = {
+    Legend: 'bg-violet-500/90 text-white border-violet-200/80',
+    Elite: 'bg-rose-500/90 text-white border-rose-200/80',
+    Prime: 'bg-sky-500/90 text-white border-sky-200/80',
+    Star: 'bg-amber-400/95 text-slate-950 border-amber-100/90',
+    Rise: 'bg-emerald-500/90 text-white border-emerald-200/80',
+    Starter: 'bg-slate-200/95 text-slate-800 border-white/90',
+  };
 
   return (
     <div
@@ -144,9 +163,14 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({
 
       {/* Top Bar */}
       <div className="relative z-10 p-4 sm:p-5 flex items-start justify-between">
-        <span className="backdrop-blur-md bg-slate-950/55 text-white border border-white/25 text-xs sm:text-sm font-bold px-3 py-1.5 rounded-full shadow-sm truncate max-w-[150px]">
-          {categoryLabel}
-        </span>
+        <div className="flex flex-col items-start gap-1">
+          <span className="backdrop-blur-md bg-slate-950/55 text-white border border-white/25 text-xs sm:text-sm font-bold px-3 py-1.5 rounded-full shadow-sm truncate max-w-[150px]">
+            {categoryLabel}
+          </span>
+          <span className={`backdrop-blur-md border text-[9px] font-extrabold uppercase tracking-wide px-2 py-0.5 rounded-full shadow-sm ${followerTierColors[followerTier]}`}>
+            {followerTier}
+          </span>
+        </div>
 
         <div className="flex flex-col gap-2">
           {showSaveButton && <button

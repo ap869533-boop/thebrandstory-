@@ -190,7 +190,7 @@ export const LiveOpportunitiesBoard: React.FC = () => {
                 </div>
 
                 <div className="mt-1">
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed line-clamp-2">
+                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed line-clamp-2">
                     {camp.deliverablesNeeded || camp.requirements || camp.campaignDescription}
                   </p>
                 </div>

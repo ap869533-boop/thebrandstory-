@@ -38,6 +38,10 @@ import {
 } from '../data/initialData';
 import { matchesCityLocation } from '../utils/location';
 
+const isRisingCreator = (creator: Creator) =>
+  creator.isRising ||
+  (creator.followers > 0 && creator.followers <= 20_000 && creator.avgViews >= creator.followers * 2);
+
 export interface FilterState {
   searchQuery: string;
   category: string;
@@ -1651,7 +1655,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (filters.verifiedOnly && !creator.isVerified) return false;
 
     // Rising stars only
-    if (filters.risingOnly && !creator.isRising && creator.followers >= 25000) return false;
+    if (filters.risingOnly && !isRisingCreator(creator)) return false;
 
     // High Engagement only (>= 4.5%)
 
@@ -1708,7 +1712,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (filters.sortBy === 'lowest_price') return a.startingPrice - b.startingPrice;
     if (filters.sortBy === 'collaborations') return b.brandCollaborationsCount - a.brandCollaborationsCount;
     if (filters.sortBy === 'recently_joined') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    if (filters.sortBy === 'rising') return (b.isRising ? 1 : 0) - (a.isRising ? 1 : 0);
+    if (filters.sortBy === 'rising') return (isRisingCreator(b) ? 1 : 0) - (isRisingCreator(a) ? 1 : 0);
     // Recommended default: weighted score based on followers, verification & featured status
     return (b.followers + (b.isVerified ? 100000 : 0) + (b.isFeatured ? 150000 : 0)) -
            (a.followers + (a.isVerified ? 100000 : 0) + (a.isFeatured ? 150000 : 0));
