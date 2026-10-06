@@ -288,6 +288,45 @@ export async function runAutoMigrations() {
         message TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_ticket_replies_ticket (ticket_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+      // --- support_faqs table ---
+      `CREATE TABLE IF NOT EXISTS \`support_faqs\` (
+        \`id\` VARCHAR(64) PRIMARY KEY,
+        \`category\` VARCHAR(100) DEFAULT 'General',
+        \`question\` TEXT NOT NULL,
+        \`answer\` TEXT NOT NULL,
+        \`sort_order\` INT DEFAULT 0,
+        \`is_active\` BOOLEAN DEFAULT TRUE,
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        \`updated_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+      // --- support_tickets table ---
+      `CREATE TABLE IF NOT EXISTS \`support_tickets\` (
+        \`id\` VARCHAR(64) PRIMARY KEY,
+        \`user_id\` VARCHAR(64) DEFAULT NULL,
+        \`user_role\` VARCHAR(20) DEFAULT 'GUEST',
+        \`guest_name\` VARCHAR(100) DEFAULT NULL,
+        \`guest_email\` VARCHAR(255) DEFAULT NULL,
+        \`category\` VARCHAR(80) DEFAULT 'General',
+        \`subject\` VARCHAR(255) NOT NULL,
+        \`description\` TEXT NOT NULL,
+        \`status\` VARCHAR(20) DEFAULT 'Open',
+        \`access_token\` VARCHAR(100) DEFAULT NULL,
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        \`updated_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+      // --- support_ticket_replies table ---
+      `CREATE TABLE IF NOT EXISTS \`support_ticket_replies\` (
+        \`id\` VARCHAR(64) PRIMARY KEY,
+        \`ticket_id\` VARCHAR(64) NOT NULL,
+        \`sender_type\` VARCHAR(20) NOT NULL,
+        \`sender_id\` VARCHAR(64) DEFAULT NULL,
+        \`message\` TEXT NOT NULL,
+        \`is_read\` BOOLEAN DEFAULT FALSE,
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
     ];
 
