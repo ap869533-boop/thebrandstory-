@@ -35,6 +35,7 @@ import { usePlatform } from '../context/PlatformContext';
 
 import { Creator } from '../types';
 import { ChangePasswordForm } from '../components/common/ChangePasswordForm';
+import AdminHelpSupport from '../components/admin/AdminHelpSupport';
 
 export const AdminDashboardView: React.FC = () => {
   const {
@@ -108,9 +109,10 @@ export const AdminDashboardView: React.FC = () => {
     }
   };
 
-  const [activeTab, setActiveTab] = useState<'creators' | 'stats' | 'campaigns' | 'brands' | 'categories' | 'industries' | 'settings' | 'brand-approvals'>('creators');
+  const [activeTab, setActiveTab] = useState<'creators' | 'stats' | 'campaigns' | 'brands' | 'categories' | 'industries' | 'settings' | 'brand-approvals' | 'help_support'>('creators');
   const [adminBrands, setAdminBrands] = useState<any[]>([]);
   const [adminPendingCampaigns, setAdminPendingCampaigns] = useState<any[]>([]);
+  const [openSupportTicketsCount, setOpenSupportTicketsCount] = useState<number>(0);
 
   // Fetch admin brands & pending campaigns
   useEffect(() => {
@@ -125,6 +127,16 @@ export const AdminDashboardView: React.FC = () => {
     fetch(apiUrl('/api/brands/admin/campaigns/pending'), { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(d => { if (d.success) setAdminPendingCampaigns(d.campaigns || []) })
+      .catch(e => console.error(e));
+
+    fetch(apiUrl('/api/support/admin/tickets'), { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => { 
+        if (d.success) {
+          const openTickets = (d.tickets || []).filter((t: any) => t.status === 'Open');
+          setOpenSupportTicketsCount(openTickets.length);
+        }
+      })
       .catch(e => console.error(e));
   }, [authUser]);
 
@@ -604,6 +616,21 @@ export const AdminDashboardView: React.FC = () => {
           >
             <Settings className="w-3.5 h-3.5" />
             <span>Account Settings</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('help_support')}
+            className={`pb-3 flex items-center gap-1.5 transition cursor-pointer ${
+              activeTab === 'help_support' ? 'text-[#D4A338] border-b-2 border-blue-600' : 'hover:text-slate-800'
+            }`}
+          >
+            <AlertCircle className="w-3.5 h-3.5" />
+            <span>Help & Support</span>
+            {openSupportTicketsCount > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-white text-[10px] font-black">
+                {openSupportTicketsCount}
+              </span>
+            )}
           </button>
         </div>
 
@@ -1713,6 +1740,13 @@ export const AdminDashboardView: React.FC = () => {
         {activeTab === 'settings' && (
           <div className="animate-fadeIn max-w-2xl">
             <ChangePasswordForm />
+          </div>
+        )}
+
+        {/* Help & Support Tab */}
+        {activeTab === 'help_support' && (
+          <div className="animate-fadeIn">
+            <AdminHelpSupport />
           </div>
         )}
       </div>
