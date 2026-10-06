@@ -94,12 +94,15 @@ export default function AdminHelpSupport() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(data)
       });
-      if (res.ok) {
+      const resData = await res.json();
+      if (res.ok && resData.success) {
         setIsFaqModalOpen(false);
         fetchFaqs();
+      } else {
+        alert('Failed to save FAQ: ' + (resData.error || 'Unknown error'));
       }
-    } catch (err) {
-      alert('Failed to save FAQ');
+    } catch (err: any) {
+      alert('Failed to save FAQ: ' + err.message);
     }
   };
 
