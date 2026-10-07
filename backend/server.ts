@@ -183,6 +183,9 @@ async function startServer() {
   const httpServer = http.createServer(app);
   initSocket(httpServer, allowedOrigins);
 
+  // Run auto migrations before starting the server
+  await runAutoMigrations();
+
   httpServer.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 thebrandsstory. Backend API Server running on http://localhost:${PORT}`);
   });

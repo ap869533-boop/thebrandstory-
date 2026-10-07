@@ -9,7 +9,6 @@ import { SavedShortlistDrawer } from './components/common/SavedShortlistDrawer';
 import { CreatorOnboardingModal } from './components/common/CreatorOnboardingModal';
 import { AuthModal } from './components/common/AuthModal';
 import { Navbar } from './components/common/Navbar';
-import { HelpWidget } from './components/common/HelpWidget';
 
 const lazyWithChunkRecovery = <T extends React.ComponentType<any>>(
   load: () => Promise<{ default: T }>
@@ -161,7 +160,6 @@ const MainAppContent: React.FC = () => {
       <SavedShortlistDrawer />
       <CreatorOnboardingModal />
       <AuthModal />
-      <HelpWidget />
     </div>
   );
 };
