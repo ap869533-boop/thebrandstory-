@@ -29,7 +29,10 @@ import {
   Phone,
   Mail,
   Instagram,
-  RefreshCw
+  RefreshCw,
+  LayoutDashboard,
+  BarChart3,
+  ArrowUpRight
 } from 'lucide-react';
 import { usePlatform } from '../context/PlatformContext';
 
@@ -109,7 +112,7 @@ export const AdminDashboardView: React.FC = () => {
     }
   };
 
-  const [activeTab, setActiveTab] = useState<'creators' | 'stats' | 'campaigns' | 'brands' | 'categories' | 'industries' | 'settings' | 'brand-approvals' | 'help_support'>('creators');
+  const [activeTab, setActiveTab] = useState<'overview' | 'creators' | 'stats' | 'campaigns' | 'brands' | 'categories' | 'industries' | 'settings' | 'brand-approvals' | 'help_support'>('overview');
   const [adminBrands, setAdminBrands] = useState<any[]>([]);
   const [adminPendingCampaigns, setAdminPendingCampaigns] = useState<any[]>([]);
   const [openSupportTicketsCount, setOpenSupportTicketsCount] = useState<number>(0);
@@ -208,8 +211,8 @@ export const AdminDashboardView: React.FC = () => {
   const [creatorSearch, setCreatorSearch] = useState('');
   const [creatorPage, setCreatorPage] = useState(0);
   const [creatorTotal, setCreatorTotal] = useState(0);
-  const [creatorStatusCounts, setCreatorStatusCounts] = useState({ pending: 0, active: 0, suspended: 0 });
-  const creatorPageSize = 25;
+  const [creatorStatusCounts, setCreatorStatusCounts] = useState({ pending: 0, active: 0, suspended: 0, newToday: 0 });
+  const creatorPageSize = 10;
   const [emailMenuCreatorId, setEmailMenuCreatorId] = useState<string | null>(null);
   const [sendingEmail, setSendingEmail] = useState<{ creatorId: string; type: 'complete_profile' | 'information_warning' } | null>(null);
   const [brandSearch, setBrandSearch] = useState('');
@@ -499,55 +502,89 @@ export const AdminDashboardView: React.FC = () => {
   const suspendedCreators = { length: creatorStatusCounts.suspended };
   const allCreatorsCount = pendingCreators.length + activeCreators.length + suspendedCreators.length;
   const displayedCreators = creators;
+  const creatorCategoryBreakdown = creators.reduce<Record<string, number>>((totals, creator) => {
+    const category = creator.primaryCategory?.trim() || 'Other';
+    totals[category] = (totals[category] || 0) + 1;
+    return totals;
+  }, {});
+  const topCreatorCategories = Object.entries(creatorCategoryBreakdown)
+    .sort(([, firstCount], [, secondCount]) => secondCount - firstCount)
+    .slice(0, 5);
+  const categoryMaximum = Math.max(1, ...topCreatorCategories.map(([, count]) => count));
 
   return (
-    <div className="min-h-screen bg-slate-50/60 py-8 font-sans">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+    <div className="admin-dashboard-page min-h-screen bg-[#080d17] py-5 sm:py-8 font-sans">
+      <div className="max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-8 space-y-5 sm:space-y-6">
         {/* Header */}
-        <div className="bg-slate-900 text-white p-6 rounded-3xl border border-slate-800 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="bg-[#0e1726] text-white p-5 sm:p-6 rounded-3xl border border-slate-800/90 shadow-xl shadow-black/20 flex flex-col xl:flex-row xl:items-center justify-between gap-5">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-black/20 border border-blue-500/30 text-blue-400 flex items-center justify-center font-bold text-xl">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#d4a338]/10 border border-[#d4a338]/25 text-[#e2bd68] flex items-center justify-center font-bold text-xl">
               <ShieldCheck className="w-7 h-7" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl font-black tracking-tight">thebrandsstory. Super Admin</h1>
-                <span className="px-2 py-0.5 bg-blue-500/20 text-blue-300 text-[10px] font-bold rounded-md border border-blue-400/30">
-                  Master Control
+                <h1 className="text-lg sm:text-xl font-black tracking-tight">thebrandsstory. Admin</h1>
+                <span className="px-2 py-0.5 bg-emerald-400/10 text-emerald-300 text-[10px] font-bold rounded-md border border-emerald-300/20">
+                  Admin Workspace
                 </span>
               </div>
-              <p className="text-xs text-slate-400">Manage creator verification & approvals, brand partners slider, platform stats and campaigns</p>
+              <p className="text-xs text-slate-400 mt-1">Platform operations, creator approvals and partner performance</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 text-xs">
-            <div className="p-3 bg-slate-800/80 rounded-2xl border border-slate-700/80 text-center">
-              <span className="text-[10px] text-slate-400 uppercase font-bold block">Live Creators</span>
-              <span className="text-base font-black text-white">{allCreatorsCount}</span>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 sm:gap-3 text-xs xl:min-w-[760px]">
+            <div className="p-3 sm:p-3.5 bg-gradient-to-br from-[#202b3c] to-[#141e2e] rounded-2xl border border-slate-700/80">
+              <span className="text-[9px] sm:text-[10px] text-slate-400 uppercase font-bold block">Total Creators</span>
+              <span className="text-lg sm:text-xl font-black text-white">{allCreatorsCount}</span>
+              <Users className="float-right -mt-6 w-4 h-4 text-slate-400" />
             </div>
-            <div className="p-3 bg-slate-800/80 rounded-2xl border border-slate-700/80 text-center">
-              <span className="text-[10px] text-amber-400 uppercase font-bold block">Pending Approval</span>
-              <span className="text-base font-black text-amber-400">{pendingCreators.length}</span>
+            <div className="p-3 sm:p-3.5 bg-gradient-to-br from-[#46391e] to-[#241f19] rounded-2xl border border-amber-300/20">
+              <span className="text-[9px] sm:text-[10px] text-amber-200/70 uppercase font-bold block">Awaiting Review</span>
+              <span className="text-lg sm:text-xl font-black text-amber-200">{pendingCreators.length}</span>
+              <AlertCircle className="float-right -mt-6 w-4 h-4 text-amber-300" />
             </div>
-            <div className="p-3 bg-slate-800/80 rounded-2xl border border-slate-700/80 text-center">
-              <span className="text-[10px] text-slate-400 uppercase font-bold block">Partner Brands</span>
-              <span className="text-base font-black text-blue-400">{partnerBrands.length}</span>
+            <div className="p-3 sm:p-3.5 bg-gradient-to-br from-[#173c3a] to-[#132a2b] rounded-2xl border border-emerald-300/15">
+              <span className="text-[9px] sm:text-[10px] text-emerald-100/70 uppercase font-bold block">Active Profiles</span>
+              <span className="text-lg sm:text-xl font-black text-emerald-200">{activeCreators.length}</span>
+              <CheckCircle2 className="float-right -mt-6 w-4 h-4 text-emerald-300" />
+            </div>
+            <div className="p-3 sm:p-3.5 bg-gradient-to-br from-[#29345a] to-[#19243d] rounded-2xl border border-indigo-300/20">
+              <span className="text-[9px] sm:text-[10px] text-indigo-100/75 uppercase font-bold block">New Today</span>
+              <span className="text-lg sm:text-xl font-black text-indigo-200">{creatorStatusCounts.newToday}</span>
+              <Users className="float-right -mt-6 w-4 h-4 text-indigo-300" />
+            </div>
+            <div className="p-3 sm:p-3.5 bg-gradient-to-br from-[#1d3150] to-[#172239] rounded-2xl border border-blue-300/15">
+              <span className="text-[9px] sm:text-[10px] text-blue-100/70 uppercase font-bold block">Brand Partners</span>
+              <span className="text-lg sm:text-xl font-black text-blue-200">{partnerBrands.length}</span>
+              <Building className="float-right -mt-6 w-4 h-4 text-blue-300" />
             </div>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex flex-wrap border-b border-slate-200 gap-6 text-xs font-bold text-slate-500">
+        <div className="grid grid-cols-1 lg:grid-cols-[250px_minmax(0,1fr)] gap-5 lg:gap-6 items-start">
+        <aside className="lg:sticky lg:top-24 rounded-3xl border border-slate-800 bg-[#0d1522] p-3 sm:p-4 shadow-xl shadow-black/10">
+        <div className="px-3 pt-2 pb-3 text-[10px] uppercase tracking-[0.18em] text-slate-500 font-black">Workspace</div>
+        {/* Admin navigation */}
+        <div className="flex lg:flex-col overflow-x-auto lg:overflow-visible gap-1.5 text-xs font-bold text-slate-400 no-scrollbar">
           <button
-            onClick={() => setActiveTab('creators')}
-            className={`pb-3 flex items-center gap-2 transition cursor-pointer ${
-              activeTab === 'creators' ? 'text-[#D4A338] border-b-2 border-blue-600' : 'hover:text-slate-800'
+            onClick={() => setActiveTab('overview')}
+            className={`shrink-0 lg:w-full px-3 py-2.5 rounded-xl flex items-center gap-2.5 transition cursor-pointer ${
+              activeTab === 'overview' ? 'bg-[#d4a338]/15 text-[#edc96e] ring-1 ring-[#d4a338]/20' : 'hover:bg-white/5 hover:text-white'
             }`}
           >
-            <Users className="w-3.5 h-3.5" />
-            <span>Influencer Approvals & Directory ({allCreatorsCount})</span>
+            <LayoutDashboard className="w-4 h-4" />
+            <span>Dashboard Overview</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('creators')}
+            className={`shrink-0 lg:w-full px-3 py-2.5 rounded-xl flex items-center gap-2.5 transition cursor-pointer ${
+              activeTab === 'creators' ? 'bg-[#d4a338]/15 text-[#edc96e] ring-1 ring-[#d4a338]/20' : 'hover:bg-white/5 hover:text-white'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span className="text-left">Influencers</span>
             {pendingCreators.length > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-white text-[10px] font-black">
+              <span className="ml-auto px-1.5 py-0.5 rounded-md bg-amber-400/15 text-amber-200 text-[10px] font-black">
                 {pendingCreators.length}
               </span>
             )}
@@ -555,84 +592,208 @@ export const AdminDashboardView: React.FC = () => {
 
           <button
             onClick={() => setActiveTab('brands')}
-            className={`pb-3 flex items-center gap-1.5 transition cursor-pointer ${
-              activeTab === 'brands' ? 'text-[#D4A338] border-b-2 border-blue-600' : 'hover:text-slate-800'
+            className={`shrink-0 lg:w-full px-3 py-2.5 rounded-xl flex items-center gap-2.5 transition cursor-pointer ${
+              activeTab === 'brands' ? 'bg-[#d4a338]/15 text-[#edc96e] ring-1 ring-[#d4a338]/20' : 'hover:bg-white/5 hover:text-white'
             }`}
           >
-            <Building className="w-3.5 h-3.5" />
-            <span>Brand Partners & Slider ({partnerBrands.length})</span>
+            <Building className="w-4 h-4" />
+            <span className="text-left">Brand Partners</span>
           </button>
 
           <button
             onClick={() => setActiveTab('categories')}
-            className={`pb-3 flex items-center gap-1.5 transition cursor-pointer ${
-              activeTab === 'categories' ? 'text-[#D4A338] border-b-2 border-blue-600' : 'hover:text-slate-800'
+            className={`shrink-0 lg:w-full px-3 py-2.5 rounded-xl flex items-center gap-2.5 transition cursor-pointer ${
+              activeTab === 'categories' ? 'bg-[#d4a338]/15 text-[#edc96e] ring-1 ring-[#d4a338]/20' : 'hover:bg-white/5 hover:text-white'
             }`}
           >
-            <Layers className="w-3.5 h-3.5" />
-            <span>Categories ({categories.length})</span>
+            <Layers className="w-4 h-4" />
+            <span className="text-left">Categories</span>
           </button>
 
           <button
             onClick={() => setActiveTab('stats')}
-            className={`pb-3 flex items-center gap-1.5 transition cursor-pointer ${
-              activeTab === 'stats' ? 'text-[#D4A338] border-b-2 border-blue-600' : 'hover:text-slate-800'
+            className={`shrink-0 lg:w-full px-3 py-2.5 rounded-xl flex items-center gap-2.5 transition cursor-pointer ${
+              activeTab === 'stats' ? 'bg-[#d4a338]/15 text-[#edc96e] ring-1 ring-[#d4a338]/20' : 'hover:bg-white/5 hover:text-white'
             }`}
           >
-            <Settings className="w-3.5 h-3.5" />
-            <span>Platform Stats Overrides</span>
+            <BarChart3 className="w-4 h-4" />
+            <span className="text-left">Platform Stats</span>
           </button>
 
           <button
             onClick={() => setActiveTab('campaigns')}
-            className={`pb-3 flex items-center gap-1.5 transition cursor-pointer ${
-              activeTab === 'campaigns' ? 'text-[#D4A338] border-b-2 border-blue-600' : 'hover:text-slate-800'
+            className={`shrink-0 lg:w-full px-3 py-2.5 rounded-xl flex items-center gap-2.5 transition cursor-pointer ${
+              activeTab === 'campaigns' ? 'bg-[#d4a338]/15 text-[#edc96e] ring-1 ring-[#d4a338]/20' : 'hover:bg-white/5 hover:text-white'
             }`}
           >
-            <Flame className="w-3.5 h-3.5" />
-            <span>Live Campaigns ({campaigns.length})</span>
+            <Flame className="w-4 h-4" />
+            <span className="text-left">Campaigns</span>
+            <span className="ml-auto text-[10px] text-slate-500">{campaigns.length}</span>
           </button>
 
           <button
             onClick={() => setActiveTab('brand-approvals')}
-            className={`pb-3 flex items-center gap-1.5 transition cursor-pointer ${
-              activeTab === 'brand-approvals' ? 'text-[#D4A338] border-b-2 border-blue-600' : 'hover:text-slate-800'
+            className={`shrink-0 lg:w-full px-3 py-2.5 rounded-xl flex items-center gap-2.5 transition cursor-pointer ${
+              activeTab === 'brand-approvals' ? 'bg-[#d4a338]/15 text-[#edc96e] ring-1 ring-[#d4a338]/20' : 'hover:bg-white/5 hover:text-white'
             }`}
           >
-            <Building className="w-3.5 h-3.5" />
-            <span>Brand Approvals ({adminBrands.filter(b => b.approvalStatus === 'pending').length})</span>
+            <Building className="w-4 h-4" />
+            <span className="text-left">Brand Approvals</span>
             {adminBrands.filter(b => b.approvalStatus === 'pending').length > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-white text-[10px] font-black">
+              <span className="ml-auto px-1.5 py-0.5 rounded-md bg-amber-400/15 text-amber-200 text-[10px] font-black">
                 {adminBrands.filter(b => b.approvalStatus === 'pending').length}
               </span>
             )}
           </button>
 
+          {authUser.role === 'ADMIN' && (
+            <button
+              onClick={() => setActiveTab('industries')}
+              className={`shrink-0 lg:w-full px-3 py-2.5 rounded-xl flex items-center gap-2.5 transition cursor-pointer ${
+                activeTab === 'industries' ? 'bg-[#d4a338]/15 text-[#edc96e] ring-1 ring-[#d4a338]/20' : 'hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              <Layers className="w-4 h-4" />
+              <span className="text-left">Industries</span>
+            </button>
+          )}
+
+          <div className="hidden lg:block border-t border-slate-800 my-2" />
           <button
             onClick={() => setActiveTab('settings')}
-            className={`pb-3 flex items-center gap-1.5 transition cursor-pointer ${
-              activeTab === 'settings' ? 'text-[#D4A338] border-b-2 border-blue-600' : 'hover:text-slate-800'
+            className={`shrink-0 lg:w-full px-3 py-2.5 rounded-xl flex items-center gap-2.5 transition cursor-pointer ${
+              activeTab === 'settings' ? 'bg-[#d4a338]/15 text-[#edc96e] ring-1 ring-[#d4a338]/20' : 'hover:bg-white/5 hover:text-white'
             }`}
           >
-            <Settings className="w-3.5 h-3.5" />
-            <span>Account Settings</span>
+            <Settings className="w-4 h-4" />
+            <span className="text-left">Settings</span>
           </button>
 
           <button
             onClick={() => setActiveTab('help_support')}
-            className={`pb-3 flex items-center gap-1.5 transition cursor-pointer ${
-              activeTab === 'help_support' ? 'text-[#D4A338] border-b-2 border-blue-600' : 'hover:text-slate-800'
+            className={`shrink-0 lg:w-full px-3 py-2.5 rounded-xl flex items-center gap-2.5 transition cursor-pointer ${
+              activeTab === 'help_support' ? 'bg-[#d4a338]/15 text-[#edc96e] ring-1 ring-[#d4a338]/20' : 'hover:bg-white/5 hover:text-white'
             }`}
           >
-            <AlertCircle className="w-3.5 h-3.5" />
-            <span>Help & Support</span>
+            <AlertCircle className="w-4 h-4" />
+            <span className="text-left">Help & Support</span>
             {openSupportTicketsCount > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-white text-[10px] font-black">
+              <span className="ml-auto px-1.5 py-0.5 rounded-md bg-amber-400/15 text-amber-200 text-[10px] font-black">
                 {openSupportTicketsCount}
               </span>
             )}
           </button>
         </div>
+        </aside>
+
+        <section aria-label="Admin dashboard content" className="min-w-0 space-y-5">
+        {activeTab === 'overview' && (
+          <div className="space-y-5 animate-fadeIn">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 px-1">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#d4a338]">Admin workspace</p>
+                <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white mt-1">Dashboard Overview</h2>
+                <p className="text-xs sm:text-sm text-slate-400 mt-1">A live snapshot of creator and partner activity.</p>
+              </div>
+              <div className="text-xs text-slate-400 bg-[#0d1522] border border-slate-800 rounded-xl px-3 py-2">
+                {new Date().toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.6fr)_minmax(280px,1fr)] gap-4">
+              <div className="rounded-3xl border border-slate-800 bg-[#0d1522] p-5 sm:p-6 shadow-lg shadow-black/10">
+                <div className="flex items-start justify-between gap-3 mb-6">
+                  <div>
+                    <h3 className="text-sm font-black text-white">Creator Directory</h3>
+                    <p className="text-xs text-slate-500 mt-1">Current account status distribution</p>
+                  </div>
+                  <span className="rounded-lg bg-slate-800/80 px-2.5 py-1 text-[10px] font-bold text-slate-300">Live totals</span>
+                </div>
+                <div className="grid grid-cols-3 gap-3 mb-6">
+                  {[
+                    { label: 'Active', value: activeCreators.length, color: 'text-emerald-300', bar: 'bg-emerald-400' },
+                    { label: 'Pending', value: pendingCreators.length, color: 'text-amber-200', bar: 'bg-amber-300' },
+                    { label: 'Suspended', value: suspendedCreators.length, color: 'text-rose-300', bar: 'bg-rose-400' },
+                  ].map((item) => (
+                    <div key={item.label} className="rounded-2xl border border-slate-800 bg-[#111c2c] p-3 sm:p-4">
+                      <span className="text-[10px] uppercase tracking-wider font-bold text-slate-500">{item.label}</span>
+                      <div className={`mt-1 text-xl sm:text-2xl font-black ${item.color}`}>{item.value}</div>
+                      <div className="mt-3 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                        <div className={`h-full rounded-full ${item.bar}`} style={{ width: `${allCreatorsCount ? Math.max(item.value ? 5 : 0, (item.value / allCreatorsCount) * 100) : 0}%` }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-end justify-around gap-3 h-36 px-2 border-b border-slate-800">
+                  {[
+                    { label: 'Active', value: activeCreators.length, color: 'from-emerald-400 to-teal-600' },
+                    { label: 'Pending', value: pendingCreators.length, color: 'from-amber-300 to-orange-500' },
+                    { label: 'Suspended', value: suspendedCreators.length, color: 'from-rose-400 to-rose-700' },
+                  ].map((item) => (
+                    <div key={item.label} className="flex h-full flex-1 flex-col items-center justify-end gap-2">
+                      <span className="text-[10px] font-bold text-slate-400">{item.value}</span>
+                      <div
+                        className={`w-full max-w-16 rounded-t-xl bg-gradient-to-t ${item.color} transition-all duration-700`}
+                        style={{ height: `${allCreatorsCount ? Math.max(item.value ? 12 : 3, (item.value / allCreatorsCount) * 100) : 3}%` }}
+                      />
+                      <span className="text-[10px] text-slate-500 pb-2">{item.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-3xl border border-slate-800 bg-[#0d1522] p-5 sm:p-6 shadow-lg shadow-black/10">
+                <div className="flex items-start justify-between gap-3 mb-5">
+                  <div>
+                    <h3 className="text-sm font-black text-white">Top Creator Categories</h3>
+                    <p className="text-xs text-slate-500 mt-1">From the currently loaded directory</p>
+                  </div>
+                  <BarChart3 className="w-4 h-4 text-[#d4a338]" />
+                </div>
+                {topCreatorCategories.length ? (
+                  <div className="space-y-4">
+                    {topCreatorCategories.map(([category, count], index) => (
+                      <div key={category}>
+                        <div className="flex justify-between gap-3 text-xs mb-1.5">
+                          <span className="font-semibold text-slate-300 truncate">{category}</span>
+                          <span className="text-slate-500 font-bold">{count}</span>
+                        </div>
+                        <div className="h-2 rounded-full bg-slate-800 overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${['bg-[#d4a338]', 'bg-sky-400', 'bg-emerald-400', 'bg-violet-400', 'bg-rose-400'][index]}`}
+                            style={{ width: `${(count / categoryMaximum) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-500 py-8 text-center">Creator category data is not available yet.</p>
+                )}
+                <button onClick={() => setActiveTab('creators')} className="mt-6 inline-flex items-center gap-1.5 text-xs font-bold text-[#e3bd65] hover:text-amber-200">
+                  Open creator directory <ArrowUpRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {[
+                { title: 'Creator approvals', description: `${pendingCreators.length} profiles waiting for review`, action: () => setActiveTab('creators'), icon: Users, color: 'text-amber-200', bg: 'bg-amber-300/10' },
+                { title: 'Brand approvals', description: `${adminBrands.filter((brand) => brand.approvalStatus === 'pending').length} brands waiting for review`, action: () => setActiveTab('brand-approvals'), icon: Building, color: 'text-sky-200', bg: 'bg-sky-300/10' },
+                { title: 'Campaign management', description: `${campaigns.length} campaigns on the platform`, action: () => setActiveTab('campaigns'), icon: Flame, color: 'text-rose-200', bg: 'bg-rose-300/10' },
+              ].map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button key={item.title} onClick={item.action} className="text-left rounded-2xl border border-slate-800 bg-[#0d1522] p-4 hover:border-slate-600 hover:bg-[#111c2c] transition group">
+                    <span className={`inline-flex w-9 h-9 items-center justify-center rounded-xl ${item.bg} ${item.color}`}><Icon className="w-4 h-4" /></span>
+                    <span className="mt-3 flex items-center justify-between text-sm font-black text-white">{item.title}<ArrowUpRight className="w-4 h-4 text-slate-600 group-hover:text-[#d4a338]" /></span>
+                    <span className="mt-1 block text-xs text-slate-500">{item.description}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Tab 1: Creators Management & Approvals */}
         {activeTab === 'creators' && (
@@ -713,7 +874,7 @@ export const AdminDashboardView: React.FC = () => {
             </div>
 
             {/* Creators Table */}
-            <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
+            <div className="admin-creator-table bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs font-sans">
                   <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-100">
@@ -742,7 +903,7 @@ export const AdminDashboardView: React.FC = () => {
                         return (
                           <tr
                             key={c.id}
-                            className={`hover:bg-slate-50/70 transition ${
+                            className={`admin-creator-row ${
                               isPending ? 'bg-amber-50/25' : isSuspended ? 'bg-rose-50/20' : ''
                             }`}
                           >
@@ -820,9 +981,9 @@ export const AdminDashboardView: React.FC = () => {
                                 <button
                                   type="button"
                                   onClick={() => toggleVerify(c.id, c.isVerified)}
-                                  className={`px-2 py-0.5 rounded-md text-[10px] font-bold border cursor-pointer ${
+                                  className={`px-2 py-0.5 rounded-md text-[10px] font-bold border cursor-pointer transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 ${
                                     c.isVerified
-                                      ? 'bg-blue-50 text-[#b88628] border-blue-200'
+                                      ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
                                       : 'bg-slate-100 text-slate-400 border-slate-200'
                                   }`}
                                 >
@@ -831,9 +992,9 @@ export const AdminDashboardView: React.FC = () => {
                                 <button
                                   type="button"
                                   onClick={() => toggleTop20(c.id, c.isTop20)}
-                                  className={`px-2 py-0.5 rounded-md text-[10px] font-bold border cursor-pointer ${
+                                  className={`px-2 py-0.5 rounded-md text-[10px] font-bold border cursor-pointer transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 ${
                                     c.isTop20
-                                      ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                      ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
                                       : 'bg-slate-100 text-slate-400 border-slate-200'
                                   }`}
                                 >
@@ -842,9 +1003,9 @@ export const AdminDashboardView: React.FC = () => {
                                 <button
                                   type="button"
                                   onClick={() => toggleFeatured(c.id, c.isFeatured)}
-                                  className={`px-2 py-0.5 rounded-md text-[10px] font-bold border cursor-pointer ${
+                                  className={`px-2 py-0.5 rounded-md text-[10px] font-bold border cursor-pointer transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-400 ${
                                     c.isFeatured
-                                      ? 'bg-purple-50 text-purple-700 border-purple-200'
+                                      ? 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100'
                                       : 'bg-slate-100 text-slate-400 border-slate-200'
                                   }`}
                                 >
@@ -1749,6 +1910,8 @@ export const AdminDashboardView: React.FC = () => {
             <AdminHelpSupport />
           </div>
         )}
+        </section>
+        </div>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
-import React, { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React, { lazy, Suspense, useEffect, useRef } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { PlatformProvider } from './context/PlatformContext';
 import { Footer } from './components/common/Footer';
@@ -53,6 +53,93 @@ const ChatView = lazyWithChunkRecovery(() => import('./views/ChatView').then(({ 
 const HelpSupportView = lazyWithChunkRecovery(() => import('./views/HelpSupportView').then(({ HelpSupportView }) => ({ default: HelpSupportView })));
 const TicketTrackingView = lazyWithChunkRecovery(() => import('./views/TicketTrackingView').then(({ TicketTrackingView }) => ({ default: TicketTrackingView })));
 
+const AnimatedRoutes: React.FC = () => {
+  const location = useLocation();
+  const routeRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const route = routeRef.current;
+    if (!route) return;
+    if (!('IntersectionObserver' in window)) {
+      route.querySelectorAll<HTMLElement>('.app-motion-pending').forEach((element) => {
+        element.classList.remove('app-motion-pending');
+        element.classList.add('app-motion-visible');
+      });
+      return;
+    }
+
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        const element = entry.target as HTMLElement;
+        element.classList.remove('app-motion-pending');
+        element.classList.add('app-motion-visible');
+        revealObserver.unobserve(element);
+      });
+    }, { threshold: 0.06, rootMargin: '0px 0px -6% 0px' });
+
+    const observeRevealTargets = (root: ParentNode) => {
+      const selector = 'section, article, [data-motion="reveal"]';
+      const targets = Array.from(root.querySelectorAll<HTMLElement>(selector));
+      if (root instanceof HTMLElement && root.matches(selector)) targets.unshift(root);
+      targets.forEach((element) => {
+        if (
+          element.classList.contains('home-reveal') ||
+          element.classList.contains('app-motion-visible') ||
+          element.classList.contains('app-motion-pending')
+        ) return;
+        element.classList.add('app-motion-pending');
+        revealObserver.observe(element);
+      });
+    };
+
+    observeRevealTargets(route);
+    const contentObserver = new MutationObserver((records) => {
+      records.forEach((record) => record.addedNodes.forEach((node) => {
+        if (node instanceof HTMLElement) {
+          if (node.matches('section, article, [data-motion="reveal"]')) observeRevealTargets(node.parentNode || route);
+          else observeRevealTargets(node);
+        }
+      }));
+    });
+    contentObserver.observe(route, { childList: true, subtree: true });
+
+    return () => {
+      contentObserver.disconnect();
+      revealObserver.disconnect();
+    };
+  }, [location.pathname]);
+
+  return (
+    <div key={location.pathname} ref={routeRef} className="app-route-enter">
+      <Suspense fallback={<div className="min-h-[40vh]" aria-busy="true" />}>
+        <Routes>
+          <Route path="/" element={<HomeView />} />
+          <Route path="/brands" element={<AllBrandsView />} />
+          <Route path="/login" element={<LoginView />} />
+          <Route path="/pitches" element={<ChatView />} />
+          <Route path="/:username/pitches" element={<ChatView />} />
+          <Route path="/explore" element={<ExploreView />} />
+          <Route path="/creator/:username" element={<CreatorDetailView />} />
+          <Route path="/brand/:brandId" element={<BrandDetailView />} />
+          <Route path="/city/:citySlug" element={<CityPageView />} />
+          <Route path="/category/:categorySlug" element={<CategoryPageView />} />
+          <Route path="/post-requirement" element={<PostRequirementView />} />
+          <Route path="/opportunities" element={<OpportunitiesView />} />
+          <Route path="/brand/:brandSlug/campaigns" element={<BrandCampaignsView />} />
+          <Route path="/wallet" element={<WalletView />} />
+          <Route path="/admin" element={<AdminDashboardView />} />
+          <Route path="/blog" element={<BlogView />} />
+          <Route path="/blog/:blogSlug" element={<BlogPostView />} />
+          <Route path="/help-support" element={<HelpSupportView />} />
+          <Route path="/ticket/:id/track/:token" element={<TicketTrackingView />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
+    </div>
+  );
+};
+
 const MainAppContent: React.FC = () => {
   return (
     <div className="dark-theme min-h-screen flex flex-col bg-[#051126] text-slate-100 font-sans antialiased selection:bg-[#D4A338]/30 selection:text-white w-full max-w-full overflow-x-hidden">
@@ -61,32 +148,7 @@ const MainAppContent: React.FC = () => {
 
       {/* Main Dynamic View */}
       <main className="flex-1 w-full max-w-full overflow-x-hidden">
-        <Suspense fallback={<div className="min-h-[40vh]" aria-busy="true" />}>
-          <Routes>
-            <Route path="/" element={<HomeView />} />
-            <Route path="/brands" element={<AllBrandsView />} />
-            <Route path="/login" element={<LoginView />} />
-            <Route path="/pitches" element={<ChatView />} />
-            <Route path="/:username/pitches" element={<ChatView />} />
-            <Route path="/explore" element={<ExploreView />} />
-            <Route path="/creator/:username" element={<CreatorDetailView />} />
-            <Route path="/brand/:brandId" element={<BrandDetailView />} />
-            <Route path="/city/:citySlug" element={<CityPageView />} />
-            <Route path="/category/:categorySlug" element={<CategoryPageView />} />
-            <Route path="/post-requirement" element={<PostRequirementView />} />
-            <Route path="/opportunities" element={<OpportunitiesView />} />
-            <Route path="/brand/:brandSlug/campaigns" element={<BrandCampaignsView />} />
-
-            <Route path="/wallet" element={<WalletView />} />
-            <Route path="/admin" element={<AdminDashboardView />} />
-            <Route path="/blog" element={<BlogView />} />
-            <Route path="/blog/:blogSlug" element={<BlogPostView />} />
-            <Route path="/help-support" element={<HelpSupportView />} />
-            <Route path="/ticket/:id/track/:token" element={<TicketTrackingView />} />
-            {/* Catch all route - redirect to home */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Suspense>
+        <AnimatedRoutes />
       </main>
 
       {/* SEO & Directory Footer */}
