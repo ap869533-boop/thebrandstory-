@@ -252,7 +252,8 @@ export async function getCreators(req: Request, res: Response) {
       includePending ? dbQuery(`SELECT
         SUM(status = 'pending' OR verification_requested = 1) as pending,
         SUM(status = 'active' AND verification_requested = 0) as active,
-        SUM(status = 'suspended') as suspended
+        SUM(status = 'suspended') as suspended,
+        SUM(created_at >= CURDATE() AND created_at < DATE_ADD(CURDATE(), INTERVAL 1 DAY)) as newToday
         FROM creators`) : Promise.resolve(null),
     ]);
 
@@ -260,6 +261,7 @@ export async function getCreators(req: Request, res: Response) {
       pending: Number(statusCountRows[0].pending) || 0,
       active: Number(statusCountRows[0].active) || 0,
       suspended: Number(statusCountRows[0].suspended) || 0,
+      newToday: Number(statusCountRows[0].newToday) || 0,
     } : undefined;
 
     if (dbRows) {
@@ -365,6 +367,14 @@ export async function getCreators(req: Request, res: Response) {
     }
 
     const pagedResult = result.slice(pageOffset, pageOffset + pageSize);
+    const today = new Date();
+    const newToday = creatorsStore.filter((creator) => {
+      const createdAt = new Date(creator.createdAt);
+      return !Number.isNaN(createdAt.getTime()) &&
+        createdAt.getFullYear() === today.getFullYear() &&
+        createdAt.getMonth() === today.getMonth() &&
+        createdAt.getDate() === today.getDate();
+    }).length;
     res.json({
       success: true,
       source: 'memory_fallback',
@@ -375,6 +385,7 @@ export async function getCreators(req: Request, res: Response) {
         pending: creatorsStore.filter((creator) => creator.status === 'pending' || creator.verificationRequested).length,
         active: creatorsStore.filter((creator) => creator.status === 'active' && !creator.verificationRequested).length,
         suspended: creatorsStore.filter((creator) => creator.status === 'suspended').length,
+        newToday,
       } : undefined,
       creators: pagedResult.map(withoutPrivateContact),
     });

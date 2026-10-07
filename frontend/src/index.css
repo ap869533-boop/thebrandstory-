@@ -217,6 +217,80 @@ a.bg-blue-500 svg {
   animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+.app-route-enter {
+  animation: appRouteEnter 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.app-motion-pending {
+  opacity: 0;
+  transform: translate3d(0, 20px, 0);
+}
+
+.app-motion-visible {
+  opacity: 1;
+  transform: none;
+  transition: opacity 600ms cubic-bezier(0.16, 1, 0.3, 1), transform 600ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]) {
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 180ms ease, background-color 180ms ease, border-color 180ms ease, color 180ms ease;
+}
+
+button:not(:disabled):active,
+[role="button"]:not([aria-disabled="true"]):active {
+  transform: scale(0.97);
+}
+
+@keyframes appRouteEnter {
+  from { opacity: 0; transform: translate3d(0, 12px, 0); }
+  to { opacity: 1; transform: none; }
+}
+
+.home-reveal {
+  opacity: 0;
+  transform: translate3d(0, 30px, 0);
+  transition: opacity 700ms cubic-bezier(0.16, 1, 0.3, 1), transform 700ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.home-reveal--visible {
+  opacity: 1;
+  transform: none;
+  will-change: auto;
+}
+
+.home-hero-enter {
+  animation: homeHeroEnter 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes homeHeroEnter {
+  from { opacity: 0; transform: translate3d(0, 18px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-route-enter,
+  .app-motion-pending,
+  .app-motion-visible,
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    animation: none;
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .home-reveal,
+  .home-reveal--visible,
+  .home-hero-enter {
+    animation: none;
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
 /* Application-wide dark palette. Existing page components retain their layout,
    while legacy light cards, controls, borders, and text stay readable on dark surfaces. */
 .dark-theme {
@@ -312,6 +386,50 @@ a.bg-blue-500 svg {
 .dark-theme .subpage-search-form {
   background-color: #ffffff !important;
   border-color: #ffffff !important;
+}
+
+.dark-theme .admin-creator-table {
+  background-color: #0d1522 !important;
+  border-color: #26364d !important;
+}
+
+.dark-theme .admin-creator-table thead {
+  color: #9aaac2;
+  background-color: #111c2c !important;
+  border-color: #26364d !important;
+}
+
+.dark-theme .admin-creator-table tbody {
+  color: #cbd5e1;
+}
+
+.dark-theme .admin-creator-table tbody tr.admin-creator-row {
+  background-color: #0d1522;
+  transition: background-color 180ms ease, box-shadow 180ms ease;
+}
+
+.dark-theme .admin-creator-table tbody tr.admin-creator-row:hover {
+  background-color: #1b2a40 !important;
+  box-shadow: inset 3px 0 #d4a338;
+}
+
+.dark-theme .admin-creator-table tbody tr.admin-creator-row.bg-amber-50\/25 {
+  background-color: #211f1a;
+}
+
+.dark-theme .admin-creator-table tbody tr.admin-creator-row.bg-rose-50\/20 {
+  background-color: #24191f;
+}
+
+.dark-theme .admin-creator-table tbody tr.admin-creator-row.bg-amber-50\/25:hover,
+.dark-theme .admin-creator-table tbody tr.admin-creator-row.bg-rose-50\/20:hover {
+  background-color: #1b2a40 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dark-theme .admin-creator-table tbody tr.admin-creator-row {
+    transition: none;
+  }
 }
 
 .dark-theme .subpage-search-input {
