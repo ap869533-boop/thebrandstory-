@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Heart, HelpCircle, LogOut, Menu, Megaphone, MessageCircle, Search, User, Wallet, X } from 'lucide-react';
+import { Heart, HelpCircle, LayoutDashboard, LogOut, Menu, Megaphone, MessageCircle, Search, User, Wallet, X } from 'lucide-react';
 import { usePlatform } from '../../context/PlatformContext';
 import { apiUrl, authHeaders } from '../../config/api';
 
@@ -42,6 +42,7 @@ export const Navbar: React.FC = () => {
 
   const isCreator = authUser?.role === 'CREATOR';
   const isBrand = authUser?.role === 'BRAND';
+  const isAdmin = authUser?.role === 'ADMIN';
   const accountSlug = (authUser?.companyName || authUser?.name || 'account').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
   const closeMenu = () => setMenuOpen(false);
   const goTo = (view: string, params?: any) => { closeMenu(); navigateTo(view, params); };
@@ -229,26 +230,34 @@ export const Navbar: React.FC = () => {
                         (authUser.name || authUser.companyName || 'U').charAt(0).toUpperCase()
                       )}
                     </div>
-                    <div className="min-w-0"><p className="truncate font-extrabold">Hi, {authUser.name || authUser.companyName}</p><p className="truncate text-xs text-slate-400">{isBrand ? authUser.companyName : `@${authUser.name?.toLowerCase().replace(/\s+/g, '_')}`}</p><button type="button" onClick={() => isBrand ? goTo('brand-profile', { slug: accountSlug }) : goTo('creator-detail', { username: authUser.creatorProfile?.username || accountSlug })} className="mt-1 text-xs font-bold text-[#D4A338] cursor-pointer">View Profile ›</button></div>
+                    <div className="min-w-0"><p className="truncate font-extrabold">Hi, {authUser.name || authUser.companyName}</p><p className="truncate text-xs text-slate-400">{isBrand ? authUser.companyName : `@${authUser.name?.toLowerCase().replace(/\s+/g, '_')}`}</p>{!isAdmin && <button type="button" onClick={() => isBrand ? goTo('brand-profile', { slug: accountSlug }) : goTo('creator-detail', { username: authUser.creatorProfile?.username || accountSlug })} className="mt-1 text-xs font-bold text-[#D4A338] cursor-pointer">View Profile ›</button>}</div>
                   </div>
 
-                  <button type="button" onClick={() => goTo(isBrand ? 'explore' : 'opportunities')} className="mt-5 flex h-14 w-full items-center justify-center gap-2 rounded-full bg-[#D4A338] font-black text-slate-950 hover:bg-[#be8f2b] cursor-pointer"><Search className="h-5 w-5" />{isBrand ? 'Find Influencers' : 'Find Brands'}</button>
-                  <nav className="mt-5 space-y-1 text-sm font-bold">
-                    <button type="button" onClick={() => { closeMenu(); openSavedDrawer(); }} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer"><Heart className="h-5 w-5" />Wishlist</button>
-                    {isBrand && <button type="button" onClick={() => goTo('brand-campaigns', { slug: accountSlug })} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer"><Megaphone className="h-5 w-5" />My Campaigns</button>}
-                    <button type="button" onClick={() => goTo('pitches', { username: accountSlug })} className="flex w-full items-center justify-between gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer">
-                      <div className="flex items-center gap-4">
-                        <Megaphone className="h-5 w-5" />Pitches
-                      </div>
-                      {unreadPitchesCount > 0 && (
-                        <span className="flex h-5 items-center justify-center rounded-full bg-rose-500 px-2 text-[10px] font-black text-white">
-                          {unreadPitchesCount}
-                        </span>
-                      )}
-                    </button>
-                    <button type="button" onClick={() => goTo('wallet')} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer"><Wallet className="h-5 w-5" />Wallet / Billing</button>
-                    <button type="button" onClick={() => goTo('help-support')} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer"><HelpCircle className="h-5 w-5" />Help and Support</button>
-                  </nav>
+                  {isAdmin ? (
+                    <nav className="mt-5">
+                      <button type="button" onClick={() => goTo('admin-dashboard')} className="flex h-14 w-full items-center justify-center gap-2 rounded-full bg-[#D4A338] px-6 text-sm font-black text-white shadow-lg shadow-[#D4A338]/20 transition-colors hover:bg-[#be8f2b] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D4A338] cursor-pointer"><LayoutDashboard className="h-5 w-5" />Dashboard</button>
+                    </nav>
+                  ) : (
+                    <>
+                      <button type="button" onClick={() => goTo(isBrand ? 'explore' : 'opportunities')} className="mt-5 flex h-14 w-full items-center justify-center gap-2 rounded-full bg-[#D4A338] font-black text-slate-950 hover:bg-[#be8f2b] cursor-pointer"><Search className="h-5 w-5" />{isBrand ? 'Find Influencers' : 'Find Brands'}</button>
+                      <nav className="mt-5 space-y-1 text-sm font-bold">
+                        <button type="button" onClick={() => { closeMenu(); openSavedDrawer(); }} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer"><Heart className="h-5 w-5" />Wishlist</button>
+                        {isBrand && <button type="button" onClick={() => goTo('brand-campaigns', { slug: accountSlug })} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer"><Megaphone className="h-5 w-5" />My Campaigns</button>}
+                        <button type="button" onClick={() => goTo('pitches', { username: accountSlug })} className="flex w-full items-center justify-between gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer">
+                          <div className="flex items-center gap-4">
+                            <Megaphone className="h-5 w-5" />Pitches
+                          </div>
+                          {unreadPitchesCount > 0 && (
+                            <span className="flex h-5 items-center justify-center rounded-full bg-rose-500 px-2 text-[10px] font-black text-white">
+                              {unreadPitchesCount}
+                            </span>
+                          )}
+                        </button>
+                        <button type="button" onClick={() => goTo('wallet')} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer"><Wallet className="h-5 w-5" />Wallet / Billing</button>
+                        <button type="button" onClick={() => goTo('help-support')} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left hover:bg-white/10 cursor-pointer"><HelpCircle className="h-5 w-5" />Help and Support</button>
+                      </nav>
+                    </>
+                  )}
                   <button type="button" onClick={() => { closeMenu(); logout(); }} className="mt-6 flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left font-bold text-rose-400 hover:bg-rose-500/10 cursor-pointer"><LogOut className="h-5 w-5" />Log out</button>
                 </>
               )}
