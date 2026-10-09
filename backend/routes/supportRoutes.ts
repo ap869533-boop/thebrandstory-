@@ -9,7 +9,8 @@ import {
   getTicketByToken,
   getAdminTickets,
   getAdminTicketDetails,
-  adminReplyTicket
+  adminReplyTicket,
+  chatSupport
 } from '../controllers/supportController';
 import { authMiddleware, optionalAuthMiddleware } from '../middleware/authMiddleware';
 
@@ -22,6 +23,7 @@ router.get('/faqs', getFaqs);
 // optionalAuthMiddleware allows guests to proceed without a token, but parses token if it exists
 router.post('/tickets', optionalAuthMiddleware, createTicket); 
 router.get('/tickets/:id/token/:token', getTicketByToken);
+router.post('/chat', optionalAuthMiddleware, chatSupport);
 
 // ==============================
 // ADMIN ROUTES
