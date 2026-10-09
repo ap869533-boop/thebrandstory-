@@ -26,6 +26,8 @@ export const HelpSupportView: React.FC = () => {
   const [inputValue, setInputValue] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [activeTicketId, setActiveTicketId] = useState<string | null>(null);
+  const [activeToken, setActiveToken] = useState<string | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -75,9 +77,9 @@ export const HelpSupportView: React.FC = () => {
     setIsTyping(true);
 
     const data = {
-      category: 'General',
-      subject: 'Support Query',
-      description: queryText,
+      message: queryText,
+      ticket_id: activeTicketId,
+      access_token: activeToken,
       guest_name: authUser ? undefined : 'Guest User',
       guest_email: authUser ? undefined : 'guest@thebrandstory.com'
     };
@@ -87,34 +89,37 @@ export const HelpSupportView: React.FC = () => {
       const token = localStorage.getItem('sc_auth_token');
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      const res = await fetch(apiUrl('/api/support/tickets'), {
+      const res = await fetch(apiUrl('/api/support/chat'), {
         method: 'POST',
         headers,
         body: JSON.stringify(data)
       });
       const resData = await res.json();
       
-      setTimeout(() => {
-        setIsTyping(false);
-        setSubmitting(false);
+      setIsTyping(false);
+      setSubmitting(false);
 
-        if (resData.success) {
-          const secretLink = resData.access_token
-            ? `${window.location.origin}/ticket/${resData.ticket_id}/track/${resData.access_token}`
-            : `${window.location.origin}/dashboard`;
+      if (resData.success) {
+        if (!activeTicketId && resData.ticket_id) {
+          setActiveTicketId(resData.ticket_id);
+          setActiveToken(resData.access_token);
+        }
 
-          setMessages(prev => [...prev, {
+        const isHandoff = resData.reply.includes("I need human assistance") || resData.reply.includes("TRANSFER_TO_HUMAN");
+        const secretLink = resData.access_token
+          ? `${window.location.origin}/ticket/${resData.ticket_id}/track/${resData.access_token}`
+          : `${window.location.origin}/dashboard`;
+
+        if (isHandoff) {
+           setMessages(prev => [...prev, {
             id: Date.now().toString(),
             sender: 'bot',
             text: (
               <div className="space-y-2">
-                <div className="flex items-center gap-2 text-emerald-400 font-bold">
-                  <CheckCircle className="w-5 h-5" /> Query Submitted!
-                </div>
-                <p>We've received your query and will get back to you soon.</p>
+                <p>I need human assistance to answer this properly. I have forwarded this entire chat to our support team, and they will get back to you soon on this ticket.</p>
                 {resData.access_token && (
                   <div className="bg-black/20 p-3 rounded-lg border border-white/10 mt-2 text-sm">
-                    <p className="text-amber-400 font-bold mb-1 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> Tracking Link:</p>
+                    <p className="text-amber-400 font-bold mb-1 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> Ticket Tracking Link:</p>
                     <a href={secretLink} className="text-blue-400 hover:underline break-all block">{secretLink}</a>
                   </div>
                 )}
@@ -122,9 +127,15 @@ export const HelpSupportView: React.FC = () => {
             )
           }]);
         } else {
-          setMessages(prev => [...prev, { id: Date.now().toString(), sender: 'bot', text: 'Failed to submit ticket: ' + resData.error }]);
+           setMessages(prev => [...prev, {
+            id: Date.now().toString(),
+            sender: 'bot',
+            text: resData.reply
+          }]);
         }
-      }, 1500);
+      } else {
+        setMessages(prev => [...prev, { id: Date.now().toString(), sender: 'bot', text: 'Failed to submit query: ' + resData.error }]);
+      }
 
     } catch (err) {
       setTimeout(() => {
