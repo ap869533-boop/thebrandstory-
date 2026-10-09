@@ -218,7 +218,7 @@ export const Navbar: React.FC = () => {
                 <div className="space-y-4">
                   <button type="button" onClick={() => goTo('login', { mode: 'login' })} className="h-11 w-full rounded-full border border-white/20 text-sm font-bold text-white hover:bg-white/10 cursor-pointer">Sign In</button>
                   <button type="button" onClick={() => goTo('login', { mode: 'signup', role: 'CREATOR' })} className="h-11 w-full rounded-full bg-[#D4A338] text-sm font-black text-slate-950 hover:bg-[#be8f2b] cursor-pointer">Get Started For Free</button>
-                  <div className="mt-6 border-t border-white/10 pt-4"><button type="button" onClick={() => goTo('blog')} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left font-bold hover:bg-white/10 cursor-pointer"><HelpCircle className="h-5 w-5" />Help and Support</button></div>
+                  <div className="mt-6 border-t border-white/10 pt-4"><button type="button" onClick={() => goTo('help-support')} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left font-bold hover:bg-white/10 cursor-pointer"><HelpCircle className="h-5 w-5" />Help and Support</button></div>
                 </div>
               ) : (
                 <>
