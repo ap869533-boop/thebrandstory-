@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { HelpCircle, Mail, MapPin, Phone, Send, CheckCircle, AlertCircle, Bot, User } from 'lucide-react';
+import { HelpCircle, Mail, MapPin, Send, AlertCircle, Bot, User, Check, MessageSquare, RotateCcw, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { apiUrl } from '../config/api';
 import { usePlatform } from '../context/PlatformContext';
 
@@ -14,31 +14,94 @@ interface ChatMessage {
   id: string;
   sender: 'bot' | 'user';
   text: React.ReactNode;
+  timestamp: string;
+  isOptionsCard?: boolean;
+  isResolutionPrompt?: boolean;
 }
 
 export const HelpSupportView: React.FC = () => {
   const { authUser } = usePlatform();
   const [faqs, setFaqs] = useState<FAQ[]>([]);
   const [loadingFaqs, setLoadingFaqs] = useState(true);
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { id: '1', sender: 'bot', text: 'Hi! How can I help you today? Select a question below or type your query.' }
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [activeTicketId, setActiveTicketId] = useState<string | null>(null);
   const [activeToken, setActiveToken] = useState<string | null>(null);
+  const [showInputBar, setShowInputBar] = useState(false);
+  const [isResolved, setIsResolved] = useState(false);
+  const [selectedFaqId, setSelectedFaqId] = useState<string | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  const formatCurrentTime = () => {
+    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  // Clean raw question string (strip leading Q: or Q : if present)
+  const cleanQuestion = (q: string) => {
+    return q.replace(/^Q\s*:\s*/i, '').trim();
+  };
+
+  const getUserFirstName = () => {
+    if (authUser?.name) {
+      return authUser.name.trim().split(' ')[0];
+    }
+    return 'there';
+  };
+
+  // Initialize Zomato-style opening greeting
+  const initChatFlow = (faqList: FAQ[]) => {
+    const time = formatCurrentTime();
+    const userName = getUserFirstName();
+
+    const initialMsgs: ChatMessage[] = [
+      {
+        id: 'msg-greeting',
+        sender: 'bot',
+        text: (
+          <div>
+            <p className="font-semibold text-amber-300/90 text-xs tracking-wider uppercase mb-1">Brand Assistant</p>
+            <p className="text-[15px] font-medium text-white">Hi {userName}!</p>
+            <p className="text-slate-200 text-sm mt-0.5">Welcome to The Brand Story support.</p>
+          </div>
+        ),
+        timestamp: time
+      },
+      {
+        id: 'msg-select-issue',
+        sender: 'bot',
+        text: (
+          <div>
+            <p className="font-semibold text-amber-300/90 text-xs tracking-wider uppercase mb-1">Brand Assistant</p>
+            <p className="text-[14.5px] text-slate-100 font-medium">Please select the issue that you need support with:</p>
+          </div>
+        ),
+        timestamp: time,
+        isOptionsCard: true
+      }
+    ];
+
+    setMessages(initialMsgs);
+    setShowInputBar(false);
+    setIsResolved(false);
+    setSelectedFaqId(null);
+  };
 
   useEffect(() => {
     fetch(apiUrl('/api/support/faqs'))
       .then(r => r.json())
       .then(d => {
-        if (d.success) setFaqs(d.faqs || []);
+        const loadedFaqs = d.success ? (d.faqs || []) : [];
+        setFaqs(loadedFaqs);
         setLoadingFaqs(false);
+        initChatFlow(loadedFaqs);
       })
-      .catch(() => setLoadingFaqs(false));
-  }, []);
+      .catch(() => {
+        setLoadingFaqs(false);
+        initChatFlow([]);
+      });
+  }, [authUser]);
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -47,32 +110,138 @@ export const HelpSupportView: React.FC = () => {
         behavior: 'smooth'
       });
     }
-  }, [messages, faqs, isTyping]);
+  }, [messages, isTyping, showInputBar, isResolved]);
 
-  const handleFaqClick = (faq: FAQ) => {
+  // Handle FAQ item selection
+  const handleSelectFaq = (faq: FAQ) => {
+    const qClean = cleanQuestion(faq.question);
+    const time = formatCurrentTime();
+    setSelectedFaqId(faq.id);
+
+    // 1. Add user selected message
     setMessages(prev => [
       ...prev,
-      { id: Date.now().toString(), sender: 'user', text: faq.question }
+      {
+        id: 'user-' + Date.now(),
+        sender: 'user',
+        text: qClean,
+        timestamp: time
+      }
     ]);
-    
+
     setIsTyping(true);
-    
+
     setTimeout(() => {
       setIsTyping(false);
+      const botTime = formatCurrentTime();
+
       setMessages(prev => [
         ...prev,
-        { id: Date.now().toString(), sender: 'bot', text: faq.answer }
+        {
+          id: 'bot-ans-' + Date.now(),
+          sender: 'bot',
+          text: (
+            <div>
+              <p className="font-semibold text-amber-300/90 text-xs tracking-wider uppercase mb-1">Brand Assistant</p>
+              <div className="text-[14px] leading-relaxed text-slate-100 whitespace-pre-line">{faq.answer}</div>
+            </div>
+          ),
+          timestamp: botTime
+        },
+        {
+          id: 'bot-res-' + Date.now(),
+          sender: 'bot',
+          text: (
+            <div>
+              <p className="text-sm font-medium text-slate-200">Did this resolve your issue?</p>
+            </div>
+          ),
+          timestamp: botTime,
+          isResolutionPrompt: true
+        }
       ]);
-    }, 1500);
+    }, 700);
   };
 
+  // Handle "I have a different issue / Chat with support"
+  const handleOpenChatMode = (reasonText?: string) => {
+    const time = formatCurrentTime();
+    const userMsg = reasonText || "I need help with something else";
+
+    setMessages(prev => [
+      ...prev,
+      {
+        id: 'user-' + Date.now(),
+        sender: 'user',
+        text: userMsg,
+        timestamp: time
+      }
+    ]);
+
+    setIsTyping(true);
+
+    setTimeout(() => {
+      setIsTyping(false);
+      const botTime = formatCurrentTime();
+
+      setMessages(prev => [
+        ...prev,
+        {
+          id: 'bot-chat-prompt-' + Date.now(),
+          sender: 'bot',
+          text: (
+            <div>
+              <p className="font-semibold text-amber-300/90 text-xs tracking-wider uppercase mb-1">Brand Assistant</p>
+              <p className="text-[14.5px] text-slate-100">
+                Please describe your issue below so our team and smart assistant can assist you better.
+              </p>
+            </div>
+          ),
+          timestamp: botTime
+        }
+      ]);
+      setShowInputBar(true);
+    }, 600);
+  };
+
+  // Handle Issue Resolved
+  const handleMarkResolved = () => {
+    const time = formatCurrentTime();
+    setMessages(prev => [
+      ...prev,
+      {
+        id: 'user-resolved-' + Date.now(),
+        sender: 'user',
+        text: "Yes, my issue is resolved. Thank you!",
+        timestamp: time
+      }
+    ]);
+
+    setIsTyping(true);
+    setTimeout(() => {
+      setIsTyping(false);
+      setIsResolved(true);
+      setShowInputBar(false);
+    }, 500);
+  };
+
+  // Send custom query through input bar
   const handleCustomQuery = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim()) return;
 
     const queryText = inputValue.trim();
+    const time = formatCurrentTime();
     setInputValue('');
-    setMessages(prev => [...prev, { id: Date.now().toString(), sender: 'user', text: queryText }]);
+    setMessages(prev => [
+      ...prev,
+      {
+        id: 'user-' + Date.now(),
+        sender: 'user',
+        text: queryText,
+        timestamp: time
+      }
+    ]);
     setSubmitting(true);
     setIsTyping(true);
 
@@ -80,8 +249,8 @@ export const HelpSupportView: React.FC = () => {
       message: queryText,
       ticket_id: activeTicketId,
       access_token: activeToken,
-      guest_name: authUser ? undefined : 'Guest User',
-      guest_email: authUser ? undefined : 'guest@thebrandstory.com'
+      guest_name: authUser?.name || 'Guest User',
+      guest_email: authUser?.email || 'guest@thebrandstory.com'
     };
 
     try {
@@ -95,7 +264,7 @@ export const HelpSupportView: React.FC = () => {
         body: JSON.stringify(data)
       });
       const resData = await res.json();
-      
+
       setIsTyping(false);
       setSubmitting(false);
 
@@ -110,72 +279,107 @@ export const HelpSupportView: React.FC = () => {
           ? `${window.location.origin}/ticket/${resData.ticket_id}/track/${resData.access_token}`
           : `${window.location.origin}/dashboard`;
 
+        const botTime = formatCurrentTime();
+
         if (isHandoff) {
-           setMessages(prev => [...prev, {
-            id: Date.now().toString(),
-            sender: 'bot',
-            text: (
-              <div className="space-y-2">
-                <p>I need human assistance to answer this properly. I have forwarded this entire chat to our support team, and they will get back to you soon on this ticket.</p>
-                {resData.access_token && (
-                  <div className="bg-black/20 p-3 rounded-lg border border-white/10 mt-2 text-sm">
-                    <p className="text-amber-400 font-bold mb-1 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> Ticket Tracking Link:</p>
-                    <a href={secretLink} className="text-blue-400 hover:underline break-all block">{secretLink}</a>
-                  </div>
-                )}
-              </div>
-            )
-          }]);
+          setMessages(prev => [
+            ...prev,
+            {
+              id: 'bot-' + Date.now(),
+              sender: 'bot',
+              timestamp: botTime,
+              text: (
+                <div className="space-y-2">
+                  <p className="font-semibold text-amber-300/90 text-xs tracking-wider uppercase mb-1">Brand Assistant</p>
+                  <p className="text-[14.5px] leading-relaxed text-slate-100">
+                    I have forwarded this entire chat to our human support team, and our representative will reply soon.
+                  </p>
+                  {resData.access_token && (
+                    <div className="bg-black/30 p-3 rounded-xl border border-white/10 mt-2 text-xs">
+                      <p className="text-amber-400 font-bold mb-1 flex items-center gap-1">
+                        <AlertCircle className="w-3.5 h-3.5" /> Ticket Tracking Link:
+                      </p>
+                      <a href={secretLink} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline break-all block">
+                        {secretLink}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )
+            }
+          ]);
         } else {
-           setMessages(prev => [...prev, {
-            id: Date.now().toString(),
-            sender: 'bot',
-            text: resData.reply
-          }]);
+          setMessages(prev => [
+            ...prev,
+            {
+              id: 'bot-' + Date.now(),
+              sender: 'bot',
+              timestamp: botTime,
+              text: (
+                <div>
+                  <p className="font-semibold text-amber-300/90 text-xs tracking-wider uppercase mb-1">Brand Assistant</p>
+                  <p className="text-[14.5px] leading-relaxed text-slate-100 whitespace-pre-wrap">{resData.reply}</p>
+                </div>
+              )
+            }
+          ]);
         }
       } else {
-        setMessages(prev => [...prev, { id: Date.now().toString(), sender: 'bot', text: 'Failed to submit query: ' + resData.error }]);
+        setMessages(prev => [
+          ...prev,
+          {
+            id: 'bot-err-' + Date.now(),
+            sender: 'bot',
+            timestamp: formatCurrentTime(),
+            text: 'Failed to submit query: ' + resData.error
+          }
+        ]);
       }
-
     } catch (err) {
-      setTimeout(() => {
-        setIsTyping(false);
-        setSubmitting(false);
-        setMessages(prev => [...prev, { id: Date.now().toString(), sender: 'bot', text: 'Network error while submitting query. Please try again.' }]);
-      }, 1500);
+      setIsTyping(false);
+      setSubmitting(false);
+      setMessages(prev => [
+        ...prev,
+        {
+          id: 'bot-err-' + Date.now(),
+          sender: 'bot',
+          timestamp: formatCurrentTime(),
+          text: 'Network error while submitting query. Please try again.'
+        }
+      ]);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#051126] text-slate-200 py-12 px-6 lg:px-12 relative overflow-hidden">
-      {/* Background Decor */}
+    <div className="min-h-screen bg-[#051126] text-slate-200 py-12 px-4 sm:px-6 lg:px-12 relative overflow-hidden">
+      {/* Background Glow */}
       <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-[#D4A338]/10 blur-[120px] rounded-full pointer-events-none"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-blue-600/10 blur-[120px] rounded-full pointer-events-none"></div>
 
-      <div className="max-w-7xl mx-auto grid lg:grid-cols-[1fr_1.2fr] gap-12 items-start relative z-10">
+      <div className="max-w-7xl mx-auto grid lg:grid-cols-[1fr_1.25fr] gap-8 lg:gap-12 items-start relative z-10">
 
-        {/* LEFT SIDE: Info & Contact */}
-        <div className="space-y-10 lg:sticky lg:top-24 pt-0">
+        {/* LEFT SIDE: Info & Contact Details */}
+        <div className="space-y-8 lg:sticky lg:top-24 pt-2">
           <div className="space-y-4">
             <div className="flex items-center gap-4">
-              <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight">Help & Support</h1>
+              <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight">Help & Support</h1>
               <div className="w-12 h-12 bg-[#D4A338]/10 rounded-2xl flex items-center justify-center border border-[#D4A338]/30 flex-shrink-0">
                 <HelpCircle className="w-6 h-6 text-[#D4A338]" />
               </div>
             </div>
-            <p className="text-slate-400 text-lg max-w-md leading-relaxed">
-              Welcome to our help center. Need quick answers? Try our smart assistant or submit a custom query on the right.
+            <p className="text-slate-400 text-base md:text-lg max-w-md leading-relaxed">
+              Welcome to our help center. Select your issue or chat with our 24/7 support assistant for instant resolution.
             </p>
           </div>
 
-          <div className="space-y-6 pt-4">
+          <div className="space-y-5 pt-2">
             <div className="flex items-center gap-4 group">
               <div className="w-12 h-12 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center group-hover:bg-[#D4A338]/10 group-hover:border-[#D4A338]/30 transition-all">
                 <MapPin className="w-5 h-5 text-slate-400 group-hover:text-[#D4A338] transition-colors" />
               </div>
               <div>
-                <p className="text-sm text-slate-500 font-bold uppercase tracking-wider mb-0.5">Address</p>
-                <p className="text-slate-200">Noida</p>
+                <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-0.5">Address</p>
+                <p className="text-slate-200 text-sm font-medium">Noida, India</p>
               </div>
             </div>
 
@@ -184,78 +388,200 @@ export const HelpSupportView: React.FC = () => {
                 <Mail className="w-5 h-5 text-slate-400 group-hover:text-[#D4A338] transition-colors" />
               </div>
               <div>
-                <p className="text-sm text-slate-500 font-bold uppercase tracking-wider mb-0.5">Email Us</p>
-                <p className="text-slate-200">support@thebrandstory.com</p>
+                <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-0.5">Email Us</p>
+                <p className="text-slate-200 text-sm font-medium">support@thebrandstory.com</p>
               </div>
             </div>
-
-
           </div>
         </div>
 
-        {/* RIGHT SIDE: Chat Assistant Interface */}
-        <div className="bg-[#0b1b36]/60 backdrop-blur-xl border border-white/10 rounded-[2rem] shadow-2xl overflow-hidden flex flex-col h-[70vh] min-h-[550px] max-h-[750px] border-t-white/20 lg:mt-16">
+        {/* RIGHT SIDE: Zomato-Style Chat Interface */}
+        <div className="bg-[#0b1b36]/80 backdrop-blur-xl border border-white/10 rounded-[1.75rem] shadow-2xl overflow-hidden flex flex-col h-[75vh] min-h-[580px] max-h-[750px] border-t-white/20">
 
-          {/* Chat Header */}
-          <div className="bg-white/5 border-b border-white/10 px-6 py-4 flex items-center gap-4">
-            <div className="w-12 h-12 bg-[#D4A338]/20 rounded-full flex items-center justify-center border border-[#D4A338]/40 relative">
-              <Bot className="w-6 h-6 text-[#D4A338]" />
-              <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-[#0b1b36]"></div>
+          {/* Chat Header (Zomato-Style) */}
+          <div className="bg-slate-900/60 border-b border-white/10 px-5 py-3.5 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-[#D4A338]/50 relative flex-shrink-0 shadow-md bg-slate-800">
+                <img
+                  src="/support-agent.png"
+                  alt="Support Agent"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-[#0b1b36]"></div>
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-base leading-tight">Support Assistant</h3>
+                <p className="text-[11px] text-slate-400">Your personal virtual assistant</p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-white font-bold text-lg">Support Assistant</h3>
-              <p className="text-xs text-emerald-400 font-medium">Online • Typically replies instantly</p>
-            </div>
+
+            <button
+              onClick={() => initChatFlow(faqs)}
+              title="Reset Conversation"
+              className="text-xs flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 transition-colors"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Reset</span>
+            </button>
           </div>
 
-          {/* Chat Area */}
-          <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar scroll-smooth">
-            {messages.map((msg) => (
-              <React.Fragment key={msg.id}>
-                <div className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  {msg.sender === 'bot' && (
-                    <div className="w-8 h-8 bg-slate-800 rounded-full flex items-center justify-center mr-3 mt-1 flex-shrink-0">
-                      <Bot className="w-4 h-4 text-slate-400" />
-                    </div>
-                  )}
-                  <div className={`max-w-[80%] md:max-w-[70%] p-4 rounded-2xl ${msg.sender === 'user'
-                    ? 'bg-[#D4A338] text-slate-900 rounded-br-sm'
-                    : 'bg-white/10 text-slate-200 rounded-bl-sm border border-white/5'
-                    }`}>
-                    <div className="text-[15px] leading-relaxed whitespace-pre-wrap">{msg.text}</div>
-                  </div>
-                  {msg.sender === 'user' && (
-                    <div className="w-8 h-8 bg-slate-800 rounded-full flex items-center justify-center ml-3 mt-1 flex-shrink-0">
-                      <User className="w-4 h-4 text-slate-400" />
-                    </div>
-                  )}
-                </div>
+          {/* Today Divider */}
+          <div className="flex justify-center my-2">
+            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest bg-white/5 px-3 py-0.5 rounded-full border border-white/5">
+              Today
+            </span>
+          </div>
 
-                {/* Quick Replies (FAQs) - Rendered only under the first welcome message */}
-                {msg.id === '1' && !loadingFaqs && faqs.length > 0 && (
-                  <div className="pl-11 pr-4 flex flex-col items-start gap-2 mt-2 animate-fadeIn">
-                    {faqs.map(faq => (
-                      <button
-                        key={faq.id}
-                        onClick={() => handleFaqClick(faq)}
-                        className="text-left px-4 py-2.5 bg-[#D4A338]/10 hover:bg-[#D4A338]/20 text-[#D4A338] border border-[#D4A338]/30 rounded-xl text-sm font-medium transition-colors"
-                      >
-                        Q: {faq.question}
-                      </button>
-                    ))}
+          {/* Chat Messages Area */}
+          <div ref={chatContainerRef} className="flex-1 overflow-y-auto px-4 sm:px-6 py-2 space-y-4 custom-scrollbar scroll-smooth">
+            {messages.map((msg) => (
+              <div key={msg.id} className="space-y-2">
+                {msg.isOptionsCard ? (
+                  /* UNIFIED ZOMATO CARD: Message Header + List Options in ONE single card */
+                  <div className="flex justify-start">
+                    {msg.sender === 'bot' && (
+                      <div className="w-7 h-7 rounded-full overflow-hidden border border-[#D4A338]/40 mr-2.5 mt-1 flex-shrink-0 shadow-sm bg-slate-800">
+                        <img src="/support-agent.png" alt="Agent" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                    <div className="max-w-[88%] sm:max-w-[80%] w-full rounded-2xl overflow-hidden border border-white/10 shadow-2xl animate-fadeIn">
+                      {/* Top Header Section */}
+                      <div className="bg-[#1e2f52] px-4 py-3 border-b border-white/10">
+                        <p className="font-semibold text-amber-300/90 text-xs tracking-wider uppercase mb-1">Brand Assistant</p>
+                        <p className="text-[14px] text-slate-100 font-medium leading-snug">
+                          Please select the issue that you need support with:
+                        </p>
+                        <div className="text-[10px] text-slate-400 mt-1 flex justify-end">
+                          {msg.timestamp}
+                        </div>
+                      </div>
+
+                      {/* Attached Options List */}
+                      <div className="bg-[#13223f] text-slate-200 divide-y divide-white/10">
+                        {loadingFaqs ? (
+                          <div className="p-4 text-center text-sm text-slate-400">Loading support topics...</div>
+                        ) : (
+                          <>
+                            {faqs.map((faq) => (
+                              <button
+                                key={faq.id}
+                                onClick={() => handleSelectFaq(faq)}
+                                disabled={selectedFaqId !== null || showInputBar || isResolved}
+                                className="w-full text-left px-4 py-3.5 hover:bg-white/[0.08] active:bg-white/[0.12] flex items-center justify-between text-[13.5px] font-medium text-slate-100 transition-colors disabled:opacity-50 disabled:hover:bg-transparent group"
+                              >
+                                <span className="pr-3 leading-snug group-hover:text-amber-300 transition-colors">
+                                  {cleanQuestion(faq.question)}
+                                </span>
+                                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-amber-300 flex-shrink-0 group-hover:translate-x-0.5 transition-all" />
+                              </button>
+                            ))}
+
+                            {/* Fallback Option: Chat with Support */}
+                            <button
+                              onClick={() => handleOpenChatMode()}
+                              disabled={showInputBar || isResolved}
+                              className="w-full text-left px-4 py-3.5 bg-[#D4A338]/10 hover:bg-[#D4A338]/20 flex items-center justify-between text-[13.5px] font-semibold text-amber-300 transition-colors disabled:opacity-50 group border-t border-[#D4A338]/20"
+                            >
+                              <span className="flex items-center gap-2 pr-3 leading-snug text-amber-300">
+                                <MessageSquare className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                                I have an issue not listed here / Chat with Support
+                              </span>
+                              <ChevronRight className="w-4 h-4 text-amber-400 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    {msg.sender === 'bot' && (
+                      <div className="w-7 h-7 rounded-full overflow-hidden border border-[#D4A338]/40 mr-2.5 mt-1 flex-shrink-0 shadow-sm bg-slate-800">
+                        <img src="/support-agent.png" alt="Agent" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+
+                    <div
+                      className={`max-w-[85%] sm:max-w-[78%] rounded-2xl px-4 py-3 shadow-md ${
+                        msg.sender === 'user'
+                          ? 'bg-blue-600/90 text-white rounded-tr-sm border border-blue-500/40'
+                          : 'bg-[#182744] text-slate-100 rounded-tl-sm border border-white/10'
+                      }`}
+                    >
+                      <div className="text-[14px] leading-relaxed text-white">
+                        {msg.text}
+                      </div>
+                      <div className={`text-[10px] mt-1.5 flex items-center justify-end gap-1 ${
+                        msg.sender === 'user' ? 'text-blue-200' : 'text-slate-400'
+                      }`}>
+                        <span>{msg.timestamp}</span>
+                        {msg.sender === 'user' && (
+                          <span className="text-white font-bold text-xs inline-flex items-center ml-0.5">✓✓</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {msg.sender === 'user' && (
+                      <div className="w-7 h-7 bg-blue-600/30 text-blue-300 border border-blue-500/40 rounded-full flex items-center justify-center ml-2.5 mt-1 flex-shrink-0">
+                        <User className="w-3.5 h-3.5 text-blue-300" />
+                      </div>
+                    )}
                   </div>
                 )}
-              </React.Fragment>
+
+                {/* Resolution Prompt Buttons (Did this resolve your issue?) */}
+                {msg.isResolutionPrompt && !isResolved && !showInputBar && (
+                  <div className="pl-9 pr-2 sm:pr-8 flex flex-wrap gap-2 pt-1 animate-fadeIn">
+                    <button
+                      onClick={handleMarkResolved}
+                      className="px-4 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition-colors"
+                    >
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      Yes, issue resolved
+                    </button>
+                    <button
+                      onClick={() => handleOpenChatMode("I still need help with this")}
+                      className="px-4 py-2 bg-[#D4A338]/15 hover:bg-[#D4A338]/25 text-[#D4A338] border border-[#D4A338]/30 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition-colors"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      No, I want to chat with Support
+                    </button>
+                    <button
+                      onClick={() => initChatFlow(faqs)}
+                      className="px-3 py-2 bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 rounded-xl text-xs sm:text-sm font-medium flex items-center gap-1.5 transition-colors"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
+                      Select another topic
+                    </button>
+                  </div>
+                )}
+              </div>
             ))}
+
+            {/* Resolved Conversation Notice (Zomato Style) */}
+            {isResolved && (
+              <div className="my-4 p-3.5 bg-emerald-950/40 border border-emerald-500/30 rounded-2xl flex items-center justify-between gap-3 text-emerald-300 text-xs sm:text-sm animate-fadeIn">
+                <div className="flex items-center gap-2 font-medium">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                  <span>This conversation has been closed and marked as resolved.</span>
+                </div>
+                <button
+                  onClick={() => initChatFlow(faqs)}
+                  className="px-3 py-1 bg-emerald-600/30 hover:bg-emerald-600/50 rounded-lg text-xs font-semibold text-white whitespace-nowrap transition-colors"
+                >
+                  Start New
+                </button>
+              </div>
+            )}
 
             {/* Typing Indicator */}
             {isTyping && (
               <div className="flex justify-start animate-fadeIn">
-                <div className="w-8 h-8 bg-slate-800 rounded-full flex items-center justify-center mr-3 mt-1 flex-shrink-0">
-                  <Bot className="w-4 h-4 text-slate-400" />
+                <div className="w-7 h-7 rounded-full overflow-hidden border border-[#D4A338]/40 mr-2.5 mt-1 flex-shrink-0 shadow-sm bg-slate-800">
+                  <img src="/support-agent.png" alt="Agent" className="w-full h-full object-cover" />
                 </div>
-                <div className="max-w-[80%] md:max-w-[70%] p-4 rounded-2xl bg-white/10 text-slate-200 rounded-bl-sm border border-white/5">
-                  <div className="flex gap-1.5 items-center h-5 px-1">
+                <div className="p-3.5 rounded-2xl bg-[#182744] border border-white/10 rounded-tl-sm">
+                  <div className="flex gap-1.5 items-center h-4 px-1">
                     <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
                     <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
                     <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
@@ -265,38 +591,48 @@ export const HelpSupportView: React.FC = () => {
             )}
           </div>
 
-          {/* Chat Input */}
-          <div className="p-4 bg-black/20 border-t border-white/10">
-            <form onSubmit={handleCustomQuery} className="flex items-end gap-3 bg-white/5 border border-white/10 rounded-2xl p-2 focus-within:border-[#D4A338]/50 focus-within:bg-white/10 transition-all">
-              <textarea
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    if (inputValue.trim()) handleCustomQuery(e);
-                  }
-                }}
-                placeholder="Ask something or write your query..."
-                className="flex-1 bg-transparent border-none text-white px-3 py-2 text-[15px] focus:outline-none resize-none max-h-32 min-h-[44px] custom-scrollbar"
-                rows={1}
-                disabled={submitting}
-              />
-              <button
-                type="submit"
-                disabled={!inputValue.trim() || submitting}
-                className="w-11 h-11 bg-[#D4A338] hover:bg-[#be8f2b] disabled:bg-slate-700 disabled:text-slate-500 text-slate-900 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors"
-              >
-                <Send className="w-5 h-5 ml-1" />
-              </button>
-            </form>
-            <p className="text-center text-[11px] text-slate-500 mt-3 font-medium">
-              If your query is not answered, typing here will submit a direct ticket to our team.
-            </p>
-          </div>
+          {/* Chat Input Bar: ONLY Shown when custom chat is unlocked (Zomato/Swiggy Flow) */}
+          {showInputBar ? (
+            <div className="p-3.5 bg-slate-900/80 border-t border-white/10 animate-fadeIn">
+              <form onSubmit={handleCustomQuery} className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-2xl p-1.5 focus-within:border-[#D4A338]/60 focus-within:bg-white/10 transition-all">
+                <textarea
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      if (inputValue.trim()) handleCustomQuery(e);
+                    }
+                  }}
+                  placeholder="Type your message here..."
+                  className="flex-1 bg-transparent border-none text-white px-3 py-2 text-sm focus:outline-none resize-none max-h-24 min-h-[40px] custom-scrollbar placeholder:text-slate-400"
+                  rows={1}
+                  disabled={submitting}
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  disabled={!inputValue.trim() || submitting}
+                  className="w-10 h-10 bg-[#D4A338] hover:bg-[#be8f2b] disabled:bg-slate-700 disabled:text-slate-500 text-slate-950 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors shadow-md"
+                >
+                  <Send className="w-4 h-4 ml-0.5" />
+                </button>
+              </form>
+              <p className="text-center text-[11px] text-slate-400 mt-2 font-medium">
+                Our support team & AI assistant will review and respond directly.
+              </p>
+            </div>
+          ) : (
+            <div className="px-4 py-3 bg-slate-900/40 border-t border-white/5 flex items-center justify-center text-center">
+              <p className="text-xs text-slate-400 flex items-center gap-1.5">
+                <span>Please select an option above to continue</span>
+              </p>
+            </div>
+          )}
 
         </div>
       </div>
     </div>
   );
 };
+
