@@ -246,16 +246,27 @@ export const chatSupport = async (req: AuthenticatedRequest, res: Response) => {
       [userReplyId, ticket_id, user_id, user_role, message]
     );
 
-    // 3. Get FAQs for AI Context
+    // 3. Get FAQs for Reference
     const faqs: any = await dbQuery('SELECT question, answer FROM support_faqs WHERE is_active = TRUE');
-    let contextPrompt = `You are the official AI Support Agent for 'The Brand Story' platform. Your job is to answer user queries politely and concisely.\n\n`;
+    let faqContext = '';
     if (faqs && faqs.length > 0) {
-      contextPrompt += `Here are the platform's Official FAQs for context:\n`;
-      faqs.forEach((faq: any, i: number) => {
-        contextPrompt += `Q${i+1}: ${faq.question}\nA: ${faq.answer}\n\n`;
-      });
+      faqContext = `Official Platform FAQs (use ONLY if the user's question directly relates to these topics):\n` +
+        faqs.map((f: any, i: number) => `Topic ${i+1}: ${f.question}\nAnswer: ${f.answer}`).join('\n\n');
     }
-    contextPrompt += `\nRULES:\n1. You are a conversational, friendly support assistant for The Brand Story.\n2. Respond in the same language the user uses (English, Hindi, or Hinglish).\n3. If user greets (hi, hello, etc.), greet back warmly and ask how you can assist.\n4. If user reports a bug, issue, or general question (e.g. 'website me bug h'), acknowledge politely, give helpful troubleshooting steps or ask them for details/screenshots, and reassure them our team is available to fix it.\n5. Keep your answers concise, practical, and polite.\n6. ONLY if user specifically requests to talk to a human agent, reply with 'TRANSFER_TO_HUMAN'.`;
+
+    const systemPrompt = `You are the official friendly AI Support Assistant for 'The Brand Story' platform (a platform connecting brands and creators for marketing campaigns).
+
+CRITICAL INSTRUCTIONS:
+1. ANSWER ONLY WHAT THE CURRENT USER ASKS: Strictly address the specific question or issue asked in the latest message. NEVER paste unrelated FAQs (like login or signup guides) unless the user explicitly asks about login or signup!
+2. TECHNICAL ISSUES & BUGS (e.g. searchbar not working, buttons not clicking, page errors):
+   - Acknowledge the specific issue politely.
+   - Give 1-2 quick troubleshooting tips (e.g. refresh the page, check internet, try incognito mode, or clear browser cache).
+   - Offer to report the issue to the tech team if problem persists.
+3. GENERAL QUESTIONS: Answer naturally, politely, and intelligently in Hinglish / Hindi / English (matching the user's language).
+4. KEEP IT CONCISE: 2 to 3 short sentences max. Do NOT write long essays.
+5. If the user explicitly asks to talk to a human agent, reply ONLY with 'TRANSFER_TO_HUMAN'.
+
+${faqContext}`;
 
     // 4. Get Chat History
     const replies: any = await dbQuery('SELECT sender_role, message FROM support_ticket_replies WHERE ticket_id=? ORDER BY created_at ASC', [ticket_id]);
@@ -276,8 +287,8 @@ export const chatSupport = async (req: AuthenticatedRequest, res: Response) => {
        try {
          const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
          const contents = [
-           { role: 'user', parts: [{ text: contextPrompt }] },
-           { role: 'model', parts: [{ text: 'Understood. I am The Brand Story AI support agent and will assist the user politely and promptly.' }] },
+           { role: 'user', parts: [{ text: systemPrompt }] },
+           { role: 'model', parts: [{ text: 'Understood. I am The Brand Story AI support agent and will assist the user politely and promptly on their specific query.' }] },
            ...history,
            { role: 'user', parts: [{ text: message }] }
          ];
