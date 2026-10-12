@@ -10,6 +10,7 @@ import {
   Smile,
   Paperclip,
   Check,
+  ExternalLink,
 } from 'lucide-react';
 import { apiUrl, authHeaders } from '../../config/api';
 import type { ChatMessage, ConversationThread } from '../../types';
@@ -86,7 +87,7 @@ export const ConversationsPanel: React.FC<{
   campaignId?: string | null;
   fullPage?: boolean;
 }> = ({ openConversationId, openUsername, openCreatorId, campaignId, fullPage = false }) => {
-  const { authUser } = usePlatform();
+  const { authUser, navigateTo } = usePlatform();
   const [threads, setThreads] = useState<ConversationThread[]>([]);
   const threadsRef = useRef<ConversationThread[]>([]);
   const [activeId, setActiveId] = useState<string | null>(openConversationId || null);
@@ -1152,7 +1153,36 @@ export const ConversationsPanel: React.FC<{
                         {active.peerName}
                       </div>
 
-                      <p className="mt-3 text-[11px] text-slate-500">
+                      {/* View Profile Action Button */}
+                      <div className="mt-5 w-full px-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const isBrandViewer = authUser?.role === 'BRAND';
+                            if (isBrandViewer) {
+                              // Brand viewing creator profile
+                              const target = active.creatorUsername || active.creatorId || active.peerName;
+                              navigateTo('creator-detail', {
+                                username: target,
+                                id: active.creatorId
+                              });
+                            } else {
+                              // Creator viewing brand profile
+                              const target = active.brandUserId || active.brandName;
+                              navigateTo('brand-detail', {
+                                id: target,
+                                brandName: active.brandName
+                              });
+                            }
+                          }}
+                          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#D4A338] hover:bg-[#c2932e] active:scale-[0.99] text-slate-950 font-bold text-sm shadow-lg shadow-[#D4A338]/10 transition-all cursor-pointer"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                          <span>View Profile</span>
+                        </button>
+                      </div>
+
+                      <p className="mt-4 text-[11px] text-slate-500">
                         Messages are private and encrypted on The Brand Story platform.
                       </p>
                     </div>
