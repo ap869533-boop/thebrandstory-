@@ -255,13 +255,12 @@ export const chatSupport = async (req: AuthenticatedRequest, res: Response) => {
         contextPrompt += `Q${i+1}: ${faq.question}\nA: ${faq.answer}\n\n`;
       });
     }
-    contextPrompt += `\nRULES:\n1. You are a conversational AI. If the user says hi, greets you, or makes small talk, politely greet them back and ask how you can help them today.\n2. If the user asks a question related to the platform, try to answer it using the FAQs provided. You can also give general advice about influencer marketing and brand collaborations based on standard industry knowledge.\n3. If the user explicitly asks to speak to a human, asks about a specific technical bug/account issue, or asks something highly specific that you cannot answer, ONLY THEN should you reply EXACTLY with the phrase "TRANSFER_TO_HUMAN" and nothing else.\n4. Keep your answers short, friendly, and helpful. Use markdown formatting if needed.`;
+    contextPrompt += `\nRULES:\n1. You are a conversational, friendly support assistant for The Brand Story.\n2. Respond in the same language the user uses (English, Hindi, or Hinglish).\n3. If user greets (hi, hello, etc.), greet back warmly and ask how you can assist.\n4. If user reports a bug, issue, or general question (e.g. 'website me bug h'), acknowledge politely, give helpful troubleshooting steps or ask them for details/screenshots, and reassure them our team is available to fix it.\n5. Keep your answers concise, practical, and polite.\n6. ONLY if user specifically requests to talk to a human agent, reply with 'TRANSFER_TO_HUMAN'.`;
 
     // 4. Get Chat History
     const replies: any = await dbQuery('SELECT sender_role, message FROM support_ticket_replies WHERE ticket_id=? ORDER BY created_at ASC', [ticket_id]);
     
     // Format for Gemini API (roles must be exactly 'user' or 'model')
-    // We filter out the very last message because that's the one we are sending right now.
     const pastReplies = replies.slice(0, -1);
     let history: any[] = pastReplies.map((r: any) => ({
       role: r.sender_role === 'AI' ? 'model' : 'user',
@@ -276,39 +275,28 @@ export const chatSupport = async (req: AuthenticatedRequest, res: Response) => {
     } else {
        try {
          const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-         
-         // Helper function with retry
-         const generateWithFallback = async () => {
-           try {
-             return await ai.models.generateContent({
-                 model: 'gemini-3.8-flash',
-                 contents: [
-                     { role: 'user', parts: [{ text: contextPrompt }] },
-                     { role: 'model', parts: [{ text: 'Understood. I will act as the support agent and follow the rules.' }] },
-                     ...history,
-                     { role: 'user', parts: [{ text: message }] }
-                 ]
-             });
-           } catch (e: any) {
-             if (e?.status === 503 || e?.message?.includes('high demand')) {
-               console.log("3.8-flash high demand, waiting 1.5 seconds and retrying...");
-               await new Promise(res => setTimeout(res, 1500)); // wait 1.5s
-               return await ai.models.generateContent({
-                   model: 'gemini-3.8-flash',
-                   contents: [
-                       { role: 'user', parts: [{ text: contextPrompt }] },
-                       { role: 'model', parts: [{ text: 'Understood. I will act as the support agent and follow the rules.' }] },
-                       ...history,
-                       { role: 'user', parts: [{ text: message }] }
-                   ]
-               });
-             }
-             throw e;
-           }
-         };
+         const contents = [
+           { role: 'user', parts: [{ text: contextPrompt }] },
+           { role: 'model', parts: [{ text: 'Understood. I am The Brand Story AI support agent and will assist the user politely and promptly.' }] },
+           ...history,
+           { role: 'user', parts: [{ text: message }] }
+         ];
 
-         const response = await generateWithFallback();
-         aiResponseText = response.text || 'TRANSFER_TO_HUMAN';
+         // Use fast model (gemini-3.5-flash-lite takes ~1.5s), fallback to gemini-2.5-flash if needed
+         try {
+           const response = await ai.models.generateContent({
+             model: 'gemini-3.5-flash-lite',
+             contents
+           });
+           aiResponseText = response.text || '';
+         } catch (primaryErr: any) {
+           console.log("3.5-flash-lite failed, trying gemini-2.5-flash fallback:", primaryErr?.message);
+           const fallbackResponse = await ai.models.generateContent({
+             model: 'gemini-2.5-flash',
+             contents
+           });
+           aiResponseText = fallbackResponse.text || '';
+         }
        } catch(e: any) {
          console.error("Gemini API Error:", e);
          aiResponseText = "TRANSFER_TO_HUMAN_ERROR: " + (e.message || 'Unknown Error');
