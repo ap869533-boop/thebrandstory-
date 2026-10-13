@@ -381,20 +381,25 @@ export default function AdminHelpSupport() {
             </div>
 
             <div className="space-y-4 mb-6 max-h-[500px] overflow-y-auto pr-2">
-              {ticketReplies.map(reply => (
-                <div key={reply.id} className={`flex ${reply.sender_role === 'ADMIN' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[70%] p-4 rounded-2xl ${
-                    reply.sender_role === 'ADMIN' ? 'bg-[#D4A338] text-slate-900 rounded-br-none font-medium' : 
-                    reply.sender_role === 'AI' ? 'bg-blue-600/30 border border-blue-500/30 text-blue-100 rounded-bl-none' : 
-                    'bg-white/10 text-slate-200 rounded-bl-none'
-                    }`}>
-                    <p className="text-sm whitespace-pre-wrap">{reply.message}</p>
-                    <div className={`text-[10px] mt-2 ${reply.sender_role === 'ADMIN' ? 'text-amber-900/60' : 'text-slate-400'}`}>
-                      {reply.sender_role === 'AI' ? '🤖 AI Agent' : (reply.sender_role === 'ADMIN' ? 'Admin' : 'User')} • {new Date(reply.created_at).toLocaleString()}
+              {ticketReplies.map(reply => {
+                const isAdmin = reply.sender_role === 'ADMIN';
+                const isAi = reply.sender_role === 'AI' || reply.sender_id === 'AI_AGENT';
+
+                return (
+                  <div key={reply.id} className={`flex ${isAdmin ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[70%] p-4 rounded-2xl ${
+                      isAdmin ? 'bg-[#D4A338] text-slate-900 rounded-br-none font-medium' : 
+                      isAi ? 'bg-blue-600/30 border border-blue-500/30 text-blue-100 rounded-bl-none' : 
+                      'bg-white/10 text-slate-200 rounded-bl-none'
+                      }`}>
+                      <p className="text-sm whitespace-pre-wrap">{reply.message}</p>
+                      <div className={`text-[10px] mt-2 ${isAdmin ? 'text-amber-900/60' : 'text-slate-400'}`}>
+                        {isAi ? '🤖 AI Agent' : (isAdmin ? 'Admin' : 'User')} • {new Date(reply.created_at).toLocaleString()}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               <div ref={messagesEndRef} />
             </div>
 

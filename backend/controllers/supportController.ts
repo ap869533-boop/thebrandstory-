@@ -288,10 +288,22 @@ export const chatSupport = async (req: AuthenticatedRequest, res: Response) => {
 
     // 2. Save user message
     const userReplyId = 'reply_' + crypto.randomBytes(8).toString('hex');
-    await dbQuery(
-      `INSERT INTO support_ticket_replies (id, ticket_id, sender_id, sender_role, message) VALUES (?, ?, ?, ?, ?)`,
-      [userReplyId, ticket_id, user_id, user_role, message]
-    );
+    try {
+      await dbQuery(
+        `INSERT INTO support_ticket_replies (id, ticket_id, sender_id, sender_role, message) VALUES (?, ?, ?, ?, ?)`,
+        [userReplyId, ticket_id, user_id, user_role, message]
+      );
+    } catch (uErr: any) {
+      try {
+        await dbQuery("ALTER TABLE support_ticket_replies MODIFY COLUMN sender_role VARCHAR(32) NOT NULL DEFAULT 'USER'");
+        await dbQuery(
+          `INSERT INTO support_ticket_replies (id, ticket_id, sender_id, sender_role, message) VALUES (?, ?, ?, ?, ?)`,
+          [userReplyId, ticket_id, user_id, user_role, message]
+        );
+      } catch (retryErr) {
+        console.error("Could not insert user message:", retryErr);
+      }
+    }
 
     // 3. Relevant FAQs Matching (Avoid dumping unrelated FAQs so AI does not get distracted)
     const faqs: any = await dbQuery('SELECT question, answer FROM support_faqs WHERE is_active = TRUE');
@@ -377,18 +389,24 @@ ${relevantFaqs}`;
       } else {
          aiResponseText = "I need human assistance to answer this properly. I have forwarded this entire chat to our support team, and they will get back to you soon on this ticket.";
       }
-      
-      const aiReplyId = 'reply_' + crypto.randomBytes(8).toString('hex');
+    }
+
+    const aiReplyId = 'reply_' + crypto.randomBytes(8).toString('hex');
+    try {
       await dbQuery(
         `INSERT INTO support_ticket_replies (id, ticket_id, sender_id, sender_role, message) VALUES (?, ?, ?, ?, ?)`,
         [aiReplyId, ticket_id, 'AI_AGENT', 'AI', aiResponseText]
       );
-    } else {
-      const aiReplyId = 'reply_' + crypto.randomBytes(8).toString('hex');
-      await dbQuery(
-        `INSERT INTO support_ticket_replies (id, ticket_id, sender_id, sender_role, message) VALUES (?, ?, ?, ?, ?)`,
-        [aiReplyId, ticket_id, 'AI_AGENT', 'AI', aiResponseText]
-      );
+    } catch (insertErr: any) {
+      try {
+        await dbQuery("ALTER TABLE support_ticket_replies MODIFY COLUMN sender_role VARCHAR(32) NOT NULL DEFAULT 'USER'");
+        await dbQuery(
+          `INSERT INTO support_ticket_replies (id, ticket_id, sender_id, sender_role, message) VALUES (?, ?, ?, ?, ?)`,
+          [aiReplyId, ticket_id, 'AI_AGENT', 'AI', aiResponseText]
+        );
+      } catch (retryErr) {
+        console.error("Critical: Could not insert AI reply:", retryErr);
+      }
     }
 
     res.json({

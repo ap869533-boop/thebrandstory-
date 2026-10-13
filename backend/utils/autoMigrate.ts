@@ -266,7 +266,7 @@ export async function runAutoMigrations() {
       `CREATE TABLE IF NOT EXISTS support_tickets (
         id VARCHAR(64) PRIMARY KEY,
         user_id VARCHAR(64) DEFAULT NULL,
-        user_role ENUM('BRAND', 'CREATOR', 'GUEST') DEFAULT 'GUEST',
+        user_role VARCHAR(32) DEFAULT 'GUEST',
         guest_name VARCHAR(120) DEFAULT NULL,
         guest_email VARCHAR(150) DEFAULT NULL,
         category VARCHAR(100) NOT NULL,
@@ -284,7 +284,7 @@ export async function runAutoMigrations() {
         id VARCHAR(64) PRIMARY KEY,
         ticket_id VARCHAR(64) NOT NULL,
         sender_id VARCHAR(64) DEFAULT NULL,
-        sender_role ENUM('USER', 'ADMIN', 'GUEST') NOT NULL,
+        sender_role VARCHAR(32) NOT NULL DEFAULT 'USER',
         message TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_ticket_replies_ticket (ticket_id)
@@ -499,6 +499,11 @@ export async function runAutoMigrations() {
         \`is_active\` TINYINT(1) DEFAULT 1,
         \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
+    ,
+
+      // --- support tables: allow AI, INFLUENCER, BRAND roles ---
+      `ALTER TABLE \`support_ticket_replies\` MODIFY COLUMN \`sender_role\` VARCHAR(32) NOT NULL DEFAULT 'USER'`,
+      `ALTER TABLE \`support_tickets\` MODIFY COLUMN \`user_role\` VARCHAR(32) DEFAULT 'GUEST'`
     ];
 
     for (const query of alterQueries) {
