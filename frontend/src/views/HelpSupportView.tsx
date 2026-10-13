@@ -66,7 +66,7 @@ export const HelpSupportView: React.FC = () => {
         sender: 'bot',
         text: (
           <div>
-            <p className="font-semibold text-amber-300/90 text-xs tracking-wider uppercase mb-1">Brand Assistant</p>
+            <p className="font-semibold text-amber-300/90 text-xs tracking-wider uppercase mb-1">Assistant</p>
             <p className="text-[15px] font-medium text-white">Hi {userName}!</p>
             <p className="text-slate-200 text-sm mt-0.5">Welcome to The Brand Story support.</p>
           </div>
@@ -78,7 +78,7 @@ export const HelpSupportView: React.FC = () => {
         sender: 'bot',
         text: (
           <div>
-            <p className="font-semibold text-amber-300/90 text-xs tracking-wider uppercase mb-1">Brand Assistant</p>
+            <p className="font-semibold text-amber-300/90 text-xs tracking-wider uppercase mb-1">Assistant</p>
             <p className="text-[14.5px] text-slate-100 font-medium">Please select the issue that you need support with:</p>
           </div>
         ),
@@ -234,7 +234,7 @@ export const HelpSupportView: React.FC = () => {
           sender: 'bot',
           text: (
             <div>
-              <p className="font-semibold text-amber-300/90 text-xs tracking-wider uppercase mb-1">Brand Assistant</p>
+              <p className="font-semibold text-amber-300/90 text-xs tracking-wider uppercase mb-1">Assistant</p>
               <div className="text-[14px] leading-relaxed text-slate-100 whitespace-pre-line">{faq.answer}</div>
             </div>
           ),
@@ -283,7 +283,7 @@ export const HelpSupportView: React.FC = () => {
           sender: 'bot',
           text: (
             <div>
-              <p className="font-semibold text-amber-300/90 text-xs tracking-wider uppercase mb-1">Brand Assistant</p>
+              <p className="font-semibold text-amber-300/90 text-xs tracking-wider uppercase mb-1">Assistant</p>
               <p className="text-[14.5px] text-slate-100">
                 Please describe your issue below so our team and smart assistant can assist you better.
               </p>
@@ -392,7 +392,7 @@ export const HelpSupportView: React.FC = () => {
               timestamp: botTime,
               text: (
                 <div className="space-y-2">
-                  <p className="font-semibold text-amber-300/90 text-xs tracking-wider uppercase mb-1">Brand Assistant</p>
+                  <p className="font-semibold text-amber-300/90 text-xs tracking-wider uppercase mb-1">Assistant</p>
                   <p className="text-[14.5px] leading-relaxed text-slate-100">
                     I have forwarded this entire chat to our human support team, and our representative will reply soon.
                   </p>
@@ -419,7 +419,7 @@ export const HelpSupportView: React.FC = () => {
               timestamp: botTime,
               text: (
                 <div>
-                  <p className="font-semibold text-amber-300/90 text-xs tracking-wider uppercase mb-1">Brand Assistant</p>
+                  <p className="font-semibold text-amber-300/90 text-xs tracking-wider uppercase mb-1">Assistant</p>
                   <p className="text-[14.5px] leading-relaxed text-slate-100 whitespace-pre-wrap">{resData.reply}</p>
                 </div>
               )
@@ -549,7 +549,7 @@ export const HelpSupportView: React.FC = () => {
                     <div className="max-w-[88%] sm:max-w-[80%] w-full rounded-2xl overflow-hidden border border-white/10 shadow-2xl animate-fadeIn">
                       {/* Top Header Section */}
                       <div className="bg-[#1e2f52] px-4 py-3 border-b border-white/10">
-                        <p className="font-semibold text-amber-300/90 text-xs tracking-wider uppercase mb-1">Brand Assistant</p>
+                        <p className="font-semibold text-amber-300/90 text-xs tracking-wider uppercase mb-1">Assistant</p>
                         <p className="text-[14px] text-slate-100 font-medium leading-snug">
                           Please select the issue that you need support with:
                         </p>
