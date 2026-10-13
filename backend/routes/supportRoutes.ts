@@ -10,7 +10,9 @@ import {
   getAdminTickets,
   getAdminTicketDetails,
   adminReplyTicket,
-  chatSupport
+  deleteAdminTicket,
+  chatSupport,
+  getChatSync
 } from '../controllers/supportController';
 import { authMiddleware, optionalAuthMiddleware } from '../middleware/authMiddleware';
 
@@ -24,6 +26,7 @@ router.get('/faqs', getFaqs);
 router.post('/tickets', optionalAuthMiddleware, createTicket); 
 router.get('/tickets/:id/token/:token', getTicketByToken);
 router.post('/chat', optionalAuthMiddleware, chatSupport);
+router.get('/chat/sync', optionalAuthMiddleware, getChatSync);
 
 // ==============================
 // ADMIN ROUTES
@@ -37,5 +40,6 @@ router.delete('/admin/faqs/:id', authMiddleware, deleteFaq);
 router.get('/admin/tickets', authMiddleware, getAdminTickets);
 router.get('/admin/tickets/:id', authMiddleware, getAdminTicketDetails);
 router.post('/admin/tickets/:id/reply', authMiddleware, adminReplyTicket);
+router.delete('/admin/tickets/:id', authMiddleware, deleteAdminTicket);
 
 export default router;

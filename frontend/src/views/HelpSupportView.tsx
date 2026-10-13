@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { HelpCircle, Mail, MapPin, Send, AlertCircle, Bot, User, Check, MessageSquare, RotateCcw, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { HelpCircle, Mail, MapPin, Send, AlertCircle, Bot, User, Check, MessageSquare, RotateCcw, ChevronRight, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { apiUrl } from '../config/api';
 import { usePlatform } from '../context/PlatformContext';
 
@@ -12,7 +12,7 @@ interface FAQ {
 
 interface ChatMessage {
   id: string;
-  sender: 'bot' | 'user';
+  sender: 'bot' | 'user' | 'admin';
   text: React.ReactNode;
   timestamp: string;
   isOptionsCard?: boolean;
@@ -27,12 +27,17 @@ export const HelpSupportView: React.FC = () => {
   const [inputValue, setInputValue] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  const [activeTicketId, setActiveTicketId] = useState<string | null>(null);
-  const [activeToken, setActiveToken] = useState<string | null>(null);
+  const [activeTicketId, setActiveTicketId] = useState<string | null>(() => {
+    return sessionStorage.getItem('sc_support_active_ticket') || null;
+  });
+  const [activeToken, setActiveToken] = useState<string | null>(() => {
+    return sessionStorage.getItem('sc_support_active_token') || null;
+  });
   const [showInputBar, setShowInputBar] = useState(false);
   const [isResolved, setIsResolved] = useState(false);
   const [selectedFaqId, setSelectedFaqId] = useState<string | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const seenReplyIdsRef = useRef<Set<string>>(new Set());
 
   const formatCurrentTime = () => {
     return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -102,6 +107,93 @@ export const HelpSupportView: React.FC = () => {
         initChatFlow([]);
       });
   }, [authUser]);
+
+  // Check for active open ticket if user is logged in
+  useEffect(() => {
+    const token = localStorage.getItem('sc_auth_token');
+    const syncUrl = activeTicketId
+      ? apiUrl(`/api/support/chat/sync?ticket_id=${activeTicketId}${activeToken ? `&access_token=${activeToken}` : ''}`)
+      : apiUrl('/api/support/chat/sync');
+
+    fetch(syncUrl, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (d.success && d.ticket_id) {
+          setActiveTicketId(d.ticket_id);
+          sessionStorage.setItem('sc_support_active_ticket', d.ticket_id);
+          if (d.access_token) {
+            setActiveToken(d.access_token);
+            sessionStorage.setItem('sc_support_active_token', d.access_token);
+          }
+          if (d.status === 'Resolved' || d.status === 'Closed') {
+            setIsResolved(true);
+          }
+        }
+      })
+      .catch(() => {});
+  }, [authUser]);
+
+  // Real-time synchronization polling for Admin replies & ticket status updates
+  useEffect(() => {
+    if (!activeTicketId) return;
+
+    let isSubscribed = true;
+
+    const syncReplies = async () => {
+      try {
+        const token = localStorage.getItem('sc_auth_token');
+        const headers: Record<string, string> = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const url = apiUrl(`/api/support/chat/sync?ticket_id=${activeTicketId}${activeToken ? `&access_token=${activeToken}` : ''}`);
+        const res = await fetch(url, { headers });
+        const data = await res.json();
+
+        if (isSubscribed && data.success && Array.isArray(data.replies)) {
+          if (data.status === 'Resolved' || data.status === 'Closed') {
+            setIsResolved(true);
+          }
+
+          const newAdminMessages: ChatMessage[] = [];
+          data.replies.forEach((rep: any) => {
+            if (!seenReplyIdsRef.current.has(rep.id)) {
+              seenReplyIdsRef.current.add(rep.id);
+              if (rep.sender_role === 'ADMIN') {
+                const time = rep.created_at
+                  ? new Date(rep.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                  : formatCurrentTime();
+                newAdminMessages.push({
+                  id: rep.id,
+                  sender: 'admin',
+                  text: rep.message,
+                  timestamp: time
+                });
+              }
+            }
+          });
+
+          if (newAdminMessages.length > 0) {
+            setMessages(prev => [...prev, ...newAdminMessages]);
+            setShowInputBar(true); // Open input bar so user can continue conversation with Admin
+          }
+        }
+      } catch (err) {
+        // silent polling catch
+      }
+    };
+
+    // Immediate sync
+    syncReplies();
+
+    // Poll every 2.5 seconds
+    const interval = setInterval(syncReplies, 2500);
+    return () => {
+      isSubscribed = false;
+      clearInterval(interval);
+    };
+  }, [activeTicketId, activeToken]);
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -245,12 +337,18 @@ export const HelpSupportView: React.FC = () => {
     setSubmitting(true);
     setIsTyping(true);
 
+    const userRoleToSend = authUser?.role
+      ? (authUser.role === 'CREATOR' ? 'INFLUENCER' : authUser.role)
+      : 'GUEST';
+
     const data = {
       message: queryText,
       ticket_id: activeTicketId,
       access_token: activeToken,
       guest_name: authUser?.name || 'Guest User',
-      guest_email: authUser?.email || 'guest@thebrandstory.com'
+      guest_email: authUser?.email || 'guest@thebrandstory.com',
+      user_id: authUser?.id || null,
+      user_role: userRoleToSend
     };
 
     try {
@@ -269,9 +367,13 @@ export const HelpSupportView: React.FC = () => {
       setSubmitting(false);
 
       if (resData.success) {
-        if (!activeTicketId && resData.ticket_id) {
+        if (resData.ticket_id) {
           setActiveTicketId(resData.ticket_id);
-          setActiveToken(resData.access_token);
+          sessionStorage.setItem('sc_support_active_ticket', resData.ticket_id);
+          if (resData.access_token) {
+            setActiveToken(resData.access_token);
+            sessionStorage.setItem('sc_support_active_token', resData.access_token);
+          }
         }
 
         const isHandoff = resData.reply.includes("I need human assistance") || resData.reply.includes("TRANSFER_TO_HUMAN");
@@ -501,13 +603,28 @@ export const HelpSupportView: React.FC = () => {
                       </div>
                     )}
 
+                    {msg.sender === 'admin' && (
+                      <div className="w-7 h-7 rounded-full border border-amber-400 mr-2.5 mt-1 flex-shrink-0 shadow-md bg-amber-500/20 flex items-center justify-center">
+                        <ShieldCheck className="w-4 h-4 text-amber-400" />
+                      </div>
+                    )}
+
                     <div
                       className={`max-w-[85%] sm:max-w-[78%] rounded-2xl px-4 py-3 shadow-md ${
                         msg.sender === 'user'
                           ? 'bg-blue-600/90 text-white rounded-tr-sm border border-blue-500/40'
+                          : msg.sender === 'admin'
+                          ? 'bg-[#1b2f57] text-white rounded-tl-sm border-2 border-amber-400/50 shadow-xl'
                           : 'bg-[#182744] text-slate-100 rounded-tl-sm border border-white/10'
                       }`}
                     >
+                      {msg.sender === 'admin' && (
+                        <div className="flex items-center gap-1.5 mb-1.5 pb-1 border-b border-white/10">
+                          <span className="text-[11px] font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1">
+                            <ShieldCheck className="w-3.5 h-3.5 text-amber-400" /> Support Team (Admin)
+                          </span>
+                        </div>
+                      )}
                       <div className="text-[14px] leading-relaxed text-white">
                         {msg.text}
                       </div>
