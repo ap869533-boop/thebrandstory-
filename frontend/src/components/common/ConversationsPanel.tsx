@@ -154,7 +154,7 @@ export const ConversationsPanel: React.FC<{
       const data = await res.json();
       if (data.success && Array.isArray(data.conversations)) {
         const currentActive = activeIdRef.current;
-        const adjusted = data.conversations.map((t: ConversationThread) => 
+        const adjusted = data.conversations.map((t: ConversationThread) =>
           t.id === currentActive ? { ...t, unreadCount: 0 } : t
         );
         threadsRef.current = adjusted;
@@ -190,19 +190,24 @@ export const ConversationsPanel: React.FC<{
 
   useEffect(() => {
     if (!authUser) return;
-    
+
     // Connect socket on auth
     const token = localStorage.getItem('sc_auth_token');
     if (token) {
       connectSocket(token);
     }
-    
+
     void loadThreads();
     const heartbeat = window.setInterval(() => {
       fetch(apiUrl('/api/presence/heartbeat'), { method: 'POST', headers: authHeaders() }).catch(() => undefined);
     }, 45000);
     fetch(apiUrl('/api/presence/heartbeat'), { method: 'POST', headers: authHeaders() }).catch(() => undefined);
-    
+
+    // Background polling ensures threads and counters update automatically
+    const pollInterval = window.setInterval(() => {
+      void loadThreads();
+    }, 10000);
+
     const socket = getSocket();
     const handleNewMessage = () => void loadThreads();
     const handlePeerTyping = (data: { conversationId: string; senderId: string; isTyping: boolean }) => {
@@ -220,6 +225,7 @@ export const ConversationsPanel: React.FC<{
 
     return () => {
       window.clearInterval(heartbeat);
+      window.clearInterval(pollInterval);
       if (socket) {
         socket.off('new_message', handleNewMessage);
         socket.off('peer_typing', handlePeerTyping);
@@ -269,7 +275,7 @@ export const ConversationsPanel: React.FC<{
           .catch(console.error);
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openConversationId, openUsername, openCreatorId, campaignId, authUser, threads]);
 
   useEffect(() => {
@@ -278,7 +284,7 @@ export const ConversationsPanel: React.FC<{
     setDraft('');
     setThreads((prev) => prev.map((t) => t.id === activeId ? { ...t, unreadCount: 0 } : t));
     void loadMessages(activeId);
-    
+
     const socket = getSocket();
     const handleActiveMessage = (message: ChatMessage) => {
       if (message.conversationId === activeId) {
@@ -287,10 +293,10 @@ export const ConversationsPanel: React.FC<{
           return [...prev, message];
         });
         // Also mark as read locally
-        fetch(apiUrl(`/api/conversations/${activeId}/messages?t=${Date.now()}`), { headers: authHeaders() }).catch(() => {});
-        
+        fetch(apiUrl(`/api/conversations/${activeId}/messages?t=${Date.now()}`), { headers: authHeaders() }).catch(() => { });
+
         // Since we're reading it instantly, reset the unread count in threads
-        setThreads((prev) => 
+        setThreads((prev) =>
           prev.map((t) => t.id === activeId ? { ...t, unreadCount: 0 } : t)
         );
       }
@@ -322,12 +328,11 @@ export const ConversationsPanel: React.FC<{
 
     // 1. Filter by category (All, Pitches, Inquiry)
     if (activeFilter === 'pitches') {
-      result = result.filter(t => t.campaignId);
+      result = result.filter(t => Boolean(t.campaignId));
     } else if (activeFilter === 'inquiry') {
-      result = result.filter(t => t.inquiryId);
+      result = result.filter(t => Boolean(t.inquiryId) || !t.campaignId);
     } else if (activeFilter === 'all') {
-      // Exclude pitches and inquiries from the default 'all' view UNLESS they have >= 2 messages
-      result = result.filter(t => (!t.campaignId && !t.inquiryId) || (t.messageCount && t.messageCount >= 2));
+      result = threads;
     }
 
     // 2. Filter by unread
@@ -356,22 +361,43 @@ export const ConversationsPanel: React.FC<{
     return result;
   }, [threads, searchQuery, activeFilter, showUnreadOnly, activeId]);
 
-  // Calculate unread thread counts for each category
-  const unreadCounts = useMemo(() => {
-    let all = 0;
+  // Calculate thread counts and unread thread counts for each category
+  const categoryCounts = useMemo(() => {
     let pitches = 0;
     let inquiry = 0;
+    let unreadAll = 0;
+    let unreadPitches = 0;
+    let unreadInquiry = 0;
+
     for (const t of threads) {
+      const isPitch = Boolean(t.campaignId);
+      const isInquiry = Boolean(t.inquiryId) || !t.campaignId;
+
+      if (isPitch) pitches++;
+      if (isInquiry) inquiry++;
+
       if (t.unreadCount > 0) {
-        if (t.campaignId) pitches++;
-        if (t.inquiryId) inquiry++;
-        if ((!t.campaignId && !t.inquiryId) || (t.messageCount && t.messageCount >= 2)) {
-          all++;
-        }
+        unreadAll++;
+        if (isPitch) unreadPitches++;
+        if (isInquiry) unreadInquiry++;
       }
     }
-    return { all, pitches, inquiry };
+
+    return {
+      all: threads.length,
+      pitches,
+      inquiry,
+      unreadAll,
+      unreadPitches,
+      unreadInquiry,
+    };
   }, [threads]);
+
+  const currentActiveCount = useMemo(() => {
+    if (activeFilter === 'pitches') return categoryCounts.pitches;
+    if (activeFilter === 'inquiry') return categoryCounts.inquiry;
+    return categoryCounts.all;
+  }, [activeFilter, categoryCounts]);
 
   const lastTypingTimeRef = useRef<number>(0);
 
@@ -379,7 +405,7 @@ export const ConversationsPanel: React.FC<{
   useEffect(() => {
     if (!activeId) return;
     const isTyping = draft.trim().length > 0;
-    
+
     if (isTyping) {
       const now = Date.now();
       if (now - lastTypingTimeRef.current > 1500) {
@@ -387,7 +413,7 @@ export const ConversationsPanel: React.FC<{
           method: 'POST',
           headers: { ...authHeaders(), 'Content-Type': 'application/json' },
           body: JSON.stringify({ isTyping: true }),
-        }).catch(() => {});
+        }).catch(() => { });
         lastTypingTimeRef.current = now;
       }
     }
@@ -397,7 +423,7 @@ export const ConversationsPanel: React.FC<{
         method: 'POST',
         headers: { ...authHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ isTyping: false }),
-      }).catch(() => {});
+      }).catch(() => { });
       lastTypingTimeRef.current = 0;
     }, 2000);
 
@@ -407,11 +433,11 @@ export const ConversationsPanel: React.FC<{
   const send = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!activeId || sending || uploadingAttachment) return;
-    
+
     // Allow sending if there's text OR an attachment
     const textToSend = draft.trim();
     if (!textToSend && !attachment) return;
-    
+
     setSending(true);
 
     try {
@@ -423,35 +449,35 @@ export const ConversationsPanel: React.FC<{
         setUploadingAttachment(true);
         // Ensure size under 50MB
         if (attachment.size > 50 * 1024 * 1024) {
-           alert("Attachment too large. Maximum size is 50MB.");
-           setUploadingAttachment(false);
-           setSending(false);
-           return;
+          alert("Attachment too large. Maximum size is 50MB.");
+          setUploadingAttachment(false);
+          setSending(false);
+          return;
         }
 
         const base64 = await new Promise<string>((resolve) => {
-           const reader = new FileReader();
-           reader.onload = () => resolve(reader.result as string);
-           reader.readAsDataURL(attachment);
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(attachment);
         });
 
         const uploadRes = await fetch(apiUrl('/api/upload'), {
-           method: 'POST',
-           headers: authHeaders(),
-           body: JSON.stringify({
-              image: base64,
-              creatorId: authUser?.id,
-              type: 'chat_attachment'
-           })
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({
+            image: base64,
+            creatorId: authUser?.id,
+            type: 'chat_attachment'
+          })
         });
         const uploadData = await uploadRes.json();
         if (uploadData.success) {
-           attachmentUrl = uploadData.url;
-           attachmentName = attachment.name;
-           if (attachment.type.startsWith('image/')) attachmentType = 'image';
-           else if (attachment.type.startsWith('video/')) attachmentType = 'video';
-           else if (attachment.type === 'application/pdf') attachmentType = 'pdf';
-           else attachmentType = 'file';
+          attachmentUrl = uploadData.url;
+          attachmentName = attachment.name;
+          if (attachment.type.startsWith('image/')) attachmentType = 'image';
+          else if (attachment.type.startsWith('video/')) attachmentType = 'video';
+          else if (attachment.type === 'application/pdf') attachmentType = 'pdf';
+          else attachmentType = 'file';
         }
         setUploadingAttachment(false);
       }
@@ -543,17 +569,15 @@ export const ConversationsPanel: React.FC<{
 
   return (
     <div
-      className={`relative w-full rounded-2xl md:rounded-3xl border border-white/10 shadow-2xl overflow-hidden bg-[#0c1322] grid grid-cols-1 md:grid-cols-12 ${
-        fullPage ? 'h-[calc(100dvh-8rem)] md:h-[calc(100vh-12rem)] md:min-h-[580px]' : 'h-[calc(100dvh-4rem)] md:min-h-[560px] md:h-[640px]'
-      }`}
+      className={`relative w-full rounded-2xl md:rounded-3xl border border-white/10 shadow-2xl overflow-hidden bg-[#0c1322] grid grid-cols-1 md:grid-cols-12 ${fullPage ? 'h-[calc(100dvh-8rem)] md:h-[calc(100vh-12rem)] md:min-h-[580px]' : 'h-[calc(100dvh-4rem)] md:min-h-[560px] md:h-[640px]'
+        }`}
     >
       {/* ========================================================
           LEFT SIDEBAR: CONVERSATION LIST (WhatsApp Web Theme)
       ======================================================== */}
       <aside
-        className={`md:col-span-4 lg:col-span-4 bg-[#0e172a] border-r border-white/10 flex flex-col h-full min-h-0 ${
-          mobileShowChat ? 'hidden md:flex' : 'flex'
-        }`}
+        className={`md:col-span-4 lg:col-span-4 bg-[#0e172a] border-r border-white/10 flex flex-col h-full min-h-0 ${mobileShowChat ? 'hidden md:flex' : 'flex'
+          }`}
       >
         {/* Sidebar Header */}
         <div className="p-3.5 px-4 bg-[#111c34] border-b border-white/10 flex items-center justify-between">
@@ -562,9 +586,11 @@ export const ConversationsPanel: React.FC<{
               <MessageSquare className="w-4 h-4 text-[#D4A338]" />
             </div>
             <div>
-              <h2 className="font-black text-sm text-white tracking-wide">Pitches</h2>
+              <h2 className="font-black text-sm text-white tracking-wide">
+                {activeFilter === 'inquiry' ? 'Inquiries' : activeFilter === 'pitches' ? 'Pitches' : 'Chats'}
+              </h2>
               <p className="text-[10px] text-slate-400 font-medium">
-                {threads.length} {threads.length === 1 ? 'conversation' : 'conversations'}
+                {currentActiveCount} {currentActiveCount === 1 ? 'conversation' : 'conversations'}
               </p>
             </div>
           </div>
@@ -614,7 +640,9 @@ export const ConversationsPanel: React.FC<{
                   }}
                   className="w-full text-left px-3 py-2 text-xs hover:bg-white/5 rounded-lg flex items-center justify-between transition"
                 >
-                  <span className={activeFilter === 'all' ? 'text-white font-semibold' : 'text-slate-300'}>All</span>
+                  <span className={activeFilter === 'all' ? 'text-white font-semibold' : 'text-slate-300'}>
+                    All {categoryCounts.all > 0 && `(${categoryCounts.all})`}
+                  </span>
                   {activeFilter === 'all' && <Check className="w-3.5 h-3.5 text-white" />}
                 </button>
 
@@ -625,7 +653,9 @@ export const ConversationsPanel: React.FC<{
                   }}
                   className="w-full text-left px-3 py-2 text-xs hover:bg-white/5 rounded-lg flex items-center justify-between transition"
                 >
-                  <span className={showUnreadOnly ? 'text-[#D4A338] font-semibold' : 'text-slate-300'}>Unread</span>
+                  <span className={showUnreadOnly ? 'text-[#D4A338] font-semibold' : 'text-slate-300'}>
+                    Unread {categoryCounts.unreadAll > 0 && `(${categoryCounts.unreadAll})`}
+                  </span>
                   {showUnreadOnly && <Check className="w-3.5 h-3.5 text-[#D4A338]" />}
                 </button>
 
@@ -636,7 +666,9 @@ export const ConversationsPanel: React.FC<{
                   }}
                   className="w-full text-left px-3 py-2 text-xs hover:bg-white/5 rounded-lg flex items-center justify-between transition"
                 >
-                  <span className={activeFilter === 'pitches' ? 'text-[#D4A338] font-semibold' : 'text-slate-300'}>Pitches</span>
+                  <span className={activeFilter === 'pitches' ? 'text-[#D4A338] font-semibold' : 'text-slate-300'}>
+                    Pitches {categoryCounts.pitches > 0 && `(${categoryCounts.pitches})`}
+                  </span>
                   {activeFilter === 'pitches' && <Check className="w-3.5 h-3.5 text-[#D4A338]" />}
                 </button>
 
@@ -647,7 +679,9 @@ export const ConversationsPanel: React.FC<{
                   }}
                   className="w-full text-left px-3 py-2 text-xs hover:bg-white/5 rounded-lg flex items-center justify-between transition"
                 >
-                  <span className={activeFilter === 'inquiry' ? 'text-emerald-400 font-semibold' : 'text-slate-300'}>Inquiry</span>
+                  <span className={activeFilter === 'inquiry' ? 'text-emerald-400 font-semibold' : 'text-slate-300'}>
+                    Inquiry {categoryCounts.inquiry > 0 && `(${categoryCounts.inquiry})`}
+                  </span>
                   {activeFilter === 'inquiry' && <Check className="w-3.5 h-3.5 text-emerald-400" />}
                 </button>
 
@@ -671,52 +705,49 @@ export const ConversationsPanel: React.FC<{
           {/* Primary Pills */}
           <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pl-2 flex-1">
             <button
-            onClick={() => setActiveFilter('all')}
-            className={`px-3 py-1.5 rounded-full text-[11px] font-semibold transition whitespace-nowrap flex items-center gap-1.5 shrink-0 ${
-              activeFilter === 'all'
-                ? 'bg-[#182647] text-white border border-white/10'
-                : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
-            }`}
-          >
-            All
-            {unreadCounts.all > 0 && (
-              <span className={`px-1.5 py-0.5 rounded-full text-[9px] ${activeFilter === 'all' ? 'bg-white/20' : 'bg-white/10 text-white'}`}>
-                {unreadCounts.all}
-              </span>
-            )}
-          </button>
-          
-          <button
-            onClick={() => setActiveFilter('pitches')}
-            className={`px-3 py-1.5 rounded-full text-[11px] font-semibold transition whitespace-nowrap flex items-center gap-1.5 shrink-0 ${
-              activeFilter === 'pitches'
-                ? 'bg-[#182647] text-[#D4A338] border border-[#D4A338]/30'
-                : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
-            }`}
-          >
-            Pitches
-            {unreadCounts.pitches > 0 && (
-              <span className={`px-1.5 py-0.5 rounded-full text-[9px] ${activeFilter === 'pitches' ? 'bg-[#D4A338]/20' : 'bg-[#D4A338]/10 text-[#D4A338]'}`}>
-                {unreadCounts.pitches}
-              </span>
-            )}
-          </button>
-          
-          <button
-            onClick={() => setActiveFilter('inquiry')}
-            className={`px-3 py-1.5 rounded-full text-[11px] font-semibold transition whitespace-nowrap flex items-center gap-1.5 shrink-0 ${
-              activeFilter === 'inquiry'
-                ? 'bg-[#182647] text-emerald-400 border border-emerald-500/30'
-                : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
-            }`}
-          >
-            Inquiry
-            {unreadCounts.inquiry > 0 && (
-              <span className={`px-1.5 py-0.5 rounded-full text-[9px] ${activeFilter === 'inquiry' ? 'bg-emerald-500/20' : 'bg-emerald-500/10 text-emerald-400'}`}>
-                {unreadCounts.inquiry}
-              </span>
-            )}
-          </button>
+              onClick={() => setActiveFilter('all')}
+              className={`px-3 py-1.5 rounded-full text-[11px] font-semibold transition whitespace-nowrap flex items-center gap-1.5 shrink-0 ${activeFilter === 'all'
+                  ? 'bg-[#182647] text-white border border-white/10'
+                  : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
+                }`}
+            >
+              All
+              {categoryCounts.all > 0 && (
+                <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${activeFilter === 'all' ? 'bg-white/20 text-white' : 'bg-white/10 text-white'}`}>
+                  {categoryCounts.all}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveFilter('pitches')}
+              className={`px-3 py-1.5 rounded-full text-[11px] font-semibold transition whitespace-nowrap flex items-center gap-1.5 shrink-0 ${activeFilter === 'pitches'
+                  ? 'bg-[#182647] text-[#D4A338] border border-[#D4A338]/30'
+                  : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
+                }`}
+            >
+              Pitches
+              {categoryCounts.pitches > 0 && (
+                <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${activeFilter === 'pitches' ? 'bg-[#D4A338]/20 text-[#D4A338]' : 'bg-[#D4A338]/10 text-[#D4A338]'}`}>
+                  {categoryCounts.pitches}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveFilter('inquiry')}
+              className={`px-3 py-1.5 rounded-full text-[11px] font-semibold transition whitespace-nowrap flex items-center gap-1.5 shrink-0 ${activeFilter === 'inquiry'
+                  ? 'bg-[#182647] text-emerald-400 border border-emerald-500/30'
+                  : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
+                }`}
+            >
+              Inquiry
+              {categoryCounts.inquiry > 0 && (
+                <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${activeFilter === 'inquiry' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                  {categoryCounts.inquiry}
+                </span>
+              )}
+            </button>
           </div>
         </div>
 
@@ -757,11 +788,10 @@ export const ConversationsPanel: React.FC<{
                   setActiveId(t.id);
                   setMobileShowChat(true);
                 }}
-                className={`w-full text-left px-3.5 py-3 flex items-center gap-3 transition relative group ${
-                  isSelected
+                className={`w-full text-left px-3.5 py-3 flex items-center gap-3 transition relative group ${isSelected
                     ? 'bg-[#182748] border-l-4 border-l-[#D4A338]'
                     : 'hover:bg-[#121f3a]'
-                }`}
+                  }`}
               >
                 {/* Peer Avatar with status ring */}
                 <div className="relative shrink-0">
@@ -783,9 +813,8 @@ export const ConversationsPanel: React.FC<{
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-1 mb-0.5">
                     <span
-                      className={`font-bold text-xs truncate ${
-                        isSelected ? 'text-white' : 'text-slate-200 group-hover:text-white'
-                      }`}
+                      className={`font-bold text-xs truncate ${isSelected ? 'text-white' : 'text-slate-200 group-hover:text-white'
+                        }`}
                     >
                       {t.peerName}
                     </span>
@@ -821,9 +850,8 @@ export const ConversationsPanel: React.FC<{
           RIGHT PANEL: ACTIVE CHAT SCREEN (WhatsApp Styled)
       ======================================================== */}
       <section
-        className={`md:col-span-8 lg:col-span-8 flex flex-col h-full min-h-0 bg-[#08101e] relative ${
-          !mobileShowChat ? 'hidden md:flex' : 'flex'
-        }`}
+        className={`md:col-span-8 lg:col-span-8 flex flex-col h-full min-h-0 bg-[#08101e] relative ${!mobileShowChat ? 'hidden md:flex' : 'flex'
+          }`}
       >
         {!active && (
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-[#091222] select-none">
@@ -886,9 +914,8 @@ export const ConversationsPanel: React.FC<{
                     ) : (
                       <>
                         <span
-                          className={`w-2 h-2 rounded-full ${
-                            active.online ? 'bg-emerald-500 animate-pulse' : 'bg-slate-500'
-                          }`}
+                          className={`w-2 h-2 rounded-full ${active.online ? 'bg-emerald-500 animate-pulse' : 'bg-slate-500'
+                            }`}
                         />
                         {active.online ? 'Online' : 'Offline'}
                       </>
@@ -902,11 +929,10 @@ export const ConversationsPanel: React.FC<{
                 <button
                   type="button"
                   onClick={() => setShowReviewModal((prev) => !prev)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 border shadow-sm cursor-pointer ${
-                    showReviewModal
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 border shadow-sm cursor-pointer ${showReviewModal
                       ? 'bg-[#D4A338] text-black border-[#D4A338]'
                       : 'bg-[#D4A338]/10 hover:bg-[#D4A338]/20 text-[#e6b955] border-[#D4A338]/40'
-                  }`}
+                    }`}
                   title={`Rate & Review ${active.peerName}`}
                 >
                   <Star className="w-3.5 h-3.5 fill-current" />
@@ -951,11 +977,10 @@ export const ConversationsPanel: React.FC<{
                           className="p-1 hover:scale-110 transition"
                         >
                           <Star
-                            className={`w-5 h-5 ${
-                              (hoverRating !== null ? hoverRating >= star : reviewRating >= star)
+                            className={`w-5 h-5 ${(hoverRating !== null ? hoverRating >= star : reviewRating >= star)
                                 ? 'text-amber-400 fill-amber-400'
                                 : 'text-slate-600'
-                            }`}
+                              }`}
                           />
                         </button>
                       ))}
@@ -992,9 +1017,8 @@ export const ConversationsPanel: React.FC<{
 
                     {reviewMsg && (
                       <p
-                        className={`text-xs font-semibold ${
-                          reviewMsg.type === 'success' ? 'text-emerald-400' : 'text-rose-400'
-                        }`}
+                        className={`text-xs font-semibold ${reviewMsg.type === 'success' ? 'text-emerald-400' : 'text-rose-400'
+                          }`}
                       >
                         {reviewMsg.text}
                       </p>
@@ -1047,27 +1071,26 @@ export const ConversationsPanel: React.FC<{
                   return (
                     <div key={m.id} className={`flex w-full ${mine ? 'justify-end' : 'justify-start'}`}>
                       <div
-                        className={`relative max-w-[85%] sm:max-w-[70%] rounded-2xl px-3.5 py-2.5 text-xs shadow-md ${
-                          mine
+                        className={`relative max-w-[85%] sm:max-w-[70%] rounded-2xl px-3.5 py-2.5 text-xs shadow-md ${mine
                             ? 'bg-[#005c4b] text-white rounded-tr-xs'
                             : 'bg-[#1f2c34] text-slate-100 rounded-tl-xs border border-white/5'
-                        }`}
+                          }`}
                       >
                         {/* Attachment Rendering */}
                         {m.attachmentUrl && (
                           <div className="mb-2">
                             {m.attachmentType === 'image' ? (
-                              <img 
-                                src={apiUrl(m.attachmentUrl)} 
-                                alt={m.attachmentName || 'Attachment'} 
-                                className="max-w-full rounded-lg max-h-[300px] object-contain bg-black/20 cursor-pointer hover:opacity-90 transition-opacity" 
+                              <img
+                                src={apiUrl(m.attachmentUrl)}
+                                alt={m.attachmentName || 'Attachment'}
+                                className="max-w-full rounded-lg max-h-[300px] object-contain bg-black/20 cursor-pointer hover:opacity-90 transition-opacity"
                                 onClick={() => setEnlargedPhotoUrl(apiUrl(m.attachmentUrl!))}
                               />
                             ) : m.attachmentType === 'video' ? (
                               <video src={apiUrl(m.attachmentUrl)} controls className="max-w-full rounded-lg max-h-[300px] object-contain bg-black/20" />
                             ) : (
                               <a href={apiUrl(m.attachmentUrl)} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-blue-300 hover:underline break-all bg-black/20 p-2.5 rounded-lg">
-                                <Paperclip className="w-4 h-4 shrink-0" /> 
+                                <Paperclip className="w-4 h-4 shrink-0" />
                                 <span className="line-clamp-2 font-medium">{m.attachmentName || 'Document'}</span>
                               </a>
                             )}
@@ -1138,9 +1161,8 @@ export const ConversationsPanel: React.FC<{
                       {/* Online Status */}
                       <p className="text-xs text-slate-400 mt-2 flex items-center justify-center gap-1.5">
                         <span
-                          className={`w-2 h-2 rounded-full ${
-                            active.online ? 'bg-emerald-500 animate-pulse' : 'bg-slate-500'
-                          }`}
+                          className={`w-2 h-2 rounded-full ${active.online ? 'bg-emerald-500 animate-pulse' : 'bg-slate-500'
+                            }`}
                         />
                         {active.online ? 'Online' : 'Offline'}
                       </p>
@@ -1270,9 +1292,9 @@ export const ConversationsPanel: React.FC<{
                   title="Send Message"
                 >
                   {uploadingAttachment ? (
-                     <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
                   ) : (
-                     <Send className="w-4 h-4 fill-current ml-0.5" />
+                    <Send className="w-4 h-4 fill-current ml-0.5" />
                   )}
                 </button>
               </form>
@@ -1296,9 +1318,9 @@ export const ConversationsPanel: React.FC<{
               </button>
             </div>
             <div className="flex-1 w-full p-4 sm:p-8 flex items-center justify-center overflow-hidden">
-              <img 
-                src={enlargedPhotoUrl} 
-                alt="Enlarged" 
+              <img
+                src={enlargedPhotoUrl}
+                alt="Enlarged"
                 className="max-w-full max-h-full object-contain drop-shadow-2xl rounded-xl"
               />
             </div>
