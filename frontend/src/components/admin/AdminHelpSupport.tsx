@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Edit2, Trash2, CheckCircle, XCircle, Search, MessageSquare, ChevronDown, ChevronUp, RefreshCw, Eye } from 'lucide-react';
 import { apiUrl } from '../../config/api';
 
@@ -39,6 +39,7 @@ export default function AdminHelpSupport() {
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [ticketReplies, setTicketReplies] = useState<any[]>([]);
   const [replyMessage, setReplyMessage] = useState('');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const fetchFaqs = async () => {
     setLoadingFaqs(true);
@@ -54,8 +55,8 @@ export default function AdminHelpSupport() {
     }
   };
 
-  const fetchTickets = async () => {
-    setLoadingTickets(true);
+  const fetchTickets = async (silent = false) => {
+    if (!silent) setLoadingTickets(true);
     try {
       const token = localStorage.getItem('sc_auth_token');
       const res = await fetch(apiUrl('/api/support/admin/tickets'), { headers: { Authorization: `Bearer ${token}` } });
@@ -64,14 +65,62 @@ export default function AdminHelpSupport() {
     } catch (error) {
       console.error(error);
     } finally {
-      setLoadingTickets(false);
+      if (!silent) setLoadingTickets(false);
     }
   };
 
   useEffect(() => {
     if (activeTab === 'faqs') fetchFaqs();
-    if (activeTab === 'tickets') fetchTickets();
+    if (activeTab === 'tickets') {
+      fetchTickets();
+      const interval = setInterval(() => {
+        fetchTickets(true);
+      }, 5000);
+      return () => clearInterval(interval);
+    }
   }, [activeTab]);
+
+  // Real-time auto-polling for active ticket conversation
+  useEffect(() => {
+    if (!selectedTicket?.id) return;
+    let isMounted = true;
+    const token = localStorage.getItem('sc_auth_token');
+
+    const syncTicketChat = async () => {
+      try {
+        const res = await fetch(apiUrl(`/api/support/admin/tickets/${selectedTicket.id}`), {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (isMounted && data.success && Array.isArray(data.replies)) {
+          setTicketReplies(prev => {
+            if (prev.length !== data.replies.length || (data.replies.length > 0 && prev[prev.length - 1]?.id !== data.replies[data.replies.length - 1]?.id)) {
+              return data.replies;
+            }
+            return prev;
+          });
+          if (data.ticket && data.ticket.status !== selectedTicket.status) {
+            setSelectedTicket(prev => prev ? { ...prev, status: data.ticket.status } : null);
+          }
+        }
+      } catch (err) {
+        // silent polling catch
+      }
+    };
+
+    const interval = setInterval(syncTicketChat, 2000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [selectedTicket?.id, selectedTicket?.status]);
+
+  // Auto-scroll chat to bottom
+  useEffect(() => {
+    if (selectedTicket) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [ticketReplies.length, selectedTicket]);
 
   const handleFaqSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -145,10 +194,42 @@ export default function AdminHelpSupport() {
       if (res.ok) {
         setReplyMessage('');
         loadTicketDetails(selectedTicket);
-        fetchTickets(); // refresh list
+        fetchTickets(true); // refresh list silently
       }
     } catch (err) {
       alert('Failed to send reply');
+    }
+  };
+
+  const formatRole = (role?: string) => {
+    if (!role) return 'Guest';
+    const r = role.toUpperCase();
+    if (r === 'CREATOR' || r === 'INFLUENCER') return 'Influencer';
+    if (r === 'BRAND') return 'Brand';
+    if (r === 'ADMIN') return 'Admin';
+    if (r === 'GUEST') return 'Guest';
+    return role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
+  };
+
+  const handleDeleteTicket = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this support chat and ticket? This will delete it completely.')) return;
+    const token = localStorage.getItem('sc_auth_token');
+    try {
+      const res = await fetch(apiUrl(`/api/support/admin/tickets/${id}`), {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        if (selectedTicket?.id === id) {
+          setSelectedTicket(null);
+        }
+        fetchTickets(false);
+      } else {
+        alert('Failed to delete ticket: ' + (data.error || 'Unknown error'));
+      }
+    } catch (err: any) {
+      alert('Failed to delete ticket: ' + err.message);
     }
   };
 
@@ -235,33 +316,36 @@ export default function AdminHelpSupport() {
                       <th className="px-4 py-3 rounded-tl-xl">ID</th>
                       <th className="px-4 py-3">User</th>
                       <th className="px-4 py-3">Subject</th>
-                      <th className="px-4 py-3">Status</th>
-                      <th className="px-4 py-3">Date</th>
+                      <th className="px-4 py-3 text-white font-semibold">Date</th>
                       <th className="px-4 py-3 rounded-tr-xl text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {tickets.map(ticket => (
-                      <tr key={ticket.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition">
+                      <tr key={ticket.id} className="border-b border-slate-100/10 hover:bg-slate-50/5 transition">
                         <td className="px-4 py-3 font-medium text-slate-200">#{ticket.id.slice(-5).toUpperCase()}</td>
                         <td className="px-4 py-3">
-                          <div className="font-semibold text-slate-800">{ticket.guest_name || ticket.user_role}</div>
-                          <div className="text-xs text-slate-500">{ticket.user_role === 'GUEST' ? 'Guest' : 'Registered'}</div>
+                          <div className="font-semibold text-slate-100">{ticket.guest_name || ticket.user_role}</div>
+                          <div className="text-xs text-slate-400 font-medium">{formatRole(ticket.user_role)}</div>
                         </td>
                         <td className="px-4 py-3 font-medium text-slate-200">{ticket.subject}</td>
-                        <td className="px-4 py-3">
-                          <span className={`px-2.5 py-1 text-xs font-bold rounded-lg ${ticket.status === 'Open' ? 'bg-amber-100 text-amber-700' :
-                            ticket.status === 'In Progress' ? 'bg-blue-100 text-blue-200' :
-                              'bg-emerald-100 text-emerald-700'
-                            }`}>
-                            {ticket.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-xs">{new Date(ticket.created_at).toLocaleDateString()}</td>
+                        <td className="px-4 py-3 text-sm font-semibold text-white">{new Date(ticket.created_at).toLocaleDateString()}</td>
                         <td className="px-4 py-3 text-right">
-                          <button onClick={() => loadTicketDetails(ticket)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition">
-                            <Eye className="w-3.5 h-3.5" /> View
-                          </button>
+                          <div className="inline-flex items-center gap-1.5 justify-end">
+                            <button onClick={() => loadTicketDetails(ticket)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition">
+                              <Eye className="w-3.5 h-3.5" /> View
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteTicket(ticket.id);
+                              }}
+                              title="Delete Ticket"
+                              className="inline-flex items-center justify-center p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-bold transition"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -274,24 +358,29 @@ export default function AdminHelpSupport() {
 
         {activeTab === 'tickets' && selectedTicket && (
           <div className="animate-fadeIn">
-            <button onClick={() => setSelectedTicket(null)} className="text-sm font-semibold text-blue-600 mb-6 hover:underline">&larr; Back to Tickets</button>
+            <div className="flex items-center justify-between mb-6">
+              <button onClick={() => setSelectedTicket(null)} className="text-sm font-semibold text-blue-600 hover:underline">&larr; Back to Tickets</button>
+              <button
+                onClick={() => handleDeleteTicket(selectedTicket.id)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-bold transition"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Delete Chat
+              </button>
+            </div>
 
-            <div className="bg-white/5 rounded-2xl p-6 border border-white/10 mb-6 flex justify-between items-start">
+            <div className="bg-white/5 rounded-2xl p-6 border border-white/10 mb-6">
               <div>
                 <h3 className="text-xl font-bold text-slate-100 mb-2">{selectedTicket.subject}</h3>
                 <p className="text-slate-300 mb-4">{selectedTicket.description}</p>
                 <div className="flex items-center gap-4 text-sm text-slate-400">
                   <span className="bg-[#D4A338]/10 text-[#D4A338] px-2 py-1 rounded border border-[#D4A338]/20">{selectedTicket.category}</span>
                   <span>From: <strong className="text-slate-200 font-semibold">{selectedTicket.guest_name || selectedTicket.user_role}</strong></span>
-                  <span>Role: <strong className="text-slate-200 font-semibold">{selectedTicket.user_role}</strong></span>
+                  <span>Role: <strong className="text-slate-200 font-semibold">{formatRole(selectedTicket.user_role)}</strong></span>
                 </div>
               </div>
-              <span className="px-3 py-1 bg-amber-100 text-amber-800 font-bold rounded-xl text-sm">
-                {selectedTicket.status}
-              </span>
             </div>
 
-            <div className="space-y-4 mb-6">
+            <div className="space-y-4 mb-6 max-h-[500px] overflow-y-auto pr-2">
               {ticketReplies.map(reply => (
                 <div key={reply.id} className={`flex ${reply.sender_role === 'ADMIN' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[70%] p-4 rounded-2xl ${
@@ -306,6 +395,7 @@ export default function AdminHelpSupport() {
                   </div>
                 </div>
               ))}
+              <div ref={messagesEndRef} />
             </div>
 
             <form onSubmit={handleReplySubmit} className="flex gap-2">

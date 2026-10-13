@@ -78,12 +78,23 @@ export const deleteFaq = async (req: AuthenticatedRequest, res: Response) => {
 
 export const createTicket = async (req: Request, res: Response) => {
   try {
-    const { category, subject, description, guest_name, guest_email } = req.body;
+    const { category, subject, description, guest_name, guest_email, user_id: bodyUserId, user_role: bodyUserRole } = req.body;
     
     // Check if authenticated
     const authReq = req as AuthenticatedRequest;
-    const user_id = authReq.user?.id || null;
-    const user_role = authReq.user?.role || 'GUEST';
+    let user_id = authReq.user?.id || bodyUserId || null;
+    let user_role = authReq.user?.role || bodyUserRole || 'GUEST';
+
+    if (guest_email && (user_role === 'GUEST' || !user_id)) {
+      try {
+        const users: any = await dbQuery('SELECT id, role, name FROM users WHERE email=? LIMIT 1', [guest_email]);
+        if (users && users.length > 0) {
+          if (!user_id) user_id = users[0].id;
+          if (user_role === 'GUEST') user_role = users[0].role;
+        }
+      } catch (err) {}
+    }
+    if (user_role === 'CREATOR') user_role = 'INFLUENCER';
     
     // Generate IDs and tokens
     const id = 'tkt_' + crypto.randomBytes(6).toString('hex');
@@ -196,15 +207,48 @@ export const adminReplyTicket = async (req: AuthenticatedRequest, res: Response)
   }
 };
 
+export const deleteAdminTicket = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    await dbQuery('DELETE FROM support_ticket_replies WHERE ticket_id=?', [id]);
+    await dbQuery('DELETE FROM support_tickets WHERE id=?', [id]);
+    res.json({ success: true, message: 'Ticket deleted successfully' });
+  } catch (error: any) {
+    console.error('Error deleting ticket:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete ticket' });
+  }
+};
+
 // ==============================
 // AI Support Chat (Frontend)
 // ==============================
 
 export const chatSupport = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    let { ticket_id, access_token, message, guest_name, guest_email } = req.body;
-    const user_id = req.user?.id || null;
-    const user_role = req.user?.role || 'GUEST';
+    let { ticket_id, access_token, message, guest_name, guest_email, user_id: bodyUserId, user_role: bodyUserRole } = req.body;
+    let user_id = req.user?.id || bodyUserId || null;
+    let user_role = req.user?.role || bodyUserRole || 'GUEST';
+
+    if (guest_email && (user_role === 'GUEST' || !user_id)) {
+      try {
+        const users: any = await dbQuery('SELECT id, role, name FROM users WHERE email=? LIMIT 1', [guest_email]);
+        if (users && users.length > 0) {
+          if (!user_id) user_id = users[0].id;
+          if (user_role === 'GUEST') user_role = users[0].role;
+          if (!guest_name) guest_name = users[0].name;
+        }
+      } catch (err) {}
+    } else if (user_id && (user_role === 'GUEST' || !guest_name)) {
+      try {
+        const users: any = await dbQuery('SELECT id, role, name FROM users WHERE id=? LIMIT 1', [user_id]);
+        if (users && users.length > 0) {
+          if (user_role === 'GUEST') user_role = users[0].role;
+          if (!guest_name) guest_name = users[0].name;
+        }
+      } catch (err) {}
+    }
+
+    if (user_role === 'CREATOR') user_role = 'INFLUENCER';
 
     if (!message || !message.trim()) {
       return res.status(400).json({ success: false, error: 'Message cannot be empty' });
@@ -237,6 +281,9 @@ export const chatSupport = async (req: AuthenticatedRequest, res: Response) => {
       if (!tickets || tickets.length === 0) {
         return res.status(404).json({ success: false, error: 'Ticket not found or unauthorized' });
       }
+      if (user_role && user_role !== 'GUEST') {
+        await dbQuery('UPDATE support_tickets SET user_role=?, user_id=COALESCE(user_id, ?) WHERE id=?', [user_role, user_id, ticket_id]);
+      }
     }
 
     // 2. Save user message
@@ -246,27 +293,34 @@ export const chatSupport = async (req: AuthenticatedRequest, res: Response) => {
       [userReplyId, ticket_id, user_id, user_role, message]
     );
 
-    // 3. Get FAQs for Reference
+    // 3. Relevant FAQs Matching (Avoid dumping unrelated FAQs so AI does not get distracted)
     const faqs: any = await dbQuery('SELECT question, answer FROM support_faqs WHERE is_active = TRUE');
-    let faqContext = '';
+    let relevantFaqs = '';
     if (faqs && faqs.length > 0) {
-      faqContext = `Official Platform FAQs (use ONLY if the user's question directly relates to these topics):\n` +
-        faqs.map((f: any, i: number) => `Topic ${i+1}: ${f.question}\nAnswer: ${f.answer}`).join('\n\n');
+      const msgWords = message.toLowerCase().split(/\s+/).filter((w: string) => w.length > 2);
+      const matched = faqs.filter((f: any) => {
+        const qLower = f.question.toLowerCase();
+        return msgWords.some((word: string) => qLower.includes(word));
+      });
+      if (matched.length > 0) {
+        relevantFaqs = `Platform Reference Info (Use ONLY if directly answering the user's question):\n` +
+          matched.map((f: any) => `Q: ${f.question}\nA: ${f.answer}`).join('\n\n');
+      }
     }
 
-    const systemPrompt = `You are the official friendly AI Support Assistant for 'The Brand Story' platform (a platform connecting brands and creators for marketing campaigns).
+    const systemPrompt = `You are DIA, the official friendly AI Support Assistant for 'The Brand Story' platform.
 
-CRITICAL INSTRUCTIONS:
-1. ANSWER ONLY WHAT THE CURRENT USER ASKS: Strictly address the specific question or issue asked in the latest message. NEVER paste unrelated FAQs (like login or signup guides) unless the user explicitly asks about login or signup!
-2. TECHNICAL ISSUES & BUGS (e.g. searchbar not working, buttons not clicking, page errors):
-   - Acknowledge the specific issue politely.
-   - Give 1-2 quick troubleshooting tips (e.g. refresh the page, check internet, try incognito mode, or clear browser cache).
-   - Offer to report the issue to the tech team if problem persists.
-3. GENERAL QUESTIONS: Answer naturally, politely, and intelligently in Hinglish / Hindi / English (matching the user's language).
-4. KEEP IT CONCISE: 2 to 3 short sentences max. Do NOT write long essays.
-5. If the user explicitly asks to talk to a human agent, reply ONLY with 'TRANSFER_TO_HUMAN'.
+STRICT RULES (NO UNNECESSARY LECTURES / ZERO FALTU GYAN):
+1. DIRECT ANSWER ONLY: Answer ONLY the exact question or issue asked in the user's latest message. Never give unsolicited advice, general lectures, or unrelated guides.
+2. NEVER mention login, signup, passwords, or unrelated platform topics unless the user explicitly asked about them!
+3. LENGTH LIMIT: 1 to 2 short, crisp sentences ONLY. Get straight to the point.
+4. Match user language naturally (Hinglish, Hindi, or English).
+5. If the user reports a bug or technical issue (e.g. searchbar not working, page glitch):
+   - Address ONLY that specific issue directly.
+   - Suggest 1 quick check (e.g. refresh the page or try incognito) and reassure them that our tech team is checking it.
+6. If the user explicitly asks to talk to a human agent, reply ONLY with 'TRANSFER_TO_HUMAN'.
 
-${faqContext}`;
+${relevantFaqs}`;
 
     // 4. Get Chat History
     const replies: any = await dbQuery('SELECT sender_role, message FROM support_ticket_replies WHERE ticket_id=? ORDER BY created_at ASC', [ticket_id]);
@@ -349,3 +403,53 @@ ${faqContext}`;
     res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 };
+
+export const getChatSync = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const ticket_id = req.query.ticket_id as string;
+    const access_token = req.query.access_token as string;
+    const user_id = req.user?.id || null;
+
+    let targetTicketId = ticket_id;
+
+    if (!targetTicketId && user_id) {
+      const existing: any = await dbQuery(
+        'SELECT id, access_token, status FROM support_tickets WHERE user_id=? AND status IN (?, ?) ORDER BY created_at DESC LIMIT 1',
+        [user_id, 'Open', 'In Progress']
+      );
+      if (existing && existing.length > 0) {
+        targetTicketId = existing[0].id;
+      }
+    }
+
+    if (!targetTicketId) {
+      return res.json({ success: true, ticket_id: null, replies: [] });
+    }
+
+    const tickets: any = await dbQuery(
+      'SELECT id, access_token, status FROM support_tickets WHERE id=? AND (access_token=? OR user_id=? OR ? = TRUE)',
+      [targetTicketId, access_token || null, user_id, req.user?.role === 'ADMIN']
+    );
+
+    if (!tickets || tickets.length === 0) {
+      return res.status(404).json({ success: false, error: 'Ticket not found or unauthorized' });
+    }
+
+    const replies = await dbQuery(
+      'SELECT id, sender_role, message, created_at FROM support_ticket_replies WHERE ticket_id=? ORDER BY created_at ASC',
+      [targetTicketId]
+    );
+
+    res.json({
+      success: true,
+      ticket_id: targetTicketId,
+      access_token: tickets[0].access_token,
+      status: tickets[0].status,
+      replies
+    });
+  } catch (error: any) {
+    console.error('Error syncing chat:', error);
+    res.status(500).json({ success: false, error: 'Failed to sync chat' });
+  }
+};
+
