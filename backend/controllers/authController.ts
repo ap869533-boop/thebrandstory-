@@ -18,7 +18,12 @@ if (!JWT_SECRET) {
 
 function normalizeMobile(phone: unknown, countryCode: unknown = '+91'): string | null {
   const code = String(countryCode || '+91').trim();
-  const digits = String(phone || '').replace(/\D/g, '');
+  let digits = String(phone || '').replace(/\D/g, '');
+  if (digits.length === 12 && digits.startsWith('91')) {
+    digits = digits.slice(2);
+  } else if (digits.length === 11 && digits.startsWith('0')) {
+    digits = digits.slice(1);
+  }
   if (!/^\+\d{1,3}$/.test(code)) return null;
   return /^\d{10}$/.test(digits) ? `${code}${digits}` : null;
 }
@@ -117,9 +122,6 @@ export async function signup(req: Request, res: Response) {
     const role = String(requestedRole).toUpperCase();
     if (role !== 'BRAND' && role !== 'CREATOR') {
       return res.status(400).json({ success: false, error: 'Only BRAND or CREATOR accounts can be registered publicly' });
-    }
-    if (String(role) === 'CREATOR') {
-      return res.status(400).json({ success: false, error: 'Creator signup must use OTP verification and complete profile onboarding.' });
     }
 
     if (!name || !email || !password) {
