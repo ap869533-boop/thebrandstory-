@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { HelpCircle, Send, AlertCircle, Bot, User, Check, MessageSquare, RotateCcw, ChevronRight, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { HelpCircle, Send, AlertCircle, Bot, User, Check, MessageSquare, RotateCcw, ChevronRight, CheckCircle2, ShieldCheck, Mail } from 'lucide-react';
 import { apiUrl } from '../config/api';
 import { usePlatform } from '../context/PlatformContext';
 
@@ -38,6 +38,7 @@ export const HelpSupportView: React.FC = () => {
   const [selectedFaqId, setSelectedFaqId] = useState<string | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const seenReplyIdsRef = useRef<Set<string>>(new Set());
+  const welcomeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const formatCurrentTime = () => {
     return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -55,25 +56,39 @@ export const HelpSupportView: React.FC = () => {
     return 'there';
   };
 
-  // Initialize normal conversation greeting
-  const initChatFlow = (faqList: FAQ[]) => {
+  // Initialize normal conversation greeting with realistic typing delay
+  const initChatFlow = (_faqList?: FAQ[]) => {
+    if (welcomeTimeoutRef.current) {
+      clearTimeout(welcomeTimeoutRef.current);
+    }
+
     const time = formatCurrentTime();
     const userName = getUserFirstName();
 
-    const initialMsgs: ChatMessage[] = [
-      {
-        id: 'msg-greeting',
-        sender: 'bot',
-        text: (
-          <div>
-            <p className="font-semibold text-amber-300/90 text-xs tracking-wider uppercase mb-1">Assistant</p>
-            <p className="text-[15px] font-medium text-white">Hi {userName}!</p>
-            <p className="text-slate-200 text-sm mt-0.5">Welcome to The Brand Story support.</p>
-          </div>
-        ),
-        timestamp: time
-      },
-      {
+    const welcomeMsg: ChatMessage = {
+      id: 'msg-greeting',
+      sender: 'bot',
+      text: (
+        <div>
+          <p className="font-semibold text-amber-300/90 text-xs tracking-wider uppercase mb-1">Assistant</p>
+          <p className="text-[15px] font-medium text-white">Hi {userName}!</p>
+          <p className="text-slate-200 text-sm mt-0.5">Welcome to The Brand Story support.</p>
+        </div>
+      ),
+      timestamp: time
+    };
+
+    setMessages([welcomeMsg]);
+    setShowInputBar(true);
+    setIsResolved(false);
+    setSelectedFaqId(null);
+    setIsTyping(true);
+
+    // Show typing dots, then show "How may I help you today?" after 1.3 seconds
+    welcomeTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+      const secondTime = formatCurrentTime();
+      const helpMsg: ChatMessage = {
         id: 'msg-help-prompt',
         sender: 'bot',
         text: (
@@ -82,15 +97,23 @@ export const HelpSupportView: React.FC = () => {
             <p className="text-[14.5px] text-slate-100 font-medium">How may I help you today?</p>
           </div>
         ),
-        timestamp: time
-      }
-    ];
+        timestamp: secondTime
+      };
 
-    setMessages(initialMsgs);
-    setShowInputBar(true);
-    setIsResolved(false);
-    setSelectedFaqId(null);
+      setMessages(prev => {
+        if (prev.some(m => m.id === 'msg-help-prompt')) return prev;
+        return [...prev, helpMsg];
+      });
+    }, 1300);
   };
+
+  useEffect(() => {
+    return () => {
+      if (welcomeTimeoutRef.current) {
+        clearTimeout(welcomeTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     fetch(apiUrl('/api/support/faqs'))
@@ -460,7 +483,7 @@ export const HelpSupportView: React.FC = () => {
       <div className="max-w-7xl mx-auto grid lg:grid-cols-[1fr_1.25fr] gap-8 lg:gap-12 items-start relative z-10">
 
         {/* LEFT SIDE: Info (hidden on mobile, shown on desktop) */}
-        <div className="hidden lg:block space-y-4 lg:sticky lg:top-24 pt-2">
+        <div className="hidden lg:block space-y-6 lg:sticky lg:top-24 pt-2">
           <div className="flex items-center gap-4">
             <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight">Help & Support</h1>
             <div className="w-12 h-12 bg-[#D4A338]/10 rounded-2xl flex items-center justify-center border border-[#D4A338]/30 flex-shrink-0">
@@ -470,6 +493,21 @@ export const HelpSupportView: React.FC = () => {
           <p className="text-slate-400 text-base md:text-lg max-w-md leading-relaxed">
             Welcome to our help center. Select your issue or chat with our 24/7 support assistant for instant resolution.
           </p>
+
+          <div className="pt-2">
+            <a
+              href="mailto:support@thebrandstory.com"
+              className="flex items-center gap-4 group p-3 -ml-3 rounded-2xl hover:bg-white/5 transition-all w-fit cursor-pointer"
+            >
+              <div className="w-12 h-12 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center group-hover:bg-[#D4A338]/10 group-hover:border-[#D4A338]/30 transition-all">
+                <Mail className="w-5 h-5 text-slate-400 group-hover:text-[#D4A338] transition-colors" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-0.5">Email Us</p>
+                <p className="text-slate-200 text-sm font-medium group-hover:text-[#D4A338] transition-colors">support@thebrandstory.com</p>
+              </div>
+            </a>
+          </div>
         </div>
 
         {/* RIGHT SIDE: Chat Interface */}
@@ -512,7 +550,7 @@ export const HelpSupportView: React.FC = () => {
           {/* Chat Messages Area */}
           <div ref={chatContainerRef} className="flex-1 overflow-y-auto px-4 sm:px-6 py-2 space-y-4 custom-scrollbar scroll-smooth">
             {messages.map((msg) => (
-              <div key={msg.id} className="space-y-2">
+              <div key={msg.id} className="space-y-2 animate-fadeIn">
                 <div className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                   {msg.sender === 'bot' && (
                     <div className="w-7 h-7 rounded-full overflow-hidden border border-[#D4A338]/40 mr-2.5 mt-1 flex-shrink-0 shadow-sm bg-slate-800">
