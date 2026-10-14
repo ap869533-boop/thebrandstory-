@@ -305,34 +305,29 @@ export const chatSupport = async (req: AuthenticatedRequest, res: Response) => {
       }
     }
 
-    // 3. Relevant FAQs Matching (Avoid dumping unrelated FAQs so AI does not get distracted)
-    const faqs: any = await dbQuery('SELECT question, answer FROM support_faqs WHERE is_active = TRUE');
-    let relevantFaqs = '';
+    // 3. Admin FAQs Knowledge Base for AI
+    const faqs: any = await dbQuery('SELECT question, answer FROM support_faqs WHERE is_active = TRUE ORDER BY sort_order ASC, created_at DESC');
+    let faqKnowledge = '';
     if (faqs && faqs.length > 0) {
-      const msgWords = message.toLowerCase().split(/\s+/).filter((w: string) => w.length > 2);
-      const matched = faqs.filter((f: any) => {
-        const qLower = f.question.toLowerCase();
-        return msgWords.some((word: string) => qLower.includes(word));
-      });
-      if (matched.length > 0) {
-        relevantFaqs = `Platform Reference Info (Use ONLY if directly answering the user's question):\n` +
-          matched.map((f: any) => `Q: ${f.question}\nA: ${f.answer}`).join('\n\n');
-      }
+      faqKnowledge = `Official Platform FAQ Knowledge Base (Provided by Admin):\n` +
+        faqs.map((f: any, idx: number) => `[FAQ ${idx + 1}]\nQuestion: ${f.question}\nAnswer: ${f.answer}`).join('\n\n');
     }
 
-    const systemPrompt = `You are DIA, the official friendly AI Support Assistant for 'The Brand Story' platform.
+    const systemPrompt = `You are the official smart AI Support Assistant for 'The Brand Story' platform.
 
-STRICT RULES (NO UNNECESSARY LECTURES / ZERO FALTU GYAN):
-1. DIRECT ANSWER ONLY: Answer ONLY the exact question or issue asked in the user's latest message. Never give unsolicited advice, general lectures, or unrelated guides.
-2. NEVER mention login, signup, passwords, or unrelated platform topics unless the user explicitly asked about them!
-3. LENGTH LIMIT: 1 to 2 short, crisp sentences ONLY. Get straight to the point.
-4. Match user language naturally (Hinglish, Hindi, or English).
-5. If the user reports a bug or technical issue (e.g. searchbar not working, page glitch):
-   - Address ONLY that specific issue directly.
-   - Suggest 1 quick check (e.g. refresh the page or try incognito) and reassure them that our tech team is checking it.
-6. If the user explicitly asks to talk to a human agent, reply ONLY with 'TRANSFER_TO_HUMAN'.
+ROLE & BEHAVIOR:
+1. When the user asks ANY question or describes their concern, understand what they mean (in Hindi, Hinglish, or casual English).
+2. If their question or concern relates to any topic in the "Official Platform FAQ Knowledge Base" below, base your answer directly on that verified information.
+3. Be conversational, friendly, and helpful like a professional support assistant.
+4. Keep replies clear, to the point, and concise (1 to 3 short sentences max).
+5. Match the language of the user naturally (Hinglish/Hindi if they write in Hinglish, English if English).
+6. If the user explicitly asks to talk to a human agent or representative, reply ONLY with 'TRANSFER_TO_HUMAN'.
 
-${relevantFaqs}`;
+PLATFORM UI & ACTIONS TERMINOLOGY (IMPORTANT):
+- When guiding creators on pitching or applying to brand campaigns: In the 'Live Opportunities' / 'Live Campaigns' section, each campaign card has a button explicitly named "Pitch Campaign". Always instruct creators to click on the "Pitch Campaign" button on the campaign card (do NOT say 'Apply', always say 'Pitch Campaign'!).
+- Once they click "Pitch Campaign", they can enter their custom pitch proposal and submit it directly to the brand.
+
+${faqKnowledge}`;
 
     // 4. Get Chat History
     const replies: any = await dbQuery('SELECT sender_role, message FROM support_ticket_replies WHERE ticket_id=? ORDER BY created_at ASC', [ticket_id]);
