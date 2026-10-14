@@ -8,6 +8,7 @@ import {
   Text,
   TextInput,
   TextProps,
+  TextStyle,
   View,
   ViewStyle,
 } from 'react-native';
@@ -109,6 +110,7 @@ export function PrimaryButton({
   busy = false,
   variant = 'gold',
   style,
+  textStyle,
 }: {
   title: string;
   onPress: () => void;
@@ -116,6 +118,7 @@ export function PrimaryButton({
   busy?: boolean;
   variant?: 'gold' | 'white' | 'blue' | 'outline';
   style?: StyleProp<ViewStyle>;
+  textStyle?: StyleProp<TextStyle>;
 }) {
   const getBtnStyle = () => {
     switch (variant) {
@@ -141,6 +144,19 @@ export function PrimaryButton({
     }
   };
 
+  const getBackgroundColor = () => {
+    switch (variant) {
+      case 'white':
+        return '#ffffff';
+      case 'blue':
+        return '#759BF6';
+      case 'outline':
+        return 'transparent';
+      default:
+        return colors.gold;
+    }
+  };
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -148,10 +164,16 @@ export function PrimaryButton({
       disabled={disabled || busy}
       style={({ pressed }) => [styles.button, getBtnStyle(), (disabled || busy) && styles.disabled, pressed && styles.pressed, style]}
     >
+      {variant !== 'outline' ? (
+        <View
+          pointerEvents="none"
+          style={[StyleSheet.absoluteFill, styles.buttonBackground, { backgroundColor: getBackgroundColor() }]}
+        />
+      ) : null}
       {busy ? (
         <ActivityIndicator color={getTextColor()} />
       ) : (
-        <Text style={[styles.buttonText, { color: getTextColor() }]}>{title}</Text>
+        <Text style={[styles.buttonText, textStyle, { color: getTextColor() }]}>{title}</Text>
       )}
     </Pressable>
   );
@@ -340,8 +362,8 @@ export function CreatorCard({
       <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
         <Defs>
           <SvgLinearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor="#020617" stopOpacity="0.15" />
-            <Stop offset="1" stopColor="#020617" stopOpacity="0.55" />
+            <Stop offset="0" stopColor="#020617" stopOpacity="0.05" />
+            <Stop offset="1" stopColor="#020617" stopOpacity="0.3" />
           </SvgLinearGradient>
         </Defs>
         <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${gradientId})`} />
@@ -639,7 +661,8 @@ const styles = StyleSheet.create({
   muted: { color: colors.muted, fontSize: 12, lineHeight: 18 },
   card: { padding: spacing.md, borderWidth: 1, borderColor: colors.border, borderRadius: 20, backgroundColor: colors.surface, gap: spacing.sm },
 
-  button: { minHeight: 48, borderRadius: 28, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.lg },
+  button: { minHeight: 48, borderRadius: 28, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.lg },
+  buttonBackground: { borderRadius: 28 },
   btnGold: { backgroundColor: colors.gold },
   btnWhite: { backgroundColor: '#ffffff' },
   btnBlue: { backgroundColor: '#759BF6' },
@@ -683,7 +706,7 @@ const styles = StyleSheet.create({
   },
   cardFullOverlay: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(2, 6, 23, 0.35)',
+    backgroundColor: 'rgba(2, 6, 23, 0.15)',
   },
   cardBorderOverlay: {
     ...StyleSheet.absoluteFill,
@@ -788,6 +811,7 @@ const styles = StyleSheet.create({
   },
   // Inner clip + padding
   brandInner: {
+    flex: 1,
     borderRadius: 24,
     overflow: 'hidden',
     backgroundColor: '#18233f',
@@ -795,6 +819,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   brandBorderOverlay: {
+    ...StyleSheet.absoluteFill,
     borderRadius: 24,
     borderWidth: 1.5,
     borderColor: 'rgba(212, 163, 56, 0.75)',
@@ -862,6 +887,7 @@ const styles = StyleSheet.create({
   brandDescription: {
     width: '100%',
     minWidth: 0,
+    maxWidth: '100%',
     color: '#5f7295',
     fontSize: 11,
     lineHeight: 16,

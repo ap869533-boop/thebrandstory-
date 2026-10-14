@@ -10,8 +10,10 @@ import {
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   AppScreen,
   BrandCampaignCard,
@@ -52,6 +54,8 @@ import {
 export default function HomeScreen() {
   const { user } = useAuth();
   const [howItWorksTab, setHowItWorksTab] = useState<'brands' | 'creators'>('brands');
+  const { height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
 
   // Location Access State
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -100,7 +104,7 @@ export default function HomeScreen() {
       {/* ================================================================
        * 1. FULL-BLEED HERO (matches website screenshot exactly)
        * ================================================================ */}
-      <View style={styles.heroFull}>
+      <View style={[styles.heroFull, { minHeight: Math.max(0, height - insets.top - 62) }]}>
         {/* Ambient background glows */}
         <View style={styles.heroGlowGold} />
         <View style={styles.heroGlowBlue} />
@@ -169,12 +173,14 @@ export default function HomeScreen() {
                 variant="white"
                 onPress={() => router.push('/(tabs)/campaigns')}
                 style={styles.heroStackedBtn}
+                textStyle={styles.heroStackedBtnText}
               />
               <PrimaryButton
                 title="View Opportunities"
                 variant="blue"
                 onPress={() => router.push('/(tabs)/campaigns')}
                 style={styles.heroStackedBtn}
+                textStyle={styles.heroStackedBtnText}
               />
             </>
           ) : isBrand ? (
@@ -184,12 +190,14 @@ export default function HomeScreen() {
                 variant="white"
                 onPress={() => router.navigate('/(tabs)/explore')}
                 style={styles.heroStackedBtn}
+                textStyle={styles.heroStackedBtnText}
               />
               <PrimaryButton
                 title="My Campaigns"
                 variant="blue"
                 onPress={() => router.push('/my-campaigns')}
                 style={styles.heroStackedBtn}
+                textStyle={styles.heroStackedBtnText}
               />
             </>
           ) : (
@@ -203,7 +211,8 @@ export default function HomeScreen() {
                     params: { mode: 'signin' },
                   })
                 }
-                style={styles.heroStackedBtn}
+                style={styles.heroGuestBtn}
+                textStyle={styles.heroStackedBtnText}
               />
               <PrimaryButton
                 title="Get Started For Free"
@@ -214,7 +223,8 @@ export default function HomeScreen() {
                     params: { mode: 'signup' },
                   })
                 }
-                style={styles.heroStackedBtn}
+                style={styles.heroGuestBtn}
+                textStyle={styles.heroStackedBtnText}
               />
             </>
           )}
@@ -765,12 +775,13 @@ const styles = StyleSheet.create({
   /* ====== FULL-BLEED HERO (matches screenshot) ====== */
   heroFull: {
     paddingHorizontal: spacing.md,
-    paddingTop: 10,
-    paddingBottom: 36,
+    paddingTop: 0,
+    paddingBottom: 32,
     alignItems: 'center',
+    justifyContent: 'space-between',
     position: 'relative',
     overflow: 'hidden',
-    gap: 6,
+    gap: 12,
   },
   heroGlowGold: {
     position: 'absolute',
@@ -904,7 +915,7 @@ const styles = StyleSheet.create({
   /* Creator Illustration */
   heroIllustrationWrap: {
     width: '80%',
-    height: 200,
+    height: 220,
     alignItems: 'center',
     justifyContent: 'center',
     marginVertical: 10,
@@ -917,18 +928,31 @@ const styles = StyleSheet.create({
   /* Hero Buttons — stacked vertically */
   heroActionsStack: {
     width: '100%',
-    maxWidth: 360,
     alignSelf: 'center',
     alignItems: 'center',
-    gap: 18,
-    marginTop: 10,
+    gap: 20,
+    marginTop: 16,
   },
   heroStackedBtn: {
-    width: '80%',
-    maxWidth: 280,
+    width: '90%',
+    maxWidth: 340,
     alignSelf: 'center',
-    height: 42,
+    height: 64,
     borderRadius: 28,
+    paddingHorizontal: 32,
+    paddingVertical: 18,
+  },
+  heroGuestBtn: {
+    width: '100%',
+    height: 112,
+    minHeight: 112,
+    flexGrow: 0,
+    flexShrink: 0,
+    paddingHorizontal: 44,
+    paddingVertical: 28,
+  },
+  heroStackedBtnText: {
+    fontSize: 17,
   },
 
   /* Brand Partners Slider */
