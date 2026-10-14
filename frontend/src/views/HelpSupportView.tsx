@@ -642,7 +642,6 @@ export const HelpSupportView: React.FC = () => {
                 className="flex-1 bg-transparent border-none text-white px-3 py-2 text-sm focus:outline-none resize-none max-h-24 min-h-[40px] custom-scrollbar placeholder:text-slate-400"
                 rows={1}
                 disabled={submitting}
-                autoFocus
               />
               <button
                 type="submit"
