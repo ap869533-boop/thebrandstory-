@@ -70,7 +70,7 @@ async function fetchApplicantsByCampaign(campaignIds: string[]): Promise<Record<
         ca.applied_at,
         COALESCE(c.name, ca.creator_name, u.name, 'Creator') as creator_name,
         COALESCE(c.username, '') as creator_username,
-        COALESCE(c.avatar, ca.creator_avatar, u.avatar, '') as creator_avatar,
+        COALESCE(c.avatar, ca.creator_avatar, '') as creator_avatar,
         COALESCE(c.primary_category, 'Influencer') as creator_category,
         COALESCE(c.current_city, 'India') as creator_city,
         COALESCE(c.followers, 0) as creator_followers,
@@ -118,10 +118,9 @@ export async function getCampaigns(req: AuthenticatedRequest, res: Response) {
     const role = req.user?.role;
 
     let sql = `
-      SELECT c.*, COALESCE(bp.logo_url, u.avatar) as logo_url,
+      SELECT c.*, COALESCE(bp.logo_url, '') as logo_url,
         (SELECT COUNT(*) FROM campaign_applicants ca WHERE ca.campaign_id = c.id) as actual_applicants_count
       FROM campaign_requirements c
-      LEFT JOIN users u ON c.user_id = u.id
       LEFT JOIN brand_profiles bp ON c.user_id = bp.user_id
     `;
     const params: any[] = [];
@@ -155,7 +154,7 @@ export async function getCampaigns(req: AuthenticatedRequest, res: Response) {
     sql += ' ORDER BY c.created_at DESC';
     const limit = Math.min(Math.max(parseInt(String(req.query.limit || '10'), 10) || 10, 1), 100);
     const offset = Math.max(parseInt(String(req.query.offset || '0'), 10) || 0, 0);
-    const countSql = sql.replace(/SELECT c\.\*, COALESCE\(bp\.logo_url, u\.avatar\) as logo_url/i, 'SELECT COUNT(*) as total')
+    const countSql = sql.replace(/SELECT c\.\*, COALESCE\(bp\.logo_url, ''\) as logo_url,\s*\(SELECT COUNT\(\*\) FROM campaign_applicants ca WHERE ca\.campaign_id = c\.id\) as actual_applicants_count/i, 'SELECT COUNT(*) as total')
       .replace(' ORDER BY c.created_at DESC', '');
     sql += ' LIMIT ? OFFSET ?';
 
@@ -478,7 +477,7 @@ export async function updateCampaign(req: AuthenticatedRequest, res: Response) {
         if (Array.isArray(cRows) && cRows.length > 0) {
           creatorRecord = cRows[0];
         } else {
-          const uRows: any = await dbQuery('SELECT id, name, avatar FROM users WHERE id = ? LIMIT 1', [effectiveCreatorId]);
+          const uRows: any = await dbQuery('SELECT id, name FROM users WHERE id = ? LIMIT 1', [effectiveCreatorId]);
           if (Array.isArray(uRows) && uRows.length > 0) {
             creatorRecord = uRows[0];
           }

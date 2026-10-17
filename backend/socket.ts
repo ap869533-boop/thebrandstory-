@@ -47,8 +47,8 @@ export function initSocket(server: http.Server, allowedOrigins: string[]) {
       });
     });
 
-    socket.on('disconnect', () => {
-      console.log(`🔌 Socket disconnected for user: ${userId}`);
+    socket.on('disconnect', (reason) => {
+      console.log(`🔌 Socket disconnected for user: ${userId} (${reason})`);
     });
   });
 

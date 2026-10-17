@@ -416,7 +416,7 @@ export const CreatorDetailView: React.FC = () => {
 
     addCreatorReview(creator.id, {
       brandName: ratingBrand.trim(),
-      brandLogo: (authUser as any)?.logoUrl || authUser?.avatar || '',
+      brandLogo: authUser?.logoUrl || '',
       rating: ratingStars,
       campaignType: ratingDeliverable,
       reviewText: ratingComment.trim() || `Rated ${ratingStars} stars for ${ratingDeliverable} collaboration.`,
@@ -963,7 +963,7 @@ export const CreatorDetailView: React.FC = () => {
                 
                 const matchedBrand = partnerBrands.find(b => b.name.toLowerCase() === rev.brandName.toLowerCase());
                 const displayLogo = isMyReview 
-                  ? ((authUser as any)?.logoUrl || authUser?.avatar || rev.brandLogo) 
+                  ? (authUser?.logoUrl || rev.brandLogo)
                   : (rev.brandLogo || matchedBrand?.logoUrl);
 
                 return (

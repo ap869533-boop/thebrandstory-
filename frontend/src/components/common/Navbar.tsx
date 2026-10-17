@@ -23,8 +23,8 @@ export const Navbar: React.FC = () => {
         .catch(() => { });
     } else if (authUser?.role === 'CREATOR' && authUser.creatorProfile?.avatar) {
       setNavLogo(authUser.creatorProfile.avatar);
-    } else if (authUser?.avatar || (authUser as any)?.logoUrl) {
-      setNavLogo(authUser?.avatar || (authUser as any)?.logoUrl);
+    } else if (authUser?.logoUrl) {
+      setNavLogo(authUser.logoUrl);
     } else {
       setNavLogo(null);
     }

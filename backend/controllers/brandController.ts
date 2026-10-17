@@ -163,14 +163,6 @@ export async function getBrandProfile(req: AuthenticatedRequest, res: Response) 
     if (rows && rows.length > 0) {
       const profile = mapDbRowToBrandProfile(rows[0]);
 
-      // The company name remains available on users; GST is stored only in brand_profiles.
-      if (!profile.brandName) {
-        const userRows = await dbQuery('SELECT company_name FROM users WHERE id = ? LIMIT 1', [userId]);
-        if (userRows && userRows.length > 0) {
-          profile.brandName = profile.brandName || userRows[0].company_name || '';
-        }
-      }
-
       return res.json({ success: true, profile });
     }
 
@@ -178,8 +170,8 @@ export async function getBrandProfile(req: AuthenticatedRequest, res: Response) 
     const memProfile = brandProfilesStore.find(p => p.userId === userId);
     if (memProfile) return res.json({ success: true, profile: memProfile });
 
-    // No brand_profile yet — build a prefilled profile from users table
-    const userRows = await dbQuery('SELECT name, company_name, approval_status FROM users WHERE id = ? LIMIT 1', [userId]);
+    // No brand profile yet — only account details remain available from users.
+    const userRows = await dbQuery('SELECT name, approval_status FROM users WHERE id = ? LIMIT 1', [userId]);
     if (userRows && userRows.length > 0) {
       const u = userRows[0];
       return res.json({
@@ -187,7 +179,7 @@ export async function getBrandProfile(req: AuthenticatedRequest, res: Response) 
         profile: {
           id: null,
           userId,
-          brandName: u.company_name || '',
+          brandName: u.name || '',
           gstNumber: '',
           contactPerson: u.name || '',
           approvalStatus: u.approval_status || 'pending',
@@ -394,7 +386,7 @@ export async function adminListBrands(req: AuthenticatedRequest, res: Response) 
     const statusFilter = (req.query.status as string) || 'all';
     let sql = `
       SELECT 
-        u.id as user_id, u.name as user_name, u.email as user_email, u.phone as user_phone, u.company_name, u.approval_status as user_approval_status, u.created_at as user_created_at,
+        u.id as user_id, u.name as user_name, u.email as user_email, u.phone as user_phone, bp.brand_name as company_name, u.approval_status as user_approval_status, u.created_at as user_created_at,
         bp.id as bp_id, bp.brand_name, bp.gst_number, bp.logo_url, bp.cover_url, bp.description, bp.website, bp.industry, bp.city, bp.contact_person, bp.approval_status as bp_approval_status, bp.rejection_reason, bp.is_featured, COALESCE(bp.created_at, u.created_at) as created_at
       FROM users u
       LEFT JOIN brand_profiles bp ON u.id = bp.user_id
@@ -415,9 +407,14 @@ export async function adminListBrands(req: AuthenticatedRequest, res: Response) 
     let rows = await dbQuery(sql, params);
     if (!rows) {
       rows = await dbQuery(
-        `SELECT id as user_id, name as user_name, email as user_email, phone as user_phone, company_name,
-                approval_status as user_approval_status, created_at, created_at as user_created_at
-         FROM users WHERE role = 'BRAND' ORDER BY created_at DESC`
+        `SELECT u.id as user_id, u.name as user_name, u.email as user_email, u.phone as user_phone,
+                bp.brand_name as company_name, u.approval_status as user_approval_status,
+                bp.brand_name, bp.id as bp_id, bp.gst_number, bp.logo_url, bp.cover_url, bp.description,
+                bp.website, bp.industry, bp.city, bp.contact_person,
+                bp.approval_status as bp_approval_status, bp.rejection_reason, bp.is_featured,
+                COALESCE(bp.created_at, u.created_at) as created_at
+         FROM users u LEFT JOIN brand_profiles bp ON u.id = bp.user_id
+         WHERE u.role = 'BRAND' ORDER BY created_at DESC`
       );
     }
 
@@ -550,14 +547,14 @@ export async function getFeaturedBrands(req: Request, res: Response) {
     const searchCity = String(req.query.city || '').trim().toLowerCase();
     const pageSize = Math.min(Math.max(parseInt(String(req.query.limit || (searchQuery ? '12' : '16')), 10) || 16, 1), 100);
     const pageOffset = Math.max(parseInt(String(req.query.offset || '0'), 10) || 0, 0);
-    const searchWhere = `${searchQuery ? ` AND (LOWER(COALESCE(bp.brand_name, u.company_name, u.name, '')) LIKE ? OR LOWER(COALESCE(bp.industry, '')) LIKE ? OR LOWER(COALESCE(bp.city, '')) LIKE ?)` : ''}${searchCity ? ` AND LOWER(COALESCE(bp.city, '')) LIKE ?` : ''}`;
+    const searchWhere = `${searchQuery ? ` AND (LOWER(COALESCE(bp.brand_name, u.name, '')) LIKE ? OR LOWER(COALESCE(bp.industry, '')) LIKE ? OR LOWER(COALESCE(bp.city, '')) LIKE ?)` : ''}${searchCity ? ` AND LOWER(COALESCE(bp.city, '')) LIKE ?` : ''}`;
     const searchParams = [...(searchQuery ? [`%${searchQuery}%`, `%${searchQuery}%`, `%${searchQuery}%`] : []), ...(searchCity ? [`%${searchCity}%`] : [])];
     const rows = await dbQuery(
       `SELECT 
         COALESCE(bp.id, CONCAT('usr_', u.id)) as id,
         u.id as user_id,
-        COALESCE(bp.brand_name, u.company_name, u.name) as brand_name,
-        COALESCE(bp.logo_url, u.avatar, '') as logo_url,
+        COALESCE(bp.brand_name, u.name) as brand_name,
+        COALESCE(bp.logo_url, '') as logo_url,
         bp.cover_url,
         COALESCE(bp.description, '') as description,
         bp.website,

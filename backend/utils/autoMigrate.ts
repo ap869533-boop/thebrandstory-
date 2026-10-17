@@ -18,9 +18,6 @@ export async function runAutoMigrations() {
         \`password_hash\` VARCHAR(255) NOT NULL,
         \`role\` ENUM('GUEST', 'BRAND', 'CREATOR', 'ADMIN', 'SALES') DEFAULT 'BRAND',
         \`phone\` VARCHAR(20) DEFAULT NULL,
-        \`company_name\` VARCHAR(150) DEFAULT NULL,
-        \`avatar\` VARCHAR(500) DEFAULT NULL,
-        \`is_verified\` BOOLEAN DEFAULT FALSE,
         \`approval_status\` VARCHAR(20) DEFAULT 'pending',
         \`last_seen_at\` TIMESTAMP NULL DEFAULT NULL,
         \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -521,8 +518,63 @@ export async function runAutoMigrations() {
       }
     }
 
+    const [userAvatarColumn] = await pool.query('SHOW COLUMNS FROM `users` LIKE ?', ['avatar']);
+    if (Array.isArray(userAvatarColumn) && userAvatarColumn.length > 0) {
+      await pool.query(`
+        UPDATE creators c
+        JOIN users u ON u.id = c.user_id
+        SET c.avatar = u.avatar
+        WHERE u.role = 'CREATOR'
+          AND COALESCE(c.avatar, '') = ''
+          AND COALESCE(u.avatar, '') <> ''
+      `);
+      await pool.query(`
+        UPDATE brand_profiles bp
+        JOIN users u ON u.id = bp.user_id
+        SET bp.logo_url = u.avatar
+        WHERE u.role = 'BRAND'
+          AND COALESCE(bp.logo_url, '') = ''
+          AND COALESCE(u.avatar, '') <> ''
+      `);
+      await pool.query('ALTER TABLE users DROP COLUMN avatar');
+      console.log('[AutoMigrate] Migrated user images to their profiles and removed users.avatar.');
+    }
+
+    const [userVerificationColumn] = await pool.query('SHOW COLUMNS FROM `users` LIKE ?', ['is_verified']);
+    if (Array.isArray(userVerificationColumn) && userVerificationColumn.length > 0) {
+      await pool.query('ALTER TABLE users DROP COLUMN is_verified');
+      console.log('[AutoMigrate] Removed obsolete users.is_verified column.');
+    }
+
+    const [userCompanyNameColumn] = await pool.query('SHOW COLUMNS FROM `users` LIKE ?', ['company_name']);
+    if (Array.isArray(userCompanyNameColumn) && userCompanyNameColumn.length > 0) {
+      await pool.query(`
+        UPDATE brand_profiles bp
+        JOIN users u ON u.id = bp.user_id
+        SET bp.brand_name = u.company_name
+        WHERE u.role = 'BRAND'
+          AND COALESCE(bp.brand_name, '') = ''
+          AND COALESCE(u.company_name, '') <> ''
+      `);
+      await pool.query(`
+        INSERT INTO brand_profiles (
+          id, user_id, brand_name, contact_person, phone, email, approval_status
+        )
+        SELECT CONCAT('bp_mig_', UUID()), u.id, u.company_name, u.name, u.phone, u.email,
+               COALESCE(u.approval_status, 'pending')
+        FROM users u
+        LEFT JOIN brand_profiles bp ON bp.user_id = u.id
+        WHERE u.role = 'BRAND'
+          AND bp.user_id IS NULL
+          AND COALESCE(u.company_name, '') <> ''
+      `);
+      await pool.query('ALTER TABLE users DROP COLUMN company_name');
+      console.log('[AutoMigrate] Migrated brand names to brand_profiles and removed users.company_name.');
+    }
+
     console.log('✅ Live Database auto-migrations completed successfully');
   } catch (error) {
     console.error('❌ Database auto-migration failed:', error);
+    throw error;
   }
 }

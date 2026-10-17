@@ -50,9 +50,6 @@ async function runSeed() {
         password_hash VARCHAR(255) NOT NULL,
         role ENUM('GUEST', 'BRAND', 'CREATOR', 'ADMIN', 'SALES') DEFAULT 'BRAND',
         phone VARCHAR(20) DEFAULT NULL,
-        company_name VARCHAR(150) DEFAULT NULL,
-        avatar VARCHAR(500) DEFAULT NULL,
-        is_verified BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -285,15 +282,15 @@ async function runSeed() {
     const creatorPass = await bcrypt.hash('creator123', 10);
 
     const usersData = [
-      ['user_admin_1', 'thebrandsstory. Admin', 'admin@thebrandsstory.in', adminPass, 'ADMIN', '+91 99999 88888', 'thebrandsstory. HQ', true],
-      ['user_brand_1', 'Nykaa Marketing Team', 'brand@nykaa.com', brandPass, 'BRAND', '+91 98111 22334', 'Nykaa Beauty', true],
-      ['user_creator_1', 'Priya Sharma', 'creator@thebrandsstory.in', creatorPass, 'CREATOR', '+91 98765 43210', 'Priya Sharma Studio', true],
+      ['user_admin_1', 'thebrandsstory. Admin', 'admin@thebrandsstory.in', adminPass, 'ADMIN', '+91 99999 88888'],
+      ['user_brand_1', 'Nykaa Marketing Team', 'brand@nykaa.com', brandPass, 'BRAND', '+91 98111 22334'],
+      ['user_creator_1', 'Priya Sharma', 'creator@thebrandsstory.in', creatorPass, 'CREATOR', '+91 98765 43210'],
     ];
 
     for (const u of usersData) {
       await connection.query(
-        `INSERT INTO users (id, name, email, password_hash, role, phone, company_name, is_verified)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `INSERT INTO users (id, name, email, password_hash, role, phone)
+         VALUES (?, ?, ?, ?, ?, ?)
          ON DUPLICATE KEY UPDATE name=VALUES(name), password_hash=VALUES(password_hash), role=VALUES(role);`,
         u
       );

@@ -203,11 +203,6 @@ export const ConversationsPanel: React.FC<{
     }, 45000);
     fetch(apiUrl('/api/presence/heartbeat'), { method: 'POST', headers: authHeaders() }).catch(() => undefined);
 
-    // Background polling ensures threads and counters update automatically
-    const pollInterval = window.setInterval(() => {
-      void loadThreads();
-    }, 10000);
-
     const socket = getSocket();
     const handleNewMessage = () => void loadThreads();
     const handlePeerTyping = (data: { conversationId: string; senderId: string; isTyping: boolean }) => {
@@ -225,13 +220,12 @@ export const ConversationsPanel: React.FC<{
 
     return () => {
       window.clearInterval(heartbeat);
-      window.clearInterval(pollInterval);
       if (socket) {
         socket.off('new_message', handleNewMessage);
         socket.off('peer_typing', handlePeerTyping);
       }
     };
-  }, [authUser, loadThreads]);
+  }, [authUser?.id, authUser?.role, loadThreads]);
 
   const resolvedUsername = useRef<string | null>(null);
 

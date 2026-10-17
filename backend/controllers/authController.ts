@@ -39,8 +39,6 @@ interface UserRecord {
   password_hash: string;
   role: 'GUEST' | 'BRAND' | 'CREATOR' | 'ADMIN' | 'SALES';
   phone?: string;
-  company_name?: string;
-  avatar?: string;
   created_at: string;
 }
 
@@ -67,7 +65,6 @@ const memoryUsers: UserRecord[] = [
     email: 'brand@nykaa.com',
     password_hash: bcrypt.hashSync('brand123', 10),
     role: 'BRAND',
-    company_name: 'Nykaa Beauty',
     created_at: new Date().toISOString(),
   },
   {
@@ -76,10 +73,17 @@ const memoryUsers: UserRecord[] = [
     email: 'creator@thebrandsstory.in',
     password_hash: bcrypt.hashSync('creator123', 10),
     role: 'CREATOR',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
     created_at: new Date().toISOString(),
   }
 ];
+
+async function getBrandProfileForUser(userId: string) {
+  const rows = await dbQuery(
+    'SELECT brand_name, logo_url, approval_status FROM brand_profiles WHERE user_id = ? LIMIT 1',
+    [userId]
+  );
+  return rows?.[0] || null;
+}
 
 /** Public availability check used while an influencer is completing signup. */
 export async function checkEmailAvailability(req: Request, res: Response) {
@@ -149,12 +153,11 @@ export async function signup(req: Request, res: Response) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const userId = `usr_${Date.now()}`;
-    const userAvatar = '';
 
     // 1. Insert in MySQL users table
     const userInsertSql =
-      `INSERT INTO users (id, name, email, password_hash, role, phone, company_name, avatar, is_verified, approval_status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+      `INSERT INTO users (id, name, email, password_hash, role, phone, approval_status)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`;
     const userInsertParams = [
         userId,
         name,
@@ -162,9 +165,6 @@ export async function signup(req: Request, res: Response) {
         hashedPassword,
         role,
         normalizedPhone,
-        companyName || null,
-        userAvatar,
-        1,
         'approved'
       ];
     await dbQueryStrict(userInsertSql, userInsertParams);
@@ -177,8 +177,6 @@ export async function signup(req: Request, res: Response) {
       password_hash: hashedPassword,
       role: role as any,
       phone: normalizedPhone,
-      company_name: companyName,
-      avatar: userAvatar,
       created_at: new Date().toISOString(),
     };
     if (role === 'BRAND') {
@@ -201,7 +199,7 @@ export async function signup(req: Request, res: Response) {
         id: creatorId,
         name,
         username: cleanUsername,
-        avatar: userAvatar,
+        avatar: '',
         coverImage: '',
         bio: '',
         currentCity: city,
@@ -344,7 +342,6 @@ export async function signup(req: Request, res: Response) {
         email: cleanEmail,
         role,
         companyName,
-        avatar: userAvatar,
         creatorProfile: createdCreatorProfile,
       },
     });
@@ -396,7 +393,7 @@ export async function fetchOrCreateCreatorProfile(user: any, requirePersistence 
     id: creatorId,
     name: user.name || '',
     username: cleanUsername,
-    avatar: user.avatar || '',
+    avatar: '',
     coverImage: '',
     reelVideoUrl: '',
     bio: '',
@@ -568,14 +565,7 @@ export async function login(req: Request, res: Response) {
       { expiresIn: '7d' }
     );
 
-    // Fetch logo for brand
-    let logoUrl: string | undefined = undefined;
-    if (user.role === 'BRAND') {
-      const dbBrands = await dbQuery('SELECT logo_url FROM brands WHERE user_id = ? LIMIT 1', [user.id]);
-      if (dbBrands && dbBrands.length > 0) {
-        logoUrl = dbBrands[0].logo_url || undefined;
-      }
-    }
+    const brandProfile = user.role === 'BRAND' ? await getBrandProfileForUser(user.id) : null;
 
     res.json({
       success: true,
@@ -587,11 +577,10 @@ export async function login(req: Request, res: Response) {
         email: user.email,
         role: user.role,
         phone: user.phone || '',
-        companyName: user.company_name,
-        approvalStatus: user.approval_status || 'approved',
-        avatar: user.avatar,
+        companyName: brandProfile?.brand_name || '',
+        approvalStatus: brandProfile?.approval_status || user.approval_status || 'approved',
         creatorProfile: creatorProfile || undefined,
-        logoUrl,
+        logoUrl: brandProfile?.logo_url || undefined,
       },
     });
   } catch (error: any) {
@@ -605,7 +594,7 @@ export async function getMe(req: AuthenticatedRequest, res: Response) {
     return res.status(401).json({ success: false, error: 'Unauthorized' });
   }
 
-  const sqlUser = 'SELECT id, name, email, role, phone, company_name, avatar, approval_status, created_at FROM users WHERE id = ? LIMIT 1';
+  const sqlUser = 'SELECT id, name, email, role, phone, approval_status, created_at FROM users WHERE id = ? LIMIT 1';
   const dbUsers = await dbQuery(sqlUser, [req.user.id]);
 
   let user = dbUsers?.[0];
@@ -618,14 +607,18 @@ export async function getMe(req: AuthenticatedRequest, res: Response) {
   if (effectiveUser && effectiveUser.role === 'CREATOR') {
     creatorProfile = await fetchOrCreateCreatorProfile(effectiveUser);
   }
+  const brandProfile = effectiveUser?.role === 'BRAND'
+    ? await getBrandProfileForUser(effectiveUser.id)
+    : null;
 
   res.json({
     success: true,
     user: {
       ...effectiveUser,
-      companyName: effectiveUser.company_name || effectiveUser.companyName || '',
-      approvalStatus: effectiveUser.approval_status || effectiveUser.approvalStatus || 'pending',
+      companyName: brandProfile?.brand_name || '',
+      approvalStatus: brandProfile?.approval_status || effectiveUser.approval_status || effectiveUser.approvalStatus || 'pending',
       creatorProfile: creatorProfile || undefined,
+      logoUrl: brandProfile?.logo_url || undefined,
     },
   });
 }
@@ -806,7 +799,6 @@ export async function verifyOtp(req: Request, res: Response) {
       const userId = `usr_${Date.now()}`;
       const cleanUsername = requestedUsername || createDraftCreatorUsername(userId);
       const instagramUrl = requestedUsername ? `https://instagram.com/${cleanUsername}` : '';
-      const userAvatar = '';
 
       if (!password) {
         return res.status(400).json({ success: false, error: 'Password is required for registration' });
@@ -814,22 +806,22 @@ export async function verifyOtp(req: Request, res: Response) {
       const hashedPassword = await bcrypt.hash(password, 10);
       const creatorAvatar = role === 'CREATOR' && creatorProfileInput?.avatar
         ? saveBase64Media(creatorProfileInput.avatar, 'avatar')
-        : userAvatar;
+        : '';
       const creatorCoverImage = role === 'CREATOR' && creatorProfileInput?.coverImage
         ? saveBase64Media(creatorProfileInput.coverImage, 'cover')
         : '';
 
       if (role === 'CREATOR') {
         await dbQueryStrict(
-          `INSERT INTO users (id, name, email, password_hash, role, phone, company_name, avatar, approval_status)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [userId, name, cleanEmail, hashedPassword, role, normalizedPhone, companyName || null, userAvatar || null, 'approved']
+            `INSERT INTO users (id, name, email, password_hash, role, phone, approval_status)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [userId, name, cleanEmail, hashedPassword, role, normalizedPhone, 'approved']
         );
       } else {
         await dbQueryStrict(
-        `INSERT INTO users (id, name, email, password_hash, role, phone, company_name, avatar, approval_status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [userId, name, cleanEmail, hashedPassword, role, normalizedPhone, companyName || null, userAvatar || null, 'approved']
+          `INSERT INTO users (id, name, email, password_hash, role, phone, approval_status)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [userId, name, cleanEmail, hashedPassword, role, normalizedPhone, 'approved']
         );
       }
 
@@ -840,8 +832,6 @@ export async function verifyOtp(req: Request, res: Response) {
         password_hash: hashedPassword,
         role: role as any,
         phone: normalizedPhone,
-        company_name: companyName,
-        avatar: userAvatar,
         created_at: new Date().toISOString(),
       };
       user = newUser;
@@ -1045,8 +1035,9 @@ export async function verifyOtp(req: Request, res: Response) {
         email: user.email,
         role: responseRole,
         phone: user.phone || normalizedPhone || '',
-        companyName: user.company_name || companyName || '',
-        avatar: user.avatar,
+        companyName: responseRole === 'BRAND'
+          ? (await getBrandProfileForUser(user.id))?.brand_name || companyName || ''
+          : '',
         approvalStatus: responseRole === 'BRAND' ? 'pending' : 'approved',
         creatorProfile: responseRole === 'CREATOR' ? (user.creatorProfile || undefined) : undefined,
       },

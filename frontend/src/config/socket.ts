@@ -17,8 +17,12 @@ export const connectSocket = (token: string): Socket => {
       console.log('Socket connected');
     });
 
-    socket.on('disconnect', () => {
-      console.log('Socket disconnected');
+    socket.on('disconnect', (reason) => {
+      console.log(`Socket disconnected: ${reason}`);
+    });
+
+    socket.on('connect_error', (error) => {
+      console.warn('Socket connection error:', error.message);
     });
   }
   return socket;

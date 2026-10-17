@@ -19,7 +19,7 @@ import {
   IndustryCardInfo
 } from '../types';
 import { cleanInstagramHandle } from '../utils/sanitize';
-import { connectSocket, getSocket } from '../config/socket';
+import { connectSocket } from '../config/socket';
 
 const normalizeCreatorMedia = (creator: Creator): Creator => ({
   ...creator,
@@ -957,25 +957,28 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         // ignore
       }
     };
-    fetchUnread();
-    const interval = window.setInterval(fetchUnread, 15000); // 15 seconds
-
-    const handleNewMessage = () => fetchUnread();
-
     const token = localStorage.getItem('sc_auth_token');
+    let socket: ReturnType<typeof connectSocket> | null = null;
+    const handleNewMessage = () => fetchUnread();
     if (token) {
-      const socket = connectSocket(token);
+      socket = connectSocket(token);
       socket.on('new_message', handleNewMessage);
+      if (socket.connected) {
+        fetchUnread();
+      } else {
+        socket.once('connect', fetchUnread);
+      }
+    } else {
+      fetchUnread();
     }
 
     return () => {
-      window.clearInterval(interval);
-      const socket = getSocket();
       if (socket) {
         socket.off('new_message', handleNewMessage);
+        socket.off('connect', fetchUnread);
       }
     };
-  }, [authUser]);
+  }, [authUser?.id, authUser?.role]);
 
 
   // Campaigns State - strictly real applicant counts
@@ -1050,7 +1053,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         id: authUser.id || creatorId || 'c1',
         name: authUser.name || 'Creator',
         username: (authUser.name || 'creator').toLowerCase().replace(/[^a-z0-9_]/g, ''),
-        avatar: authUser.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400',
+        avatar: authUser.creatorProfile?.avatar || '',
         currentCity: 'Pan India',
         primaryCategory: 'Influencer',
         trustScore: 92,
@@ -1283,7 +1286,6 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setAuthUser(prev => {
       if (!prev) return prev;
       const updatedUser = { ...prev };
-      if (updates.avatar !== undefined) updatedUser.avatar = updates.avatar;
       if (prev.creatorProfile && (prev.creatorProfile.id === creatorId || prev.id === creatorId)) {
         updatedUser.creatorProfile = {
           ...prev.creatorProfile,

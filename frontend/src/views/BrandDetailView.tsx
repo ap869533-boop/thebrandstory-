@@ -332,9 +332,8 @@ export const BrandDetailView: React.FC = () => {
                   name: updates.contactPerson || authUser.name,
                   companyName: updates.brandName || authUser.companyName,
                   phone: updates.phone,
-                  avatar: updates.logoUrl || authUser.avatar,
-                  logoUrl: updates.logoUrl || (authUser as any).logoUrl,
-                } as any);
+                  logoUrl: updates.logoUrl || authUser.logoUrl,
+                });
               }
               setBrand({ ...brand, ...updates });
               setIsEditing(false);

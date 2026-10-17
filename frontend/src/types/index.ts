@@ -11,7 +11,7 @@ export interface AuthUser {
   gstNumber?: string;
   industry?: string;
   approvalStatus?: 'pending' | 'approved' | 'rejected';
-  avatar?: string;
+  logoUrl?: string;
   creatorProfile?: any; // Full creator profile object, populated after signup/login
 }
 

@@ -1,4 +1,4 @@
-export type UserRole = 'GUEST' | 'CREATOR' | 'BRAND' | 'ADMIN' | 'SALES';
+export type UserRole = 'GUEST' | 'CREATOR' | 'BRAND' | 'ADMIN' ;
 
 export interface AuthUser {
   id: string;
@@ -6,7 +6,6 @@ export interface AuthUser {
   email: string;
   role: UserRole;
   companyName?: string;
-  avatar?: string;
   creatorProfile?: any;
 }
 

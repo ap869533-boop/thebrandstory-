@@ -30,6 +30,16 @@
   }
 }
 
+.app-route-enter .max-w-7xl,
+.app-route-enter .max-w-6xl,
+.app-route-enter .max-w-5xl,
+.app-route-enter [class~="max-w-[1600px]"],
+footer .max-w-7xl {
+  width: 100%;
+  max-width: none;
+  padding-inline: clamp(3rem, 6vw, 6rem);
+}
+
 /* Ensure buttons using brand gold have black text for high contrast and brand identity */
 button.bg-blue-600,
 button.bg-blue-500,

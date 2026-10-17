@@ -171,10 +171,11 @@ if (distPath && process.env.NODE_ENV === 'production') {
 // Initialize MySQL Pool & Start Server
 async function startServer() {
   try {
-    await getDbPool();
-    console.log('✅ MySQL Database pool ready');
-    if (process.env.RUN_AUTO_MIGRATIONS === 'true' && process.env.NODE_ENV !== 'production') {
-      await runAutoMigrations();
+    const pool = await getDbPool();
+    if (pool) {
+      console.log('✅ MySQL Database pool ready');
+    } else {
+      console.warn('⚠️ MySQL unavailable; database migrations cannot run until the connection is configured.');
     }
   } catch (err: any) {
     console.warn('⚠️ MySQL connection notice:', err.message);
@@ -214,7 +215,10 @@ async function startServer() {
   }, 24 * 60 * 60 * 1000); // Check daily
 }
 
-startServer();
+startServer().catch((error) => {
+  console.error('❌ Backend startup failed:', error);
+  process.exitCode = 1;
+});
 
 export default app;
 
