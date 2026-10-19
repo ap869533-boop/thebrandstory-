@@ -121,6 +121,8 @@ export const Footer: React.FC = () => {
             <button onClick={() => navigateTo('blog')} className="hover:text-white transition cursor-pointer">Insights & Reports</button>
             <span>•</span>
             <button onClick={() => navigateTo('post-requirement')} className="hover:text-white transition cursor-pointer">Enterprise Solutions</button>
+            <span>•</span>
+            <button onClick={() => navigateTo('terms-and-conditions')} className="hover:text-white transition cursor-pointer">Terms &amp; Conditions</button>
           </div>
         </div>
       </div>

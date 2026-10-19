@@ -257,24 +257,25 @@ export const CreatorOnboardingModal: React.FC = () => {
                 </div>
               </div>
 
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.isBarterAvailable}
-                    onChange={(e) => setFormData({ ...formData, isBarterAvailable: e.target.checked })}
-                    className="w-4 h-4 rounded text-[#D4A338] focus:ring-blue-500"
-                  />
-                  <span className="font-semibold text-slate-800 text-xs">
-                    I am also open to Barter / Product gifting collaborations
-                  </span>
-                </label>
-              </div>
             </>
           )}
 
           {step === 3 && (
             <>
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.isBarterAvailable}
+                    onChange={(e) => setFormData({ ...formData, isBarterAvailable: e.target.checked })}
+                    className="mt-0.5 w-4 h-4 rounded text-[#D4A338] focus:ring-amber-500"
+                  />
+                  <span className="font-semibold text-slate-800 text-xs">
+                    I am open to barter / product-gifting collaborations
+                  </span>
+                </label>
+              </div>
+
               <div>
                 <label className="block text-slate-800 text-xs font-bold mb-1.5">Short Bio / Pitch</label>
                 <textarea

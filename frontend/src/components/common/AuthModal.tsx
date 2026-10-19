@@ -146,6 +146,7 @@ export const AuthModal: React.FC = () => {
   const [languages, setLanguages] = useState('');
   const [ageGroup, setAgeGroup] = useState('');
   const [startingPrice, setStartingPrice] = useState('');
+  const [isBarterAvailable, setIsBarterAvailable] = useState(false);
   const [followers, setFollowers] = useState('');
   const [totalPosts, setTotalPosts] = useState('');
   const [avgViews, setAvgViews] = useState('');
@@ -307,7 +308,10 @@ export const AuthModal: React.FC = () => {
       username: instagramHandle, gender, currentCity: creatorState.trim(), state: '', primaryCategory: category,
       avatar: profilePhotoUrl, coverImage: bannerUrl,
       languages: languages.split(',').map((item) => item.trim()).filter(Boolean), ageGroup,
-      startingPrice: Number(startingPrice), pricing: { startingPrice: Number(startingPrice) },
+      startingPrice: Number(startingPrice), pricing: {
+        startingPrice: Number(startingPrice),
+        isBarterAvailable,
+      },
       followers: Number(followers) || 0, totalPosts: Number(totalPosts) || 0,
       avgViews: Number(avgViews) || 0, avgLikes: Number(avgLikes) || 0, avgComments: Number(avgComments) || 0,
       socialPlatforms: [{ platform: 'instagram', username: instagramHandle, url: username.trim(), followers: Number(followers) || 0, avgViews: Number(avgViews) || 0, verified: false }],
@@ -848,6 +852,17 @@ export const AuthModal: React.FC = () => {
                   <input value={username} onChange={e => { setUsername(e.target.value); setInstaError(null); }} placeholder="Instagram URL * (https://instagram.com/yourhandle)" className={`w-full ${creatorFieldClass('username')} ${instaError ? 'border-red-500/70 focus:border-red-500 shadow-[0_0_10px_rgba(239,68,68,0.1)]' : ''}`} />{creatorFieldError('username')}
                 </div>
                 <div><input type="number" min="1" value={startingPrice} onChange={e => setStartingPrice(e.target.value)} placeholder="Starting price (₹) *" className={`w-full ${creatorFieldClass('startingPrice')}`} />{creatorFieldError('startingPrice')}</div>
+                <label className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-slate-800 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isBarterAvailable}
+                    onChange={e => setIsBarterAvailable(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 accent-[#D4A338]"
+                  />
+                  <span className="text-xs font-semibold">
+                    I am open to barter / product-gifting collaborations
+                  </span>
+                </label>
                 <div className="grid grid-cols-2 gap-3">{[
                   ['Followers count', followers, setFollowers, 'followers'], ['Total posts', totalPosts, setTotalPosts, 'totalPosts'], ['Average views', avgViews, setAvgViews, 'avgViews'], ['Average likes', avgLikes, setAvgLikes, 'avgLikes'], ['Average comments', avgComments, setAvgComments, 'avgComments'],
                 ].map(([label, value, setter, field]: any) => <div key={label}><input type="number" min="0" value={value} onChange={e => setter(e.target.value)} placeholder={label} className={`w-full ${creatorFieldClass(field)}`} />{creatorFieldError(field)}</div>)}</div>

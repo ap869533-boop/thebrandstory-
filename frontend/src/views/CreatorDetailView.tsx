@@ -91,6 +91,7 @@ export const CreatorDetailView: React.FC = () => {
   const [isEditingRates, setIsEditingRates] = useState(false);
   const [isSavingRates, setIsSavingRates] = useState(false);
   const [ratesDraft, setRatesDraft] = useState<Record<string, string>>({});
+  const [isBarterAvailableDraft, setIsBarterAvailableDraft] = useState(false);
   const [ratesError, setRatesError] = useState('');
   const [cropModalData, setCropModalData] = useState<{ src: string, type: string } | null>(null);
   const [uploadingMedia, setUploadingMedia] = useState<string | null>(null);
@@ -279,6 +280,7 @@ export const CreatorDetailView: React.FC = () => {
       ugcPrice: String(creator.pricing?.ugcPrice || 0),
       eventPrice: String(creator.pricing?.eventPrice || 0),
     });
+    setIsBarterAvailableDraft(creator.pricing?.isBarterAvailable ?? false);
     setIsEditingRates(true);
   };
 
@@ -311,7 +313,7 @@ export const CreatorDetailView: React.FC = () => {
           ugcPrice: parsedRates.ugcPrice,
           eventPrice: parsedRates.eventPrice,
           isNegotiable: creator.pricing?.isNegotiable ?? false,
-          isBarterAvailable: creator.pricing?.isBarterAvailable ?? false,
+          isBarterAvailable: isBarterAvailableDraft,
           pricingDisplayType: creator.pricing?.pricingDisplayType ?? 'starting',
         }
       });
@@ -740,10 +742,26 @@ export const CreatorDetailView: React.FC = () => {
             </div>
 
             <div className="min-w-0 p-3 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
-              <span className="text-[11px] font-bold text-amber-700 uppercase tracking-wider block">Barter</span>
-              <span className="text-base font-black text-slate-900 block">
-                {creator.pricing?.isBarterAvailable ? 'Available' : 'Paid Only'}
-              </span>
+              <span className="text-[11px] font-bold text-amber-700 uppercase tracking-wider block">Barter Collaboration</span>
+              {isEditingRates ? (
+                <label className="flex min-h-8 items-center justify-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isBarterAvailableDraft}
+                    onChange={(event) => setIsBarterAvailableDraft(event.target.checked)}
+                    disabled={isSavingRates}
+                    aria-label="Available for barter collaborations"
+                    className="h-4 w-4 accent-[#D4A338]"
+                  />
+                  <span className="text-xs font-bold text-slate-900">
+                    {isBarterAvailableDraft ? 'Available' : 'Not Available'}
+                  </span>
+                </label>
+              ) : (
+                <span className="text-base font-black text-slate-900 block">
+                  {creator.pricing?.isBarterAvailable ? 'Available' : 'Not Available'}
+                </span>
+              )}
               <span className="text-[10px] text-slate-600 font-semibold block">
                 {creator.pricing?.isNegotiable ? 'Negotiable' : 'Fixed'}
               </span>

@@ -52,6 +52,7 @@ const LoginView = lazyWithChunkRecovery(() => import('./views/LoginView').then((
 const ChatView = lazyWithChunkRecovery(() => import('./views/ChatView').then(({ ChatView }) => ({ default: ChatView })));
 const HelpSupportView = lazyWithChunkRecovery(() => import('./views/HelpSupportView').then(({ HelpSupportView }) => ({ default: HelpSupportView })));
 const TicketTrackingView = lazyWithChunkRecovery(() => import('./views/TicketTrackingView').then(({ TicketTrackingView }) => ({ default: TicketTrackingView })));
+const TermsAndConditionsView = lazyWithChunkRecovery(() => import('./views/TermsAndConditionsView').then(({ TermsAndConditionsView }) => ({ default: TermsAndConditionsView })));
 
 const AnimatedRoutes: React.FC = () => {
   const location = useLocation();
@@ -132,6 +133,7 @@ const AnimatedRoutes: React.FC = () => {
           <Route path="/blog" element={<BlogView />} />
           <Route path="/blog/:blogSlug" element={<BlogPostView />} />
           <Route path="/help-support" element={<HelpSupportView />} />
+          <Route path="/terms-and-conditions" element={<TermsAndConditionsView />} />
           <Route path="/ticket/:id/track/:token" element={<TicketTrackingView />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

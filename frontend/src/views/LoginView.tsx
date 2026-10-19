@@ -123,6 +123,7 @@ export const LoginView: React.FC = () => {
   const [avgLikes, setAvgLikes] = useState('');
   const [avgComments, setAvgComments] = useState('');
   const [startingPrice, setStartingPrice] = useState('');
+  const [isBarterAvailable, setIsBarterAvailable] = useState(false);
 
   const isFieldInvalid = (field: string, value: string) => {
     if (!touched[field]) return false;
@@ -280,7 +281,7 @@ export const LoginView: React.FC = () => {
       languages: languages.split(',').map(item => item.trim()).filter(Boolean),
       avatar: profilePhotoUrl || '', coverImage: bannerUrl || '',
       startingPrice: parsedStartingPrice,
-      pricing: { startingPrice: parsedStartingPrice },
+      pricing: { startingPrice: parsedStartingPrice, isBarterAvailable },
       followers: Number(followers) || 0, totalPosts: Number(totalPosts) || 0,
       avgViews: Number(avgViews) || 0, avgLikes: Number(avgLikes) || 0, avgComments: Number(avgComments) || 0,
       socialPlatforms: [{ platform: 'instagram', username: instagramHandle, url: username.trim(), followers: Number(followers) || 0, avgViews: Number(avgViews) || 0, verified: false }],
@@ -932,6 +933,17 @@ export const LoginView: React.FC = () => {
                       />
                       <p className="text-slate-500 mt-1 text-[10px]">Minimum fee per brand collaboration</p>
                     </div>
+                    <label className="flex items-start gap-2 rounded-xl border border-amber-200/20 bg-amber-400/5 p-3 text-slate-200 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isBarterAvailable}
+                        onChange={e => setIsBarterAvailable(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 accent-[#D4A338]"
+                      />
+                      <span className="text-xs font-semibold">
+                        I am open to barter / product-gifting collaborations
+                      </span>
+                    </label>
                   </>
                 )}
               </div>

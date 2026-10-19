@@ -907,7 +907,7 @@ export async function verifyOtp(req: Request, res: Response) {
             postPrice: Number(creatorProfileInput?.pricing?.postPrice) || 0,
             ugcPrice: Number(creatorProfileInput?.pricing?.ugcPrice) || 0,
             isNegotiable: false,
-            isBarterAvailable: false,
+            isBarterAvailable: Boolean(creatorProfileInput?.pricing?.isBarterAvailable),
             pricingDisplayType: 'starting',
           },
           collaborationTypes: [],
